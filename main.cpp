@@ -29,7 +29,7 @@ int main() {
     me.name = "张兆恒";
     me.title = "C++ 开发者 ";
     me.bio = "热爱系统底层开发 C++17/20、Linux 系统编程";
-    me.avatar = "d:\\图片\\OIP-C.jpg" ;// 用 emoji 代替头像，避免图片路径问题
+    me.avatar =  "avatar.jpg";// 用 emoji 代替头像，避免图片路径问题
     me.skills = {"C++", "Python", "Linux", "CMake", "WebAssembly", "Docker"};
     me.email = "3255484226@qq.com";
     me.github = "https://github.com/zhehong268";
@@ -163,7 +163,7 @@ int main() {
 </head>
 <body>
     <div class="card">
-        <div class="avatar">)" << me.avatar << R"(</div>
+       <div class="avatar"><img src=")" << me.avatar << R"(" alt="头像"></div>
         <h1>)" << me.name << R"(</h1>
         <div class="title">)" << me.title << R"(</div>
         <p class="bio">)" << me.bio << R"(</p>
