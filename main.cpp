@@ -284,13 +284,12 @@ int main() {
         <div class="landing-overlay"></div>
         <div class="landing-content">
             <h1>)" << me.welcomeText << R"(</h1>
-            <button class="enter-btn" onclick="enterSite()">点击进入</button>
+           <button class="enter-btn" onclick="enterSite()">点击进入</button>
         </div>
     </div>
 
     <!-- 音乐开关 -->
-    <button class="music-toggle" id="musicBtn" onclick="toggleMusic()" title="暂停/播放音乐">♪</button>
-
+    <button class="music-toggle" id="musicBtn" onclick="toggleMusic();" title="暂停/播放音乐">&#9834;</button>
     <!-- 主页面 -->
     <div class="main-page" id="mainPage">
         <div class="card">
