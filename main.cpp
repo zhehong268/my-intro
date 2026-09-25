@@ -4,17 +4,17 @@ extern "C" {
 
     EMSCRIPTEN_KEEPALIVE
     const char* getName() {
-        return "Zhang San";
+        return "张兆恒";
     }
 
     EMSCRIPTEN_KEEPALIVE
     const char* getTitle() {
-        return "C++ Developer";
+        return "C++ 开发者";
     }
 
     EMSCRIPTEN_KEEPALIVE
     const char* getBio() {
-        return "Passionate about low-level systems, C++17/20 and Linux programming.";
+        return "对底层系统、C++17/20 和 Linux 编程充满热情。";
     }
 
     EMSCRIPTEN_KEEPALIVE
@@ -24,6 +24,6 @@ extern "C" {
 
     EMSCRIPTEN_KEEPALIVE
     const char* getSkills() {
-        return "[\"C++\", \"Python\", \"Linux\", \"CMake\", \"WebAssembly\"]";
+        return "[\"C++\"]";
     }
 }
