@@ -19,7 +19,7 @@ extern "C" {
 
     EMSCRIPTEN_KEEPALIVE
     int getYearsOfExperience() {
-        return 3;
+        return 0;
     }
 
     EMSCRIPTEN_KEEPALIVE
