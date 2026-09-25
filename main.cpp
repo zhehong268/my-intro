@@ -284,7 +284,7 @@ int main() {
         <div class="landing-overlay"></div>
         <div class="landing-content">
             <h1>)" << me.welcomeText << R"(</h1>
-           <button class="enter-btn" onclick="enterSite()">点击进入</button>
+           <button class="enter-btn" onclick="enterSite();">点击进入</button>
         </div>
     </div>
 
