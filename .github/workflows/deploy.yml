@@ -1,0 +1,49 @@
+name: Build and Deploy C++ WASM
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: mymindstorm/setup-emsdk@v14
+
+      - name: Compile C++ to WASM
+        run: |
+          emcc main.cpp -o main.js \
+            -s WASM=1 \
+            -s EXPORTED_FUNCTIONS='["_getName","_getTitle","_getBio","_getYearsOfExperience","_getSkills"]' \
+            -s EXPORTED_RUNTIME_METHODS='["UTF8ToString"]' \
+            -O2
+
+      - name: Prepare deployment folder
+        run: |
+          mkdir -p dist
+          cp index.html main.js main.wasm dist/
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/deploy-pages@v4
+        id: deployment
