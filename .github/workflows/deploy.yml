@@ -1,4 +1,4 @@
-name: Build and Deploy C++ WASM
+name: Build and Deploy C++ Generated Site
 
 on:
   push:
@@ -24,18 +24,15 @@ jobs:
           g++ main.cpp -o generator
           ./generator
 
-      - name: Prepare deployment folder
-        run: |
-          mkdir -p dist
-          cp index.html dist/
-
-      - uses: actions/upload-pages-artifact@v3
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
         with:
-          path: dist
+          path: .
 
   deploy:
     needs: build
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/deploy-pages@v4
+      - name: Deploy to GitHub Pages
         id: deployment
+        uses: actions/deploy-pages@v4
