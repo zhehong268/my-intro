@@ -26,12 +26,12 @@ std::string generateSkillTags(const std::vector<std::string>& skills) {
 int main() {
     // 初始化数据
     Profile me;
-    me.name = "张三";
-    me.title = "C++ 开发者 / 系统架构师";
-    me.bio = "热爱系统底层开发，熟悉 C++17/20、Linux 系统编程。目前专注于高性能计算与 WebAssembly 方向。";
-    me.avatar = "👨‍💻"; // 用 emoji 代替头像，避免图片路径问题
+    me.name = "张兆恒";
+    me.title = "C++ 开发者 ";
+    me.bio = "热爱系统底层开发 C++17/20、Linux 系统编程";
+    me.avatar = "d:\\图片\\OIP-C.jpg" ;// 用 emoji 代替头像，避免图片路径问题
     me.skills = {"C++", "Python", "Linux", "CMake", "WebAssembly", "Docker"};
-    me.email = "zhangsan@example.com";
+    me.email = "3255484226@qq.com";
     me.github = "https://github.com/zhehong268";
 
     // 打开文件准备写入
