@@ -30,7 +30,7 @@ int main() {
     me.title = "C++ 开发者 ";
     me.bio = "热爱系统底层开发 C++17/20、Linux 系统编程";
     me.avatar =  "avatar.jpg";// 用 emoji 代替头像，避免图片路径问题
-    me.skills = {"C++", "Python", "Linux", "CMake", "WebAssembly", "Docker"};
+    me.skills = {"C++", "Python"};
     me.email = "3255484226@qq.com";
     me.github = "https://github.com/zhehong268";
 
