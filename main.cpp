@@ -409,16 +409,11 @@ int main() {
                 </div>
                 <div class="project-card">
                     <h3>Project Alpha</h3>
-                    <p>使用现代 C++ 编写的高性能数据处理引擎。</p>
-                    <div class="project-tech">C++17 / 多线程</div>
+                    <p>使用现代 C++ 编写的高性能数据处理引擎。（并非）</p>
+                    <div class="project-tech">C++17 </div>
                     <a href="#" target="_blank">查看详情</a>
                 </div>
-                <div class="project-card">
-                    <h3>Project Beta</h3>
-                    <p>基于 C++ 的 Web 服务后端，部署在 Linux 上。</p>
-                    <div class="project-tech">C++ / REST API / Docker</div>
-                    <a href="#" target="_blank">查看详情</a>
-                </div>
+                
             </div>
         </section>
 
@@ -426,27 +421,27 @@ int main() {
             <h2 class="section-title">Experience</h2>
             <div class="timeline">
                 <div class="timeline-item">
-                    <div class="timeline-period">2023 - 至今</div>
+                    <div class="timeline-period">2025-至今</div>
                     <div class="timeline-content">
-                        <h3>系统架构师</h3>
+                        <h3>BanGDream高级工程师</h3>
                         <div class="timeline-company">某科技公司</div>
                         <p>设计高性能计算平台与核心系统模块。</p>
                     </div>
                 </div>
                 <div class="timeline-item">
-                    <div class="timeline-period">2021 - 2023</div>
+                    <div class="timeline-period">2023 - 2026</div>
                     <div class="timeline-content">
-                        <h3>C++ 工程师</h3>
-                        <div class="timeline-company">某互联网公司</div>
-                        <p>开发后端服务并优化系统性能。</p>
+                        <h3>苦逼高中生</h3>
+                        <div class="timeline-company">成都某不知名高中</div>
+                        <p>天天打游戏，上课就睡觉</p>
                     </div>
                 </div>
                 <div class="timeline-item">
-                    <div class="timeline-period">2019 - 2021</div>
+                    <div class="timeline-period">2014 - 2023</div>
                     <div class="timeline-content">
-                        <h3>初级开发者</h3>
-                        <div class="timeline-company">某创业公司</div>
-                        <p>构建基础功能并维护生产系统。</p>
+                        <h3>小初生</h3>
+                        <div class="timeline-company">成都某不知名学校</div>
+                        <p>搞忘天天干啥了</p>
                     </div>
                 </div>
             </div>
