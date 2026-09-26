@@ -28,7 +28,7 @@ int main() {
     Profile me;
     me.name = "张兆恒";
     me.title = "C++ 开发者 ";
-    me.bio = "热爱系统底层开发 C++17/20、Linux 系统编程。";
+    me.bio = "     热爱系统底层开发 C++17/20、Linux 系统编程。";
     me.avatar = "avatar.jpg";
     me.coverImage = "cover.jpg";        // 首页封面图
     me.bgMusic = "music.mp3";            // 背景音乐
@@ -51,23 +51,23 @@ int main() {
     <title>)" << me.name << R"( - 自我介绍</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        html, body {
-            height: 100%;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
-            overflow: hidden;
-        }
+       html, body {
+    font-family: ...;
+}
 
         /* ========== 首页封面 ========== */
         .landing {
             position: fixed;
             inset: 0;
             z-index: 100;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            background: #000;
-            transition: opacity 0.8s ease, visibility 0.8s ease;
-        }
+           .main-page {
+    min-height: 100vh;
+    padding: 60px 20px;
+    background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
+    color: #fff;
+    opacity: 0;
+    transition: opacity 0.8s ease;
+}
         .landing.hidden {
             opacity: 0;
             visibility: hidden;
@@ -160,6 +160,7 @@ int main() {
             box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5);
             text-align: center;
             animation: fadeInUp 0.8s ease-out;
+             margin: 0 auto 60px auto;
         }
         @keyframes fadeInUp {
             from { opacity: 0; transform: translateY(30px); }
@@ -274,6 +275,145 @@ int main() {
             transform: scale(1.1);
         }
         .music-toggle.paused { color: #666; border-color: #666; }
+        .section {
+    max-width: 1000px;
+    margin: 0 auto;
+    padding: 60px 20px;
+}
+.section-title {
+    font-size: 28px;
+    font-weight: 700;
+    text-align: center;
+    margin-bottom: 40px;
+    background: linear-gradient(135deg, #a78bfa, #60a5fa);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+.skills {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 12px;
+}
+.skill-tag {
+    background: rgba(167, 139, 250, 0.15);
+    color: #c4b5fd;
+    padding: 10px 22px;
+    border-radius: 22px;
+    font-size: 14px;
+    font-weight: 500;
+    border: 1px solid rgba(167, 139, 250, 0.3);
+    transition: all 0.3s ease;
+}
+.skill-tag:hover {
+    background: rgba(167, 139, 250, 0.3);
+    transform: translateY(-3px);
+    box-shadow: 0 8px 20px rgba(167, 139, 250, 0.3);
+}
+.projects-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 24px;
+}
+.project-card {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 16px;
+    padding: 28px;
+    transition: all 0.3s ease;
+}
+.project-card:hover {
+    transform: translateY(-6px);
+    border-color: rgba(167, 139, 250, 0.4);
+    box-shadow: 0 15px 40px rgba(167, 139, 250, 0.2);
+}
+.project-card h3 { font-size: 18px; margin-bottom: 10px; }
+.project-card p {
+    font-size: 14px;
+    color: rgba(255, 255, 255, 0.6);
+    line-height: 1.7;
+    margin-bottom: 14px;
+}
+.project-tech {
+    font-size: 12px;
+    color: #a78bfa;
+    margin-bottom: 14px;
+    padding-bottom: 14px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+.project-card a {
+    color: #60a5fa;
+    text-decoration: none;
+    font-size: 14px;
+    font-weight: 500;
+}
+.timeline { position: relative; max-width: 720px; margin: 0 auto; }
+.timeline::before {
+    content: '';
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    width: 2px;
+    background: linear-gradient(180deg, #a78bfa, #60a5fa);
+}
+.timeline-item {
+    position: relative;
+    padding-left: 36px;
+    margin-bottom: 36px;
+}
+.timeline-item::before {
+    content: '';
+    position: absolute;
+    left: -6px; top: 8px;
+    width: 14px; height: 14px;
+    border-radius: 50%;
+    background: #a78bfa;
+    box-shadow: 0 0 0 4px rgba(167, 139, 250, 0.2);
+}
+.timeline-period {
+    font-size: 13px;
+    color: #a78bfa;
+    font-weight: 600;
+    margin-bottom: 6px;
+}
+.timeline-content h3 { font-size: 18px; margin-bottom: 4px; }
+.timeline-company {
+    font-size: 14px;
+    color: rgba(255, 255, 255, 0.5);
+    margin-bottom: 10px;
+}
+.timeline-content p {
+    font-size: 15px;
+    color: rgba(255, 255, 255, 0.7);
+    line-height: 1.7;
+}
+.section-contact { text-align: center; padding-bottom: 60px; }
+.contact {
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+    flex-wrap: wrap;
+    margin-bottom: 40px;
+}
+.contact a {
+    color: #60a5fa;
+    text-decoration: none;
+    padding: 12px 28px;
+    border-radius: 14px;
+    background: rgba(96, 165, 250, 0.1);
+    border: 1px solid rgba(96, 165, 250, 0.2);
+    font-size: 15px;
+    font-weight: 500;
+    transition: all 0.3s ease;
+}
+.contact a:hover {
+    background: rgba(96, 165, 250, 0.2);
+    transform: translateY(-3px);
+}
+.footer {
+    font-size: 13px;
+    color: rgba(255, 255, 255, 0.3);
+}
     </style>
 </head>
 <body>
@@ -306,6 +446,74 @@ int main() {
             </div>
             <div class="footer">Generated by C++ · Powered by GitHub Pages</div>
         </div>
+                <section class="section">
+            <h2 class="section-title">Skills</h2>
+            <div class="skills">)HTML" << generateSkillTags(me.skills) << R"HTML(</div>
+        </section>
+
+        <section class="section">
+            <h2 class="section-title">Projects</h2>
+            <div class="projects-grid">
+                <div class="project-card">
+                    <h3>WASM Intro Site</h3>
+                    <p>A personal homepage generated entirely by C++ and deployed to GitHub Pages.</p>
+                    <div class="project-tech">C++ / WebAssembly / GitHub Actions</div>
+                    <a href="https://github.com/zhehong268/my-intro" target="_blank">View Details</a>
+                </div>
+                <div class="project-card">
+                    <h3>Project Alpha</h3>
+                    <p>A high-performance data processing engine written in modern C++.</p>
+                    <div class="project-tech">C++17 / Multithreading</div>
+                    <a href="#" target="_blank">View Details</a>
+                </div>
+                <div class="project-card">
+                    <h3>Project Beta</h3>
+                    <p>A web service backend built with C++ and deployed on Linux.</p>
+                    <div class="project-tech">C++ / REST API / Docker</div>
+                    <a href="#" target="_blank">View Details</a>
+                </div>
+            </div>
+        </section>
+
+        <section class="section">
+            <h2 class="section-title">Experience</h2>
+            <div class="timeline">
+                <div class="timeline-item">
+                    <div class="timeline-period">2023 - Present</div>
+                    <div class="timeline-content">
+                        <h3>System Architect</h3>
+                        <div class="timeline-company">Tech Company A</div>
+                        <p>Designing high-performance computing platforms and core system modules.</p>
+                    </div>
+                </div>
+                <div class="timeline-item">
+                    <div class="timeline-period">2021 - 2023</div>
+                    <div class="timeline-content">
+                        <h3>C++ Engineer</h3>
+                        <div class="timeline-company">Internet Company B</div>
+                        <p>Developed backend services and optimized system performance.</p>
+                    </div>
+                </div>
+                <div class="timeline-item">
+                    <div class="timeline-period">2019 - 2021</div>
+                    <div class="timeline-content">
+                        <h3>Junior Developer</h3>
+                        <div class="timeline-company">Startup C</div>
+                        <p>Built foundational features and maintained production systems.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="section section-contact">
+            <h2 class="section-title">Get in Touch</h2>
+            <div class="contact">
+                <a href="mailto:zhangsan@example.com">Email</a>
+                <a href="https://github.com/zhehong268" target="_blank">GitHub</a>
+            </div>
+            <div class="footer">Generated by C++ | Powered by GitHub Pages</div>
+        </section>
+
     </div>
 
     <!-- 背景音乐 -->
@@ -317,6 +525,7 @@ int main() {
         function enterSite() {
             document.getElementById('landing').classList.add('hidden');
             document.getElementById('mainPage').classList.add('visible');
+            document.body.style.overflowY = 'auto';
 
             var music = document.getElementById('bgMusic');
             var btn = document.getElementById('musicBtn');
