@@ -424,8 +424,8 @@ int main() {
                     <div class="timeline-period">2025-至今</div>
                     <div class="timeline-content">
                         <h3>BanGDream高级工程师</h3>
-                        <div class="timeline-company">某科技公司</div>
-                        <p>设计高性能计算平台与核心系统模块。</p>
+                        <div class="timeline-company">沈阳理工大学</div>
+                        <p>游玩并严肃观看邦邦所有内容，最喜欢高松灯（不是凑企鹅）</p>
                     </div>
                 </div>
                 <div class="timeline-item">
