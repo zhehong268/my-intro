@@ -29,7 +29,7 @@ int main() {
     Profile me;
     me.name = "遮鸿";
     me.title = "C++ 开发者";
-    me.bio = "沈阳理工大学在读。在学 C++，目前还在打基础，写点小项目练手。平时喜欢看 BanGDream，最喜欢高松灯。";
+    me.bio = "在学 C++，目前还在打基础，写点小项目练手。平时喜欢看动漫：邦多利、jojo、鬼灭、轻音、咒术、孤独摇滚、闺泣等。";
     me.avatar = "avatar.jpg";
     me.coverImage = "cover.jpg";
     me.bgImage = "bg.webp";
