@@ -27,14 +27,14 @@ std::string generateSkillTags(const std::vector<std::string>& skills) {
 
 int main() {
     Profile me;
-    me.name = "张兆恒";
+    me.name = "遮鸿";
     me.title = "C++ 开发者";
     me.bio = "热爱系统底层开发，熟悉 C++17/20、Linux 系统编程。";
     me.avatar = "avatar.jpg";
     me.coverImage = "cover.jpg";
-     me.bgImage = "bg.webp";
+    me.bgImage = "bg.webp";
     me.bgMusic = "music.mp3";
-    me.welcomeText = "欢迎来到我的主页";
+    me.welcomeText = "欢迎来到遮鸿的个人主页";
     me.skills = {"C++", "Python"};
     me.email = "3255484226@qq.com";
     me.github = "https://github.com/zhehong268";
@@ -59,7 +59,7 @@ int main() {
             color: #fff;
         }
 
-        /* 首页封面 */
+        /* ========== 首页封面 ========== */
         .landing {
             position: fixed;
             inset: 0;
@@ -127,8 +127,7 @@ int main() {
             box-shadow: 0 10px 30px rgba(167, 139, 250, 0.4);
         }
 
-        /* 主页面 */
-                /* 主页面 */
+        /* ========== 主页面 ========== */
         .main-page {
             min-height: 100vh;
             padding: 60px 20px;
@@ -147,6 +146,7 @@ int main() {
         }
         .main-page.visible { opacity: 1; }
 
+        /* 卡片 */
         .card {
             background: rgba(255, 255, 255, 0.05);
             backdrop-filter: blur(20px);
@@ -165,6 +165,8 @@ int main() {
             from { opacity: 0; transform: translateY(30px); }
             to { opacity: 1; transform: translateY(0); }
         }
+
+        /* 头像 */
         .avatar { margin-bottom: 20px; animation: float 3s ease-in-out infinite; }
         .avatar img {
             width: 120px;
@@ -173,8 +175,6 @@ int main() {
             object-fit: cover;
             border: 3px solid rgba(167, 139, 250, 0.5);
             box-shadow: 0 8px 25px rgba(167, 139, 250, 0.3);
-        }
-                    .avatar img {
             cursor: pointer;
         }
         .avatar img.pop {
@@ -192,6 +192,8 @@ int main() {
             0%, 100% { transform: translateY(0); }
             50% { transform: translateY(-10px); }
         }
+
+        /* 标题 */
         .card h1 {
             font-size: 32px;
             font-weight: 700;
@@ -206,14 +208,28 @@ int main() {
             color: #a78bfa;
             font-weight: 500;
             letter-spacing: 1px;
-            margin-bottom: 24px;
+            margin-bottom: 16px;
         }
+
+        /* 时钟 */
+        .clock {
+            font-family: 'Courier New', 'Consolas', monospace;
+            font-size: 22px;
+            font-weight: 700;
+            color: #7dd3fc;
+            letter-spacing: 8px;
+            margin-bottom: 24px;
+            text-shadow: 0 0 18px rgba(125, 211, 252, 0.8);
+        }
+
         .card .bio {
             font-size: 15px;
             color: rgba(255, 255, 255, 0.7);
             line-height: 1.8;
             margin-bottom: 30px;
         }
+
+        /* 技能标签 */
         .skills {
             display: flex;
             flex-wrap: wrap;
@@ -236,6 +252,8 @@ int main() {
             transform: translateY(-3px);
             box-shadow: 0 8px 20px rgba(167, 139, 250, 0.3);
         }
+
+        /* 联系方式 */
         .contact {
             display: flex;
             justify-content: center;
@@ -290,7 +308,7 @@ int main() {
         }
         .music-toggle.paused { color: #666; border-color: #666; }
 
-        /* 内容区块 */
+        /* 区块 */
         .section {
             max-width: 1000px;
             margin: 0 auto;
@@ -307,6 +325,7 @@ int main() {
             background-clip: text;
         }
 
+        /* 项目卡片 */
         .projects-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
@@ -345,6 +364,7 @@ int main() {
             font-weight: 500;
         }
 
+        /* 时间线 */
         .timeline { position: relative; max-width: 720px; margin: 0 auto; }
         .timeline::before {
             content: '';
@@ -385,17 +405,107 @@ int main() {
             line-height: 1.7;
         }
 
-        .section-contact {
-            text-align: center;
-            padding-bottom: 60px;
+        /* ========== 音游区域 ========== */
+        .rhythm-container {
+            position: relative;
+            max-width: 560px;
+            margin: 0 auto;
+            height: 520px;
+            background: linear-gradient(180deg, rgba(10,14,26,0.9), rgba(10,14,26,0.5));
+            border: 1px solid rgba(125, 211, 252, 0.3);
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: 0 0 50px rgba(125, 211, 252, 0.15) inset,
+                        0 10px 40px rgba(0, 0, 0, 0.5);
+        }
+        .lanes {
+            display: flex;
+            height: 100%;
+            position: relative;
+        }
+        .lane {
+            flex: 1;
+            border-right: 1px solid rgba(125, 211, 252, 0.08);
+            position: relative;
+            overflow: hidden;
+        }
+        .lane:last-child { border-right: none; }
+
+        /* 判定线 */
+        .judge-line {
+            position: absolute;
+            bottom: 100px;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: #7dd3fc;
+            box-shadow: 0 0 25px rgba(125, 211, 252, 1),
+                        0 0 50px rgba(125, 211, 252, 0.6);
+            z-index: 5;
+        }
+        .judge-line.pulse {
+            animation: judgePulse 0.3s ease;
+        }
+        @keyframes judgePulse {
+            0% { box-shadow: 0 0 25px rgba(125,211,252,1), 0 0 50px rgba(125,211,252,0.6); }
+            50% { box-shadow: 0 0 50px rgba(255,255,255,1), 0 0 100px rgba(125,211,252,1); }
+            100% { box-shadow: 0 0 25px rgba(125,211,252,1), 0 0 50px rgba(125,211,252,0.6); }
         }
 
-        @media (max-width: 600px) {
-            .landing-content h1 { font-size: 32px; }
-            .card h1 { font-size: 26px; }
-            .section-title { font-size: 22px; }
+        /* COMBO 显示 */
+        .combo-display {
+            position: absolute;
+            top: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            text-align: center;
+            z-index: 10;
+            pointer-events: none;
         }
-                    /* ========== MyGO 签名书写加载动画 ========== */
+        .combo-count {
+            font-size: 64px;
+            font-weight: 800;
+            color: #7dd3fc;
+            line-height: 1;
+            text-shadow: 0 0 40px rgba(125, 211, 252, 1),
+                         0 0 80px rgba(125, 211, 252, 0.6);
+            font-family: 'Courier New', monospace;
+        }
+        .combo-count.pop {
+            animation: comboPop 0.3s ease;
+        }
+        @keyframes comboPop {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.35); color: #fff; }
+            100% { transform: scale(1); }
+        }
+        .combo-label {
+            font-size: 13px;
+            color: rgba(125, 211, 252, 0.7);
+            letter-spacing: 8px;
+            margin-top: 8px;
+            font-weight: 700;
+        }
+
+        /* 音符 */
+        .note {
+            position: absolute;
+            width: 70%;
+            left: 15%;
+            height: 16px;
+            background: linear-gradient(180deg, #bae6fd, #7dd3fc);
+            border-radius: 8px;
+            box-shadow: 0 0 18px rgba(125, 211, 252, 0.9),
+                        0 0 35px rgba(125, 211, 252, 0.5);
+            z-index: 3;
+        }
+        .note.hit {
+            background: #fff;
+            box-shadow: 0 0 30px rgba(255, 255, 255, 1),
+                        0 0 60px rgba(125, 211, 252, 1);
+        }
+
+        /* ========== 签名加载 ========== */
         .loader {
             position: fixed;
             inset: 0;
@@ -409,52 +519,34 @@ int main() {
         }
         .loader.show { display: flex; opacity: 1; }
 
-        .signature {
-            font-family: 'Brush Script MT', 'Segoe Script', 'Lucida Handwriting', cursive;
-            font-size: 72px;
-            color: #7dd3fc;
-            text-shadow: 0 0 30px rgba(125, 211, 252, 0.9),
-                         0 0 60px rgba(125, 211, 252, 0.5);
-            letter-spacing: 4px;
-            white-space: nowrap;
-            position: relative;
+        .signature-svg {
+            width: 90%;
+            max-width: 560px;
+            height: auto;
+            overflow: visible;
         }
-        .sig-char {
-            display: inline-block;
-            opacity: 0;
-            transform: translateY(-20px) rotate(-20deg);
-            animation: writeChar 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+        #sigText {
+            animation: drawSignature 3.5s cubic-bezier(0.45, 0, 0.3, 1) forwards;
+            filter: drop-shadow(0 0 12px rgba(125, 211, 252, 0.8));
         }
-        @keyframes writeChar {
-            from { opacity: 0; transform: translateY(-20px) rotate(-20deg) scale(0.5); }
-            to   { opacity: 1; transform: translateY(0) rotate(0) scale(1); }
+        @keyframes drawSignature {
+            to { stroke-dashoffset: 0; }
         }
 
-        /* 签名后的光标闪烁 */
-        .signature::after {
-            content: '';
-            display: inline-block;
-            width: 3px;
-            height: 60px;
-            background: #7dd3fc;
-            margin-left: 8px;
-            vertical-align: middle;
-            animation: cursorBlink 0.8s ease-in-out infinite;
-            box-shadow: 0 0 15px rgba(125, 211, 252, 0.9);
-        }
-        @keyframes cursorBlink {
-            0%, 45% { opacity: 1; }
-            50%, 100% { opacity: 0; }
-        }
-
+        /* 响应式 */
         @media (max-width: 600px) {
-            .signature { font-size: 44px; letter-spacing: 2px; }
-            .signature::after { height: 36px; }
+            .landing-content h1 { font-size: 32px; }
+            .card h1 { font-size: 26px; }
+            .section-title { font-size: 22px; }
+            .clock { font-size: 18px; letter-spacing: 4px; }
+            .combo-count { font-size: 48px; }
+            .rhythm-container { height: 420px; }
         }
     </style>
 </head>
 <body>
 
+    <!-- 首页封面 -->
     <div class="landing" id="landing">
         <div class="landing-bg" style="background-image: url(')HTML" << me.coverImage << R"HTML(');"></div>
         <div class="landing-overlay"></div>
@@ -464,18 +556,29 @@ int main() {
         </div>
     </div>
 
-        <!-- MyGO 签名加载动画 -->
+    <!-- 签名加载 -->
     <div class="loader" id="loader">
-        <div class="signature" id="signature"></div>
+        <svg class="signature-svg" viewBox="0 0 500 140" xmlns="http://www.w3.org/2000/svg">
+            <text x="250" y="100" text-anchor="middle"
+                  font-family="'Brush Script MT', 'Segoe Script', 'Apple Chancery', cursive"
+                  font-size="72" font-weight="bold"
+                  fill="none" stroke="#7dd3fc" stroke-width="2"
+                  stroke-linecap="round" stroke-linejoin="round"
+                  stroke-dasharray="3000" stroke-dashoffset="3000"
+                  id="sigText">It's MyGO!!!!!</text>
+        </svg>
     </div>
 
+    <!-- 音乐开关 -->
     <button class="music-toggle" id="musicBtn" onclick="toggleMusic();" title="暂停/播放音乐">&#9834;</button>
 
+    <!-- 主页面 -->
     <div class="main-page" id="mainPage">
         <div class="card">
-           <div class="avatar"><img src=")HTML" << me.avatar << R"HTML(" alt="头像" onclick="popAvatar(this);"></div>
+            <div class="avatar"><img src=")HTML" << me.avatar << R"HTML(" alt="头像" onclick="popAvatar(this);"></div>
             <h1>)HTML" << me.name << R"HTML(</h1>
             <div class="title">)HTML" << me.title << R"HTML(</div>
+            <div class="clock" id="clock">00:00:00</div>
             <p class="bio">)HTML" << me.bio << R"HTML(</p>
             <div class="skills">)HTML" << generateSkillTags(me.skills) << R"HTML(</div>
             <div class="contact">
@@ -497,10 +600,9 @@ int main() {
                 <div class="project-card">
                     <h3>Project Alpha</h3>
                     <p>使用现代 C++ 编写的高性能数据处理引擎。（并非）</p>
-                    <div class="project-tech">C++17 </div>
+                    <div class="project-tech">C++17</div>
                     <a href="#" target="_blank">查看详情</a>
                 </div>
-                
             </div>
         </section>
 
@@ -534,6 +636,26 @@ int main() {
             </div>
         </section>
 
+        <section class="section">
+            <h2 class="section-title">Rhythm</h2>
+            <div class="rhythm-container" id="rhythmContainer">
+                <div class="combo-display">
+                    <div class="combo-count" id="comboCount">0</div>
+                    <div class="combo-label">COMBO</div>
+                </div>
+                <div class="judge-line" id="judgeLine"></div>
+                <div class="lanes" id="lanes">
+                    <div class="lane"></div>
+                    <div class="lane"></div>
+                    <div class="lane"></div>
+                    <div class="lane"></div>
+                    <div class="lane"></div>
+                    <div class="lane"></div>
+                    <div class="lane"></div>
+                </div>
+            </div>
+        </section>
+
         <section class="section section-contact">
             <h2 class="section-title">联系我</h2>
             <div class="contact">
@@ -549,23 +671,22 @@ int main() {
     </audio>
 
     <script>
-                function enterSite() {
+        /* ============ 时钟 ============ */
+        function updateClock() {
+            var now = new Date();
+            var h = String(now.getHours()).padStart(2, '0');
+            var m = String(now.getMinutes()).padStart(2, '0');
+            var s = String(now.getSeconds()).padStart(2, '0');
+            document.getElementById('clock').textContent = h + ':' + m + ':' + s;
+        }
+        setInterval(updateClock, 1000);
+        updateClock();
+
+        /* ============ 进入站点 ============ */
+        function enterSite() {
             var loader = document.getElementById('loader');
-            var sig = document.getElementById('signature');
-
-            // 1. 显示加载界面，逐个写出字符
             loader.classList.add('show');
-            sig.innerHTML = '';
-            var text = "It's MyGO!!!!!";
-            for (var i = 0; i < text.length; i++) {
-                var span = document.createElement('span');
-                span.className = 'sig-char';
-                span.textContent = text[i] === ' ' ? '\u00A0' : text[i];
-                span.style.animationDelay = (i * 0.15) + 's';
-                sig.appendChild(span);
-            }
 
-            // 2. 等签名写完（约 2.5 秒）后，切到主页面
             setTimeout(function() {
                 document.getElementById('landing').classList.add('hidden');
                 document.getElementById('mainPage').classList.add('visible');
@@ -582,16 +703,16 @@ int main() {
                     btn.classList.add('paused');
                 });
 
-                // 3. 再等 0.5 秒后隐藏 loader
                 setTimeout(function() {
                     loader.classList.remove('show');
                     setTimeout(function() {
                         loader.style.display = 'none';
                     }, 600);
-                }, 500);
-            }, 2500);
+                }, 300);
+            }, 3500);
         }
 
+        /* ============ 音乐开关 ============ */
         function toggleMusic() {
             var music = document.getElementById('bgMusic');
             var btn = document.getElementById('musicBtn');
@@ -603,11 +724,88 @@ int main() {
                 btn.classList.add('paused');
             }
         }
-                    function popAvatar(el) {
+
+        /* ============ 头像弹跳 ============ */
+        function popAvatar(el) {
             el.classList.remove('pop');
-            void el.offsetWidth;   // 强制浏览器重绘，让动画能重复触发
+            void el.offsetWidth;
             el.classList.add('pop');
         }
+
+        /* ============ 音游自动打 ============ */
+        // 改 BPM 可以调节奏快慢
+        // 春日影大约 168 BPM
+        var BPM = 168;
+        var beatInterval = 60000 / BPM;    // 一拍多少毫秒，168 BPM 约 357ms
+        var noteTravelTime = 1800;          // 音符从顶部落到判定线需要多久
+        var rhythmStarted = false;
+        var combo = 0;
+
+        function startRhythm() {
+            if (rhythmStarted) return;
+            rhythmStarted = true;
+
+            var lanes = document.querySelectorAll('#lanes .lane');
+            var comboEl = document.getElementById('comboCount');
+            var judgeLine = document.getElementById('judgeLine');
+
+            function spawnNote() {
+                // 每一拍随机挑一条轨道
+                var laneIndex = Math.floor(Math.random() * lanes.length);
+                var lane = lanes[laneIndex];
+
+                var note = document.createElement('div');
+                note.className = 'note';
+                lane.appendChild(note);
+
+                var laneHeight = lane.clientHeight;
+                var targetTop = laneHeight - 100 - 8;   // 判定线位置 - 半个音符高
+
+                // 用 Web Animations API 做匀速下落
+                note.animate(
+                    [
+                        { top: '-20px', opacity: 1 },
+                        { top: targetTop + 'px', opacity: 1 }
+                    ],
+                    { duration: noteTravelTime, easing: 'linear', fill: 'forwards' }
+                );
+
+                // 到判定线时击打
+                setTimeout(function() {
+                    note.classList.add('hit');
+                    note.animate(
+                        [
+                            { opacity: 1, transform: 'scale(1)' },
+                            { opacity: 0, transform: 'scale(2.5)' }
+                        ],
+                        { duration: 280, fill: 'forwards' }
+                    );
+                    setTimeout(function() { note.remove(); }, 280);
+
+                    // 判定线闪一下
+                    judgeLine.classList.remove('pulse');
+                    void judgeLine.offsetWidth;
+                    judgeLine.classList.add('pulse');
+
+                    // COMBO 累加
+                    combo++;
+                    comboEl.textContent = combo;
+                    comboEl.classList.remove('pop');
+                    void comboEl.offsetWidth;
+                    comboEl.classList.add('pop');
+                }, noteTravelTime);
+            }
+
+            setInterval(spawnNote, beatInterval);
+        }
+
+        // 进入主界面 1 秒后自动开始
+        var rhythmWatcher = setInterval(function() {
+            if (document.getElementById('mainPage').classList.contains('visible')) {
+                clearInterval(rhythmWatcher);
+                setTimeout(startRhythm, 1000);
+            }
+        }, 200);
     </script>
 </body>
 </html>)HTML";
