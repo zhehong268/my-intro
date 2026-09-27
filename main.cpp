@@ -29,7 +29,7 @@ int main() {
     Profile me;
     me.name = "遮鸿";
     me.title = "C++ 开发者";
-    me.bio = "热爱系统底层开发，熟悉 C++17/20、Linux 系统编程。";
+    me.bio = "。在学 C++，目前还在打基础，写点小项目练手。平时喜欢看动漫，轻音少女、BanG Dream、孤独摇滚、Girls band cry、Fate、鬼灭之刃、jojo的奇妙冒险、间谍过家家、咒术回战等等";
     me.avatar = "avatar.jpg";
     me.coverImage = "cover.jpg";
     me.bgImage = "bg.webp";
@@ -542,6 +542,50 @@ int main() {
             .combo-count { font-size: 48px; }
             .rhythm-container { height: 420px; }
         }
+                    .status {
+            font-size: 13px;
+            color: rgba(167, 139, 250, 0.8);
+            margin-bottom: 20px;
+            letter-spacing: 1px;
+        }
+                    .skill-bars {
+            max-width: 640px;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            gap: 22px;
+        }
+        .skill-bar .skill-name {
+            font-size: 15px;
+            color: #e0f2fe;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .skill-bar .skill-name span {
+            font-size: 12px;
+            color: rgba(167, 139, 250, 0.8);
+            letter-spacing: 2px;
+        }
+        .bar {
+            height: 8px;
+            background: rgba(255, 255, 255, 0.08);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        .bar-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #a78bfa, #60a5fa);
+            border-radius: 4px;
+            box-shadow: 0 0 12px rgba(167, 139, 250, 0.6);
+            animation: barGrow 1.2s cubic-bezier(0.45, 0, 0.3, 1) forwards;
+            transform-origin: left;
+        }
+        @keyframes barGrow {
+            from { transform: scaleX(0); }
+            to { transform: scaleX(1); }
+        }
     </style>
 </head>
 <body>
@@ -579,6 +623,7 @@ int main() {
             <h1>)HTML" << me.name << R"HTML(</h1>
             <div class="title">)HTML" << me.title << R"HTML(</div>
             <div class="clock" id="clock">00:00:00</div>
+            <div class="status" id="status">📍 在上课 / 在写代码 / 在摸鱼</div>
             <p class="bio">)HTML" << me.bio << R"HTML(</p>
             <div class="skills">)HTML" << generateSkillTags(me.skills) << R"HTML(</div>
             <div class="contact">
@@ -603,6 +648,35 @@ int main() {
                     <div class="project-tech">C++17</div>
                     <a href="#" target="_blank">查看详情</a>
                 </div>
+            </div>
+        </section>
+                <section class="section">
+            <h2 class="section-title">正在学习</h2>
+            <div class="learning-grid">
+                <div class="learning-card">
+                    <h3>C++ 基础</h3>
+                    <p>类、STL、指针和引用这些，边写边学。</p>
+                </div>
+                <div class="learning-card">
+                    <h3>数据结构</h3>
+                    <p>课程在学，顺便用 C++ 手写一遍加深理解。</p>
+                </div>
+                <div class="learning-card">
+                    <h3>Git 和 GitHub</h3>
+                    <p>这个网站就是在用的过程中学会的。</p>
+                </div>
+                <div class="learning-card">
+                    <h3>Linux 基础</h3>
+                    <p>会一些常用命令，还在慢慢熟悉。</p>
+                </div>
+            </div>
+        </section>
+                <section class="section">
+            <h2 class="section-title">关于本站</h2>
+            <div class="about-site">
+                <p>这个网站是一个 C++ 项目。所有内容由 <code>main.cpp</code> 生成，源文件里没有手写的 HTML。</p>
+                <p>每次推送到 GitHub，Actions 会自动编译运行，生成新的 index.html 并部署到 Pages。</p>
+                <p class="about-tech">C++ · GitHub Actions · HTML · CSS · JavaScript</p>
             </div>
         </section>
 
@@ -655,6 +729,31 @@ int main() {
                 </div>
             </div>
         </section>
+                <section class="section">
+            <h2 class="section-title">技能</h2>
+            <div class="skill-bars">
+                <div class="skill-bar">
+                    <div class="skill-name">C++ <span>入门</span></div>
+                    <div class="bar"><div class="bar-fill" style="width: 40%;"></div></div>
+                </div>
+                <div class="skill-bar">
+                    <div class="skill-name">Python <span>了解</span></div>
+                    <div class="bar"><div class="bar-fill" style="width: 30%;"></div></div>
+                </div>
+                <div class="skill-bar">
+                    <div class="skill-name">Git / GitHub <span>会用</span></div>
+                    <div class="bar"><div class="bar-fill" style="width: 50%;"></div></div>
+                </div>
+                <div class="skill-bar">
+                    <div class="skill-name">HTML / CSS <span>够用</span></div>
+                    <div class="bar"><div class="bar-fill" style="width: 45%;"></div></div>
+                </div>
+                <div class="skill-bar">
+                    <div class="skill-name">Linux <span>在学</span></div>
+                    <div class="bar"><div class="bar-fill" style="width: 25%;"></div></div>
+                </div>
+            </div>
+        </section>
 
         <section class="section section-contact">
             <h2 class="section-title">联系我</h2>
@@ -681,6 +780,19 @@ int main() {
         }
         setInterval(updateClock, 1000);
         updateClock();
+                function updateStatus() {
+            var h = new Date().getHours();
+            var el = document.getElementById('status');
+            if (h >= 0 && h < 7) el.textContent = ' 这个点还没睡？';
+            else if (h < 9) el.textContent = ' 早八人';
+            else if (h < 12) el.textContent = ' 在上课';
+            else if (h < 14) el.textContent = ' 干饭中';
+            else if (h < 18) el.textContent = ' 在写代码';
+            else if (h < 22) el.textContent = ' 在摸鱼';
+            else el.textContent = ' 准备睡了';
+        }
+        setInterval(updateStatus, 60000);
+        updateStatus();
 
         /* ============ 进入站点 ============ */
         function enterSite() {
