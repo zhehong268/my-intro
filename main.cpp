@@ -29,13 +29,13 @@ int main() {
     Profile me;
     me.name = "遮鸿";
     me.title = "C++ 开发者";
-    me.bio = "。在学 C++，目前还在打基础，写点小项目练手。平时喜欢看动漫，轻音少女、BanG Dream、孤独摇滚、Girls band cry、Fate、鬼灭之刃、jojo的奇妙冒险、间谍过家家、咒术回战等等";
+    me.bio = "沈阳理工大学在读。在学 C++，目前还在打基础，写点小项目练手。平时喜欢看 BanGDream，最喜欢高松灯。";
     me.avatar = "avatar.jpg";
     me.coverImage = "cover.jpg";
     me.bgImage = "bg.webp";
     me.bgMusic = "music.mp3";
     me.welcomeText = "欢迎来到遮鸿的个人主页";
-    me.skills = {"C++", "Python"};
+    me.skills = {"C++", "Python", "Git", "Linux"};
     me.email = "3255484226@qq.com";
     me.github = "https://github.com/zhehong268";
 
@@ -127,6 +127,33 @@ int main() {
             box-shadow: 0 10px 30px rgba(167, 139, 250, 0.4);
         }
 
+        /* ========== 签名加载 ========== */
+        .loader {
+            position: fixed;
+            inset: 0;
+            z-index: 300;
+            background: #0a0e1a;
+            display: none;
+            justify-content: center;
+            align-items: center;
+            opacity: 0;
+            transition: opacity 0.6s ease;
+        }
+        .loader.show { display: flex; opacity: 1; }
+        .signature-svg {
+            width: 90%;
+            max-width: 560px;
+            height: auto;
+            overflow: visible;
+        }
+        #sigText {
+            animation: drawSignature 3.5s cubic-bezier(0.45, 0, 0.3, 1) forwards;
+            filter: drop-shadow(0 0 12px rgba(125, 211, 252, 0.8));
+        }
+        @keyframes drawSignature {
+            to { stroke-dashoffset: 0; }
+        }
+
         /* ========== 主页面 ========== */
         .main-page {
             min-height: 100vh;
@@ -146,7 +173,7 @@ int main() {
         }
         .main-page.visible { opacity: 1; }
 
-        /* 卡片 */
+        /* ========== 卡片 ========== */
         .card {
             background: rgba(255, 255, 255, 0.05);
             backdrop-filter: blur(20px);
@@ -218,8 +245,16 @@ int main() {
             font-weight: 700;
             color: #7dd3fc;
             letter-spacing: 8px;
-            margin-bottom: 24px;
+            margin-bottom: 12px;
             text-shadow: 0 0 18px rgba(125, 211, 252, 0.8);
+        }
+
+        /* 状态 */
+        .status {
+            font-size: 13px;
+            color: rgba(167, 139, 250, 0.9);
+            margin-bottom: 24px;
+            letter-spacing: 1px;
         }
 
         .card .bio {
@@ -281,7 +316,7 @@ int main() {
             color: rgba(255, 255, 255, 0.3);
         }
 
-        /* 音乐开关 */
+        /* ========== 音乐开关 ========== */
         .music-toggle {
             position: fixed;
             top: 20px;
@@ -308,7 +343,7 @@ int main() {
         }
         .music-toggle.paused { color: #666; border-color: #666; }
 
-        /* 区块 */
+        /* ========== 区块 ========== */
         .section {
             max-width: 1000px;
             margin: 0 auto;
@@ -325,7 +360,7 @@ int main() {
             background-clip: text;
         }
 
-        /* 项目卡片 */
+        /* ========== 项目卡片 ========== */
         .projects-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
@@ -364,7 +399,7 @@ int main() {
             font-weight: 500;
         }
 
-        /* 时间线 */
+        /* ========== 时间线 ========== */
         .timeline { position: relative; max-width: 720px; margin: 0 auto; }
         .timeline::before {
             content: '';
@@ -405,150 +440,8 @@ int main() {
             line-height: 1.7;
         }
 
-        /* ========== 音游区域 ========== */
-        .rhythm-container {
-            position: relative;
-            max-width: 560px;
-            margin: 0 auto;
-            height: 520px;
-            background: linear-gradient(180deg, rgba(10,14,26,0.9), rgba(10,14,26,0.5));
-            border: 1px solid rgba(125, 211, 252, 0.3);
-            border-radius: 16px;
-            overflow: hidden;
-            box-shadow: 0 0 50px rgba(125, 211, 252, 0.15) inset,
-                        0 10px 40px rgba(0, 0, 0, 0.5);
-        }
-        .lanes {
-            display: flex;
-            height: 100%;
-            position: relative;
-        }
-        .lane {
-            flex: 1;
-            border-right: 1px solid rgba(125, 211, 252, 0.08);
-            position: relative;
-            overflow: hidden;
-        }
-        .lane:last-child { border-right: none; }
-
-        /* 判定线 */
-        .judge-line {
-            position: absolute;
-            bottom: 100px;
-            left: 0;
-            right: 0;
-            height: 3px;
-            background: #7dd3fc;
-            box-shadow: 0 0 25px rgba(125, 211, 252, 1),
-                        0 0 50px rgba(125, 211, 252, 0.6);
-            z-index: 5;
-        }
-        .judge-line.pulse {
-            animation: judgePulse 0.3s ease;
-        }
-        @keyframes judgePulse {
-            0% { box-shadow: 0 0 25px rgba(125,211,252,1), 0 0 50px rgba(125,211,252,0.6); }
-            50% { box-shadow: 0 0 50px rgba(255,255,255,1), 0 0 100px rgba(125,211,252,1); }
-            100% { box-shadow: 0 0 25px rgba(125,211,252,1), 0 0 50px rgba(125,211,252,0.6); }
-        }
-
-        /* COMBO 显示 */
-        .combo-display {
-            position: absolute;
-            top: 30px;
-            left: 50%;
-            transform: translateX(-50%);
-            text-align: center;
-            z-index: 10;
-            pointer-events: none;
-        }
-        .combo-count {
-            font-size: 64px;
-            font-weight: 800;
-            color: #7dd3fc;
-            line-height: 1;
-            text-shadow: 0 0 40px rgba(125, 211, 252, 1),
-                         0 0 80px rgba(125, 211, 252, 0.6);
-            font-family: 'Courier New', monospace;
-        }
-        .combo-count.pop {
-            animation: comboPop 0.3s ease;
-        }
-        @keyframes comboPop {
-            0% { transform: scale(1); }
-            50% { transform: scale(1.35); color: #fff; }
-            100% { transform: scale(1); }
-        }
-        .combo-label {
-            font-size: 13px;
-            color: rgba(125, 211, 252, 0.7);
-            letter-spacing: 8px;
-            margin-top: 8px;
-            font-weight: 700;
-        }
-
-        /* 音符 */
-        .note {
-            position: absolute;
-            width: 70%;
-            left: 15%;
-            height: 16px;
-            background: linear-gradient(180deg, #bae6fd, #7dd3fc);
-            border-radius: 8px;
-            box-shadow: 0 0 18px rgba(125, 211, 252, 0.9),
-                        0 0 35px rgba(125, 211, 252, 0.5);
-            z-index: 3;
-        }
-        .note.hit {
-            background: #fff;
-            box-shadow: 0 0 30px rgba(255, 255, 255, 1),
-                        0 0 60px rgba(125, 211, 252, 1);
-        }
-
-        /* ========== 签名加载 ========== */
-        .loader {
-            position: fixed;
-            inset: 0;
-            z-index: 300;
-            background: #0a0e1a;
-            display: none;
-            justify-content: center;
-            align-items: center;
-            opacity: 0;
-            transition: opacity 0.6s ease;
-        }
-        .loader.show { display: flex; opacity: 1; }
-
-        .signature-svg {
-            width: 90%;
-            max-width: 560px;
-            height: auto;
-            overflow: visible;
-        }
-        #sigText {
-            animation: drawSignature 3.5s cubic-bezier(0.45, 0, 0.3, 1) forwards;
-            filter: drop-shadow(0 0 12px rgba(125, 211, 252, 0.8));
-        }
-        @keyframes drawSignature {
-            to { stroke-dashoffset: 0; }
-        }
-
-        /* 响应式 */
-        @media (max-width: 600px) {
-            .landing-content h1 { font-size: 32px; }
-            .card h1 { font-size: 26px; }
-            .section-title { font-size: 22px; }
-            .clock { font-size: 18px; letter-spacing: 4px; }
-            .combo-count { font-size: 48px; }
-            .rhythm-container { height: 420px; }
-        }
-                    .status {
-            font-size: 13px;
-            color: rgba(167, 139, 250, 0.8);
-            margin-bottom: 20px;
-            letter-spacing: 1px;
-        }
-                    .skill-bars {
+        /* ========== 技能条 ========== */
+        .skill-bars {
             max-width: 640px;
             margin: 0 auto;
             display: flex;
@@ -586,6 +479,172 @@ int main() {
             from { transform: scaleX(0); }
             to { transform: scaleX(1); }
         }
+
+        /* ========== 正在学习 ========== */
+        .learning-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 20px;
+        }
+        .learning-card {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            padding: 24px;
+            transition: all 0.3s ease;
+        }
+        .learning-card:hover {
+            transform: translateY(-4px);
+            border-color: rgba(167, 139, 250, 0.4);
+            box-shadow: 0 10px 30px rgba(167, 139, 250, 0.2);
+        }
+        .learning-card h3 {
+            font-size: 16px;
+            margin-bottom: 12px;
+            color: #c4b5fd;
+        }
+        .learning-card p {
+            font-size: 14px;
+            color: rgba(255, 255, 255, 0.65);
+            line-height: 1.7;
+        }
+
+        /* ========== 音游区域 ========== */
+        .rhythm-container {
+            position: relative;
+            max-width: 560px;
+            margin: 0 auto;
+            height: 520px;
+            background: linear-gradient(180deg, rgba(10,14,26,0.9), rgba(10,14,26,0.5));
+            border: 1px solid rgba(125, 211, 252, 0.3);
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: 0 0 50px rgba(125, 211, 252, 0.15) inset,
+                        0 10px 40px rgba(0, 0, 0, 0.5);
+        }
+        .lanes {
+            display: flex;
+            height: 100%;
+            position: relative;
+        }
+        .lane {
+            flex: 1;
+            border-right: 1px solid rgba(125, 211, 252, 0.08);
+            position: relative;
+            overflow: hidden;
+        }
+        .lane:last-child { border-right: none; }
+        .judge-line {
+            position: absolute;
+            bottom: 100px;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: #7dd3fc;
+            box-shadow: 0 0 25px rgba(125, 211, 252, 1),
+                        0 0 50px rgba(125, 211, 252, 0.6);
+            z-index: 5;
+        }
+        .judge-line.pulse {
+            animation: judgePulse 0.3s ease;
+        }
+        @keyframes judgePulse {
+            0% { box-shadow: 0 0 25px rgba(125,211,252,1), 0 0 50px rgba(125,211,252,0.6); }
+            50% { box-shadow: 0 0 50px rgba(255,255,255,1), 0 0 100px rgba(125,211,252,1); }
+            100% { box-shadow: 0 0 25px rgba(125,211,252,1), 0 0 50px rgba(125,211,252,0.6); }
+        }
+        .combo-display {
+            position: absolute;
+            top: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            text-align: center;
+            z-index: 10;
+            pointer-events: none;
+        }
+        .combo-count {
+            font-size: 64px;
+            font-weight: 800;
+            color: #7dd3fc;
+            line-height: 1;
+            text-shadow: 0 0 40px rgba(125, 211, 252, 1),
+                         0 0 80px rgba(125, 211, 252, 0.6);
+            font-family: 'Courier New', monospace;
+        }
+        .combo-count.pop {
+            animation: comboPop 0.3s ease;
+        }
+        @keyframes comboPop {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.35); color: #fff; }
+            100% { transform: scale(1); }
+        }
+        .combo-label {
+            font-size: 13px;
+            color: rgba(125, 211, 252, 0.7);
+            letter-spacing: 8px;
+            margin-top: 8px;
+            font-weight: 700;
+        }
+        .note {
+            position: absolute;
+            width: 70%;
+            left: 15%;
+            height: 16px;
+            background: linear-gradient(180deg, #bae6fd, #7dd3fc);
+            border-radius: 8px;
+            box-shadow: 0 0 18px rgba(125, 211, 252, 0.9),
+                        0 0 35px rgba(125, 211, 252, 0.5);
+            z-index: 3;
+        }
+        .note.hit {
+            background: #fff;
+            box-shadow: 0 0 30px rgba(255, 255, 255, 1),
+                        0 0 60px rgba(125, 211, 252, 1);
+        }
+
+        /* ========== 关于本站 ========== */
+        .about-site {
+            max-width: 720px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.03);
+            border-left: 3px solid #a78bfa;
+            padding: 30px 36px;
+            border-radius: 0 12px 12px 0;
+        }
+        .about-site p {
+            font-size: 15px;
+            color: rgba(255, 255, 255, 0.7);
+            line-height: 1.9;
+            margin-bottom: 14px;
+        }
+        .about-site p:last-child { margin-bottom: 0; }
+        .about-site code {
+            background: rgba(167, 139, 250, 0.15);
+            color: #c4b5fd;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+        }
+        .about-tech {
+            margin-top: 20px !important;
+            padding-top: 16px;
+            border-top: 1px solid rgba(255, 255, 255, 0.08);
+            font-size: 13px !important;
+            color: #a78bfa !important;
+            letter-spacing: 1px;
+        }
+
+        /* ========== 响应式 ========== */
+        @media (max-width: 600px) {
+            .landing-content h1 { font-size: 32px; }
+            .card h1 { font-size: 26px; }
+            .section-title { font-size: 22px; }
+            .clock { font-size: 18px; letter-spacing: 4px; }
+            .combo-count { font-size: 48px; }
+            .rhythm-container { height: 420px; }
+        }
     </style>
 </head>
 <body>
@@ -618,12 +677,14 @@ int main() {
 
     <!-- 主页面 -->
     <div class="main-page" id="mainPage">
+
+        <!-- 个人卡片 -->
         <div class="card">
             <div class="avatar"><img src=")HTML" << me.avatar << R"HTML(" alt="头像" onclick="popAvatar(this);"></div>
             <h1>)HTML" << me.name << R"HTML(</h1>
             <div class="title">)HTML" << me.title << R"HTML(</div>
             <div class="clock" id="clock">00:00:00</div>
-            <div class="status" id="status">📍 在上课 / 在写代码 / 在摸鱼</div>
+            <div class="status" id="status">加载中...</div>
             <p class="bio">)HTML" << me.bio << R"HTML(</p>
             <div class="skills">)HTML" << generateSkillTags(me.skills) << R"HTML(</div>
             <div class="contact">
@@ -633,60 +694,33 @@ int main() {
             <div class="footer">Generated by C++ · Powered by GitHub Pages</div>
         </div>
 
+        <!-- 项目 -->
         <section class="section">
             <h2 class="section-title">Projects</h2>
             <div class="projects-grid">
                 <div class="project-card">
-                    <h3>WASM Intro Site</h3>
-                    <p>用 C++ 生成并部署到 GitHub Pages 的个人主页。</p>
-                    <div class="project-tech">C++ / GitHub Actions</div>
-                    <a href="https://github.com/zhehong268/my-intro" target="_blank">查看详情</a>
+                    <h3>个人主页生成器</h3>
+                    <p>用 C++ 写的静态站点生成器，运行时拼接 HTML 并输出 index.html，推送到 GitHub 后由 Actions 自动编译部署。</p>
+                    <div class="project-tech">C++ / GitHub Actions / HTML / CSS / JavaScript</div>
+                    <a href="https://github.com/zhehong268/my-intro" target="_blank">查看源码</a>
                 </div>
                 <div class="project-card">
                     <h3>Project Alpha</h3>
-                    <p>使用现代 C++ 编写的高性能数据处理引擎。（并非）</p>
-                    <div class="project-tech">C++17</div>
-                    <a href="#" target="_blank">查看详情</a>
+                    <p>还在构思中，打算写一个 C++ 小工具练手。</p>
+                    <div class="project-tech">C++</div>
+                    <a href="#" target="_blank">敬请期待</a>
                 </div>
-            </div>
-        </section>
-                <section class="section">
-            <h2 class="section-title">正在学习</h2>
-            <div class="learning-grid">
-                <div class="learning-card">
-                    <h3>C++ 基础</h3>
-                    <p>类、STL、指针和引用这些，边写边学。</p>
-                </div>
-                <div class="learning-card">
-                    <h3>数据结构</h3>
-                    <p>课程在学，顺便用 C++ 手写一遍加深理解。</p>
-                </div>
-                <div class="learning-card">
-                    <h3>Git 和 GitHub</h3>
-                    <p>这个网站就是在用的过程中学会的。</p>
-                </div>
-                <div class="learning-card">
-                    <h3>Linux 基础</h3>
-                    <p>会一些常用命令，还在慢慢熟悉。</p>
-                </div>
-            </div>
-        </section>
-                <section class="section">
-            <h2 class="section-title">关于本站</h2>
-            <div class="about-site">
-                <p>这个网站是一个 C++ 项目。所有内容由 <code>main.cpp</code> 生成，源文件里没有手写的 HTML。</p>
-                <p>每次推送到 GitHub，Actions 会自动编译运行，生成新的 index.html 并部署到 Pages。</p>
-                <p class="about-tech">C++ · GitHub Actions · HTML · CSS · JavaScript</p>
             </div>
         </section>
 
+        <!-- 经历 -->
         <section class="section">
             <h2 class="section-title">Experience</h2>
             <div class="timeline">
                 <div class="timeline-item">
-                    <div class="timeline-period">2025-至今</div>
+                    <div class="timeline-period">2025 - 至今</div>
                     <div class="timeline-content">
-                        <h3>BanGDream高级工程师</h3>
+                        <h3>BanGDream 高级工程师</h3>
                         <div class="timeline-company">沈阳理工大学</div>
                         <p>游玩并严肃观看邦邦所有内容，最喜欢高松灯（不是凑企鹅）</p>
                     </div>
@@ -710,26 +744,8 @@ int main() {
             </div>
         </section>
 
+        <!-- 技能条 -->
         <section class="section">
-            <h2 class="section-title">Rhythm</h2>
-            <div class="rhythm-container" id="rhythmContainer">
-                <div class="combo-display">
-                    <div class="combo-count" id="comboCount">0</div>
-                    <div class="combo-label">COMBO</div>
-                </div>
-                <div class="judge-line" id="judgeLine"></div>
-                <div class="lanes" id="lanes">
-                    <div class="lane"></div>
-                    <div class="lane"></div>
-                    <div class="lane"></div>
-                    <div class="lane"></div>
-                    <div class="lane"></div>
-                    <div class="lane"></div>
-                    <div class="lane"></div>
-                </div>
-            </div>
-        </section>
-                <section class="section">
             <h2 class="section-title">技能</h2>
             <div class="skill-bars">
                 <div class="skill-bar">
@@ -755,6 +771,61 @@ int main() {
             </div>
         </section>
 
+        <!-- 正在学习 -->
+        <section class="section">
+            <h2 class="section-title">正在学习</h2>
+            <div class="learning-grid">
+                <div class="learning-card">
+                    <h3>C++ 基础</h3>
+                    <p>类、STL、指针和引用这些，边写边学。</p>
+                </div>
+                <div class="learning-card">
+                    <h3>数据结构</h3>
+                    <p>课程在学，顺便用 C++ 手写一遍加深理解。</p>
+                </div>
+                <div class="learning-card">
+                    <h3>Git 和 GitHub</h3>
+                    <p>这个网站就是在用的过程中学会的。</p>
+                </div>
+                <div class="learning-card">
+                    <h3>Linux 基础</h3>
+                    <p>会一些常用命令，还在慢慢熟悉。</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- 音游 -->
+        <section class="section">
+            <h2 class="section-title">Rhythm</h2>
+            <div class="rhythm-container" id="rhythmContainer">
+                <div class="combo-display">
+                    <div class="combo-count" id="comboCount">0</div>
+                    <div class="combo-label">COMBO</div>
+                </div>
+                <div class="judge-line" id="judgeLine"></div>
+                <div class="lanes" id="lanes">
+                    <div class="lane"></div>
+                    <div class="lane"></div>
+                    <div class="lane"></div>
+                    <div class="lane"></div>
+                    <div class="lane"></div>
+                    <div class="lane"></div>
+                    <div class="lane"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 关于本站 -->
+        <section class="section">
+            <h2 class="section-title">关于本站</h2>
+            <div class="about-site">
+                <p>这个网站是一个 C++ 项目。所有内容由 <code>main.cpp</code> 生成，源文件里没有手写的 HTML。</p>
+                <p>每次推送到 GitHub，Actions 会自动编译运行，生成新的 index.html 并部署到 Pages。</p>
+                <p class="about-tech">C++ · GitHub Actions · HTML · CSS · JavaScript</p>
+            </div>
+        </section>
+
+        <!-- 联系我 -->
         <section class="section section-contact">
             <h2 class="section-title">联系我</h2>
             <div class="contact">
@@ -763,6 +834,7 @@ int main() {
             </div>
             <div class="footer">Generated by C++ · Powered by GitHub Pages</div>
         </section>
+
     </div>
 
     <audio id="bgMusic" loop>
@@ -780,16 +852,18 @@ int main() {
         }
         setInterval(updateClock, 1000);
         updateClock();
-                function updateStatus() {
+
+        /* ============ 状态 ============ */
+        function updateStatus() {
             var h = new Date().getHours();
             var el = document.getElementById('status');
-            if (h >= 0 && h < 7) el.textContent = ' 这个点还没睡？';
-            else if (h < 9) el.textContent = ' 早八人';
-            else if (h < 12) el.textContent = ' 在上课';
-            else if (h < 14) el.textContent = ' 干饭中';
-            else if (h < 18) el.textContent = ' 在写代码';
-            else if (h < 22) el.textContent = ' 在摸鱼';
-            else el.textContent = ' 准备睡了';
+            if (h >= 0 && h < 7) el.textContent = '这个点还没睡？';
+            else if (h < 9) el.textContent = '早八人';
+            else if (h < 12) el.textContent = '在上课';
+            else if (h < 14) el.textContent = '干饭中';
+            else if (h < 18) el.textContent = '在写代码';
+            else if (h < 22) el.textContent = '在摸鱼';
+            else el.textContent = '准备睡了';
         }
         setInterval(updateStatus, 60000);
         updateStatus();
@@ -845,11 +919,9 @@ int main() {
         }
 
         /* ============ 音游自动打 ============ */
-        // 改 BPM 可以调节奏快慢
-        // 春日影大约 168 BPM
         var BPM = 168;
-        var beatInterval = 60000 / BPM;    // 一拍多少毫秒，168 BPM 约 357ms
-        var noteTravelTime = 1800;          // 音符从顶部落到判定线需要多久
+        var beatInterval = 60000 / BPM;
+        var noteTravelTime = 1800;
         var rhythmStarted = false;
         var combo = 0;
 
@@ -862,7 +934,6 @@ int main() {
             var judgeLine = document.getElementById('judgeLine');
 
             function spawnNote() {
-                // 每一拍随机挑一条轨道
                 var laneIndex = Math.floor(Math.random() * lanes.length);
                 var lane = lanes[laneIndex];
 
@@ -871,9 +942,8 @@ int main() {
                 lane.appendChild(note);
 
                 var laneHeight = lane.clientHeight;
-                var targetTop = laneHeight - 100 - 8;   // 判定线位置 - 半个音符高
+                var targetTop = laneHeight - 100 - 8;
 
-                // 用 Web Animations API 做匀速下落
                 note.animate(
                     [
                         { top: '-20px', opacity: 1 },
@@ -882,7 +952,6 @@ int main() {
                     { duration: noteTravelTime, easing: 'linear', fill: 'forwards' }
                 );
 
-                // 到判定线时击打
                 setTimeout(function() {
                     note.classList.add('hit');
                     note.animate(
@@ -894,12 +963,10 @@ int main() {
                     );
                     setTimeout(function() { note.remove(); }, 280);
 
-                    // 判定线闪一下
                     judgeLine.classList.remove('pulse');
                     void judgeLine.offsetWidth;
                     judgeLine.classList.add('pulse');
 
-                    // COMBO 累加
                     combo++;
                     comboEl.textContent = combo;
                     comboEl.classList.remove('pop');
@@ -911,7 +978,6 @@ int main() {
             setInterval(spawnNote, beatInterval);
         }
 
-        // 进入主界面 1 秒后自动开始
         var rhythmWatcher = setInterval(function() {
             if (document.getElementById('mainPage').classList.contains('visible')) {
                 clearInterval(rhythmWatcher);
