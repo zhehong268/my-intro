@@ -9,6 +9,7 @@ struct Profile {
     std::string bio;
     std::string avatar;
     std::string coverImage;
+    std::string bgImage;
     std::string bgMusic;
     std::string welcomeText;
     std::vector<std::string> skills;
@@ -31,6 +32,7 @@ int main() {
     me.bio = "热爱系统底层开发，熟悉 C++17/20、Linux 系统编程。";
     me.avatar = "avatar.jpg";
     me.coverImage = "cover.jpg";
+     me.bgImage = "bg.webp";
     me.bgMusic = "music.mp3";
     me.welcomeText = "欢迎来到我的主页";
     me.skills = {"C++", "Python"};
@@ -126,10 +128,20 @@ int main() {
         }
 
         /* 主页面 */
+                /* 主页面 */
         .main-page {
             min-height: 100vh;
             padding: 60px 20px;
-            background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
+            background-image:
+                linear-gradient(180deg,
+                    rgba(125,211,252,0.65) 0%,
+                    rgba(56,189,248,0.3) 25%,
+                    rgba(15,12,41,0.85) 65%,
+                    rgba(15,12,41,0.98) 100%),
+                url(')HTML" << me.bgImage << R"HTML(');
+            background-size: cover, cover;
+            background-position: center, center;
+            background-attachment: fixed, fixed;
             opacity: 0;
             transition: opacity 0.8s ease;
         }
@@ -161,6 +173,20 @@ int main() {
             object-fit: cover;
             border: 3px solid rgba(167, 139, 250, 0.5);
             box-shadow: 0 8px 25px rgba(167, 139, 250, 0.3);
+        }
+                    .avatar img {
+            cursor: pointer;
+        }
+        .avatar img.pop {
+            animation: avatarPop 0.7s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        @keyframes avatarPop {
+            0%   { transform: scale(1) rotate(0); }
+            20%  { transform: scale(1.3) rotate(-8deg); }
+            40%  { transform: scale(0.9) rotate(6deg); }
+            60%  { transform: scale(1.15) rotate(-4deg); }
+            80%  { transform: scale(0.98) rotate(2deg); }
+            100% { transform: scale(1) rotate(0); }
         }
         @keyframes float {
             0%, 100% { transform: translateY(0); }
@@ -369,6 +395,62 @@ int main() {
             .card h1 { font-size: 26px; }
             .section-title { font-size: 22px; }
         }
+                    /* ========== MyGO 签名书写加载动画 ========== */
+        .loader {
+            position: fixed;
+            inset: 0;
+            z-index: 300;
+            background: #0a0e1a;
+            display: none;
+            justify-content: center;
+            align-items: center;
+            opacity: 0;
+            transition: opacity 0.6s ease;
+        }
+        .loader.show { display: flex; opacity: 1; }
+
+        .signature {
+            font-family: 'Brush Script MT', 'Segoe Script', 'Lucida Handwriting', cursive;
+            font-size: 72px;
+            color: #7dd3fc;
+            text-shadow: 0 0 30px rgba(125, 211, 252, 0.9),
+                         0 0 60px rgba(125, 211, 252, 0.5);
+            letter-spacing: 4px;
+            white-space: nowrap;
+            position: relative;
+        }
+        .sig-char {
+            display: inline-block;
+            opacity: 0;
+            transform: translateY(-20px) rotate(-20deg);
+            animation: writeChar 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+        }
+        @keyframes writeChar {
+            from { opacity: 0; transform: translateY(-20px) rotate(-20deg) scale(0.5); }
+            to   { opacity: 1; transform: translateY(0) rotate(0) scale(1); }
+        }
+
+        /* 签名后的光标闪烁 */
+        .signature::after {
+            content: '';
+            display: inline-block;
+            width: 3px;
+            height: 60px;
+            background: #7dd3fc;
+            margin-left: 8px;
+            vertical-align: middle;
+            animation: cursorBlink 0.8s ease-in-out infinite;
+            box-shadow: 0 0 15px rgba(125, 211, 252, 0.9);
+        }
+        @keyframes cursorBlink {
+            0%, 45% { opacity: 1; }
+            50%, 100% { opacity: 0; }
+        }
+
+        @media (max-width: 600px) {
+            .signature { font-size: 44px; letter-spacing: 2px; }
+            .signature::after { height: 36px; }
+        }
     </style>
 </head>
 <body>
@@ -382,11 +464,16 @@ int main() {
         </div>
     </div>
 
+        <!-- MyGO 签名加载动画 -->
+    <div class="loader" id="loader">
+        <div class="signature" id="signature"></div>
+    </div>
+
     <button class="music-toggle" id="musicBtn" onclick="toggleMusic();" title="暂停/播放音乐">&#9834;</button>
 
     <div class="main-page" id="mainPage">
         <div class="card">
-            <div class="avatar"><img src=")HTML" << me.avatar << R"HTML(" alt="头像"></div>
+           <div class="avatar"><img src=")HTML" << me.avatar << R"HTML(" alt="头像" onclick="popAvatar(this);"></div>
             <h1>)HTML" << me.name << R"HTML(</h1>
             <div class="title">)HTML" << me.title << R"HTML(</div>
             <p class="bio">)HTML" << me.bio << R"HTML(</p>
@@ -462,21 +549,47 @@ int main() {
     </audio>
 
     <script>
-        function enterSite() {
-            document.getElementById('landing').classList.add('hidden');
-            document.getElementById('mainPage').classList.add('visible');
-            document.body.style.overflowY = 'auto';
+                function enterSite() {
+            var loader = document.getElementById('loader');
+            var sig = document.getElementById('signature');
 
-            var music = document.getElementById('bgMusic');
-            var btn = document.getElementById('musicBtn');
-            btn.classList.add('visible');
+            // 1. 显示加载界面，逐个写出字符
+            loader.classList.add('show');
+            sig.innerHTML = '';
+            var text = "It's MyGO!!!!!";
+            for (var i = 0; i < text.length; i++) {
+                var span = document.createElement('span');
+                span.className = 'sig-char';
+                span.textContent = text[i] === ' ' ? '\u00A0' : text[i];
+                span.style.animationDelay = (i * 0.15) + 's';
+                sig.appendChild(span);
+            }
 
-            music.play().then(function() {
-                btn.classList.remove('paused');
-            }).catch(function(err) {
-                console.log('音乐播放失败:', err);
-                btn.classList.add('paused');
-            });
+            // 2. 等签名写完（约 2.5 秒）后，切到主页面
+            setTimeout(function() {
+                document.getElementById('landing').classList.add('hidden');
+                document.getElementById('mainPage').classList.add('visible');
+                document.body.style.overflowY = 'auto';
+
+                var music = document.getElementById('bgMusic');
+                var btn = document.getElementById('musicBtn');
+                btn.classList.add('visible');
+
+                music.play().then(function() {
+                    btn.classList.remove('paused');
+                }).catch(function(err) {
+                    console.log('音乐播放失败:', err);
+                    btn.classList.add('paused');
+                });
+
+                // 3. 再等 0.5 秒后隐藏 loader
+                setTimeout(function() {
+                    loader.classList.remove('show');
+                    setTimeout(function() {
+                        loader.style.display = 'none';
+                    }, 600);
+                }, 500);
+            }, 2500);
         }
 
         function toggleMusic() {
@@ -489,6 +602,11 @@ int main() {
                 music.pause();
                 btn.classList.add('paused');
             }
+        }
+                    function popAvatar(el) {
+            el.classList.remove('pop');
+            void el.offsetWidth;   // 强制浏览器重绘，让动画能重复触发
+            el.classList.add('pop');
         }
     </script>
 </body>
