@@ -178,18 +178,18 @@ int main() {
         .main-page.visible { opacity: 1; }
         .main-page .card, .main-page .section { position: relative; z-index: 2; }
 
-        /* ========== 滚动入场 ========== */
-        .section, .card {
+        /* ========== 滚动入场（只作用于 section） ========== */
+        .section {
             opacity: 0;
             transform: translateY(40px);
             transition: opacity 0.8s ease, transform 0.8s cubic-bezier(0.45, 0, 0.3, 1);
         }
-        .section.revealed, .card.revealed {
+        .section.revealed {
             opacity: 1;
             transform: translateY(0);
         }
 
-        /* ========== 卡片 ========== */
+        /* ========== 卡片（初始隐藏，通过 JS 加 revealed 触发滑入） ========== */
         .card {
             background: rgba(255, 255, 255, 0.05);
             backdrop-filter: blur(20px);
@@ -202,6 +202,13 @@ int main() {
             margin: 0 auto 60px auto;
             box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5);
             text-align: center;
+            opacity: 0;
+            transform: translateY(40px);
+            transition: opacity 0.8s ease, transform 0.8s cubic-bezier(0.45, 0, 0.3, 1);
+        }
+        .card.revealed {
+            opacity: 1;
+            transform: translateY(0);
         }
 
         /* ========== 名字逐字浮现 ========== */
@@ -627,10 +634,8 @@ int main() {
 </head>
 <body>
 
-    <!-- 粒子背景 -->
     <canvas class="particle-canvas" id="particleCanvas"></canvas>
 
-    <!-- 首页封面 -->
     <div class="landing" id="landing">
         <div class="landing-bg" style="background-image: url(')HTML" << me.coverImage << R"HTML(');"></div>
         <div class="landing-overlay"></div>
@@ -640,7 +645,6 @@ int main() {
         </div>
     </div>
 
-    <!-- 签名加载 -->
     <div class="loader" id="loader">
         <svg class="signature-svg" viewBox="0 0 500 140" xmlns="http://www.w3.org/2000/svg">
             <text x="250" y="100" text-anchor="middle"
@@ -653,13 +657,11 @@ int main() {
         </svg>
     </div>
 
-    <!-- 音乐开关 -->
     <button class="music-toggle" id="musicBtn" title="暂停/播放音乐">&#9834;</button>
 
-    <!-- 主页面 -->
     <div class="main-page" id="mainPage">
 
-        <div class="card">
+        <div class="card" id="mainCard">
             <div class="avatar"><img src=")HTML" << me.avatar << R"HTML(" alt="头像" id="avatarImg"></div>
             <h1 id="nameTyping" data-name=")HTML" << me.name << R"HTML("></h1>
             <div class="title">)HTML" << me.title << R"HTML(</div>
@@ -842,7 +844,7 @@ int main() {
         setInterval(updateStatus, 60000);
         updateStatus();
 
-        /* ============ 鼠标点击光波 ============ */
+        /* ============ 点击光波 ============ */
         document.addEventListener('click', function(e) {
             var ripple = document.createElement('div');
             ripple.className = 'click-ripple';
@@ -914,14 +916,12 @@ int main() {
             draw();
         })();
 
-        /* ============ 滚动入场 ============ */
-        function setupReveal(selector, options) {
-            var targets = document.querySelectorAll(selector);
-            var revealAll = function() {
-                targets.forEach(function(el) { el.classList.add('revealed'); });
-            };
+        /* ============ 滚动入场（只作用于 section） ============ */
+        function setupReveal() {
+            var targets = document.querySelectorAll('.section');
+            // 兜底：浏览器不支持 IntersectionObserver 时直接显示
             if (!('IntersectionObserver' in window)) {
-                revealAll();
+                targets.forEach(function(el) { el.classList.add('revealed'); });
                 return;
             }
             var observer = new IntersectionObserver(function(entries) {
@@ -931,22 +931,15 @@ int main() {
                         observer.unobserve(entry.target);
                     }
                 });
-            }, options || { threshold: 0, rootMargin: '0px' });
+            }, { threshold: 0.05, rootMargin: '0px 0px -60px 0px' });
             targets.forEach(function(el) { observer.observe(el); });
-            // 兜底：进入 2 秒后，把还没 revealed 的都显示出来
-            setTimeout(revealAll, 2000);
         }
 
-        /* ============ 技能条滚入 ============ */
+        /* ============ 技能条 ============ */
         function setupBars() {
             var bars = document.querySelectorAll('.bar-fill');
-            var runAll = function() {
-                bars.forEach(function(bar) {
-                    bar.style.width = bar.getAttribute('data-width');
-                });
-            };
             if (!('IntersectionObserver' in window)) {
-                runAll();
+                bars.forEach(function(bar) { bar.style.width = bar.getAttribute('data-width'); });
                 return;
             }
             var observer = new IntersectionObserver(function(entries) {
@@ -955,25 +948,21 @@ int main() {
                         var bar = entry.target;
                         setTimeout(function() {
                             bar.style.width = bar.getAttribute('data-width');
-                        }, 200);
+                        }, 150);
                         observer.unobserve(bar);
                     }
                 });
             }, { threshold: 0.3 });
             bars.forEach(function(b) { observer.observe(b); });
-            setTimeout(runAll, 3000);
         }
 
-        /* ============ 时间线动画 ============ */
+        /* ============ 时间线 ============ */
         function setupTimeline() {
             var timeline = document.getElementById('timeline');
             if (!timeline) return;
             var items = timeline.querySelectorAll('.timeline-item');
-            var runAll = function() {
-                items.forEach(function(item) { item.classList.add('revealed'); });
-            };
             if (!('IntersectionObserver' in window)) {
-                runAll();
+                items.forEach(function(item) { item.classList.add('revealed'); });
                 return;
             }
             var observer = new IntersectionObserver(function(entries) {
@@ -985,14 +974,11 @@ int main() {
                 }
             }, { threshold: 0.1 });
             observer.observe(timeline);
-            setTimeout(runAll, 3000);
         }
 
         /* ============ 名字逐字浮现 ============ */
         function revealName() {
             var el = document.getElementById('nameTyping');
-            if (!el || el.dataset.done === '1') return;
-            el.dataset.done = '1';
             var text = el.getAttribute('data-name');
             el.textContent = '';
             for (var i = 0; i < text.length; i++) {
@@ -1009,21 +995,18 @@ int main() {
             var loader = document.getElementById('loader');
             loader.classList.add('show');
 
+            // 1. 签名动画播 3.5 秒
             setTimeout(function() {
+                // 2. 隐藏 landing，显示 mainPage
                 document.getElementById('landing').classList.add('hidden');
                 document.getElementById('mainPage').classList.add('visible');
                 document.body.style.overflowY = 'auto';
                 document.getElementById('particleCanvas').classList.add('visible');
 
-                revealName();
-                setupReveal('.card, .section');
-                setupBars();
-                setupTimeline();
-
+                // 3. 播音乐
                 var music = document.getElementById('bgMusic');
                 var btn = document.getElementById('musicBtn');
                 btn.classList.add('visible');
-
                 music.play().then(function() {
                     btn.classList.remove('paused');
                 }).catch(function(err) {
@@ -1031,12 +1014,24 @@ int main() {
                     btn.classList.add('paused');
                 });
 
+                // 4. loader 开始淡出
+                loader.classList.remove('show');
+
+                // 5. loader 完全消失后，正式开始动画
                 setTimeout(function() {
-                    loader.classList.remove('show');
-                    setTimeout(function() {
-                        loader.style.display = 'none';
-                    }, 600);
-                }, 300);
+                    loader.style.display = 'none';
+
+                    // 卡片先滑入
+                    document.getElementById('mainCard').classList.add('revealed');
+
+                    // 卡片滑入 400ms 后，名字逐个浮现
+                    setTimeout(revealName, 400);
+
+                    // 其他 section 注册滚动入场
+                    setupReveal();
+                    setupBars();
+                    setupTimeline();
+                }, 500);
             }, 3500);
         }
 
@@ -1064,7 +1059,7 @@ int main() {
             this.classList.add('pop');
         });
 
-        /* ============ 音游自动打 ============ */
+        /* ============ 音游 ============ */
         var BPM = 168;
         var beatInterval = 60000 / BPM;
         var noteTravelTime = 1800;
