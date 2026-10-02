@@ -59,8 +59,8 @@ int main() {
             color: #fff;
         }
 
-        /* ========== 键盘光波 ========== */
-        .key-ripple {
+        /* ========== 点击光波 ========== */
+        .click-ripple {
             position: fixed;
             width: 30px; height: 30px;
             border: 2px solid rgba(125, 211, 252, 0.9);
@@ -178,17 +178,15 @@ int main() {
         .main-page.visible { opacity: 1; }
         .main-page .card, .main-page .section { position: relative; z-index: 2; }
 
-        /* ========== 滚动入场（带兜底） ========== */
+        /* ========== 滚动入场 ========== */
         .section, .card {
             opacity: 0;
             transform: translateY(40px);
             transition: opacity 0.8s ease, transform 0.8s cubic-bezier(0.45, 0, 0.3, 1);
         }
-        .section.revealed, .card.revealed { opacity: 1; transform: translateY(0); }
-        /* 兜底：如果 1.8 秒后还没有 revealed，强制显示 */
-        .force-reveal .section, .force-reveal .card {
-            opacity: 1 !important;
-            transform: translateY(0) !important;
+        .section.revealed, .card.revealed {
+            opacity: 1;
+            transform: translateY(0);
         }
 
         /* ========== 卡片 ========== */
@@ -216,13 +214,6 @@ int main() {
         }
         @keyframes charReveal {
             to { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); }
-        }
-        /* 兜底 */
-        .force-reveal .name-char {
-            opacity: 1 !important;
-            transform: none !important;
-            filter: none !important;
-            animation: none !important;
         }
 
         /* 头像 */
@@ -412,8 +403,7 @@ int main() {
             transform: translateX(-40px);
             transition: opacity 0.7s ease, transform 0.7s cubic-bezier(0.45, 0, 0.3, 1);
         }
-        .timeline-item.revealed,
-        .force-reveal .timeline-item { opacity: 1; transform: translateX(0); }
+        .timeline-item.revealed { opacity: 1; transform: translateX(0); }
         .timeline-item::before {
             content: '';
             position: absolute;
@@ -467,7 +457,6 @@ int main() {
             box-shadow: 0 0 12px rgba(167, 139, 250, 0.6);
             transition: width 1.2s cubic-bezier(0.45, 0, 0.3, 1);
         }
-        .force-reveal .bar-fill { width: attr(data-width); }
 
         /* ========== 正在学习 ========== */
         .learning-grid {
@@ -853,27 +842,17 @@ int main() {
         setInterval(updateStatus, 60000);
         updateStatus();
 
-        /* ============ 鼠标位置记录（供键盘光波用） ============ */
-        var mouseX = window.innerWidth / 2;
-        var mouseY = window.innerHeight / 2;
-        document.addEventListener('mousemove', function(e) {
-            mouseX = e.clientX;
-            mouseY = e.clientY;
-        });
-
-        /* ============ 键盘光波（功能 10） ============ */
-        document.addEventListener('keydown', function(e) {
-            // 输入框里打字时不触发
-            if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+        /* ============ 鼠标点击光波 ============ */
+        document.addEventListener('click', function(e) {
             var ripple = document.createElement('div');
-            ripple.className = 'key-ripple';
-            ripple.style.left = mouseX + 'px';
-            ripple.style.top = mouseY + 'px';
+            ripple.className = 'click-ripple';
+            ripple.style.left = e.clientX + 'px';
+            ripple.style.top = e.clientY + 'px';
             document.body.appendChild(ripple);
             setTimeout(function() { ripple.remove(); }, 900);
         });
 
-        /* ============ 鼠标视差（功能 17） ============ */
+        /* ============ 鼠标视差 ============ */
         (function() {
             var mp = document.getElementById('mainPage');
             var targetX = 50, targetY = 50, curX = 50, curY = 50;
@@ -890,7 +869,7 @@ int main() {
             tick();
         })();
 
-        /* ============ 粒子背景（功能 5） ============ */
+        /* ============ 粒子背景 ============ */
         (function() {
             var canvas = document.getElementById('particleCanvas');
             var ctx = canvas.getContext('2d');
@@ -935,69 +914,81 @@ int main() {
             draw();
         })();
 
-        /* ============ 滚动入场（功能 2） ============ */
-        (function() {
-            var targets = document.querySelectorAll('.card, .section');
-            try {
-                var observer = new IntersectionObserver(function(entries) {
-                    entries.forEach(function(entry) {
-                        if (entry.isIntersecting) {
-                            entry.target.classList.add('revealed');
-                            observer.unobserve(entry.target);
-                        }
-                    });
-                }, { threshold: 0.05, rootMargin: '0px 0px -60px 0px' });
-                targets.forEach(function(el) { observer.observe(el); });
-            } catch (e) {
-                // 浏览器不支持 IntersectionObserver 时直接显示
-                document.body.classList.add('force-reveal');
+        /* ============ 滚动入场 ============ */
+        function setupReveal(selector, options) {
+            var targets = document.querySelectorAll(selector);
+            var revealAll = function() {
+                targets.forEach(function(el) { el.classList.add('revealed'); });
+            };
+            if (!('IntersectionObserver' in window)) {
+                revealAll();
+                return;
             }
-        })();
+            var observer = new IntersectionObserver(function(entries) {
+                entries.forEach(function(entry) {
+                    if (entry.isIntersecting) {
+                        entry.target.classList.add('revealed');
+                        observer.unobserve(entry.target);
+                    }
+                });
+            }, options || { threshold: 0, rootMargin: '0px' });
+            targets.forEach(function(el) { observer.observe(el); });
+            // 兜底：进入 2 秒后，把还没 revealed 的都显示出来
+            setTimeout(revealAll, 2000);
+        }
 
-        /* ============ 技能条滚入（功能 16） ============ */
-        (function() {
+        /* ============ 技能条滚入 ============ */
+        function setupBars() {
             var bars = document.querySelectorAll('.bar-fill');
-            try {
-                var observer = new IntersectionObserver(function(entries) {
-                    entries.forEach(function(entry) {
-                        if (entry.isIntersecting) {
-                            var bar = entry.target;
-                            setTimeout(function() {
-                                bar.style.width = bar.getAttribute('data-width');
-                            }, 200);
-                            observer.unobserve(bar);
-                        }
-                    });
-                }, { threshold: 0.3 });
-                bars.forEach(function(b) { observer.observe(b); });
-            } catch (e) {
+            var runAll = function() {
                 bars.forEach(function(bar) {
                     bar.style.width = bar.getAttribute('data-width');
                 });
+            };
+            if (!('IntersectionObserver' in window)) {
+                runAll();
+                return;
             }
-        })();
+            var observer = new IntersectionObserver(function(entries) {
+                entries.forEach(function(entry) {
+                    if (entry.isIntersecting) {
+                        var bar = entry.target;
+                        setTimeout(function() {
+                            bar.style.width = bar.getAttribute('data-width');
+                        }, 200);
+                        observer.unobserve(bar);
+                    }
+                });
+            }, { threshold: 0.3 });
+            bars.forEach(function(b) { observer.observe(b); });
+            setTimeout(runAll, 3000);
+        }
 
-        /* ============ 时间线动画（功能 15） ============ */
-        (function() {
+        /* ============ 时间线动画 ============ */
+        function setupTimeline() {
             var timeline = document.getElementById('timeline');
             if (!timeline) return;
             var items = timeline.querySelectorAll('.timeline-item');
-            try {
-                var observer = new IntersectionObserver(function(entries) {
-                    if (entries[0].isIntersecting) {
-                        items.forEach(function(item, i) {
-                            setTimeout(function() { item.classList.add('revealed'); }, i * 200);
-                        });
-                        observer.disconnect();
-                    }
-                }, { threshold: 0.1 });
-                observer.observe(timeline);
-            } catch (e) {
+            var runAll = function() {
                 items.forEach(function(item) { item.classList.add('revealed'); });
+            };
+            if (!('IntersectionObserver' in window)) {
+                runAll();
+                return;
             }
-        })();
+            var observer = new IntersectionObserver(function(entries) {
+                if (entries[0].isIntersecting) {
+                    items.forEach(function(item, i) {
+                        setTimeout(function() { item.classList.add('revealed'); }, i * 200);
+                    });
+                    observer.disconnect();
+                }
+            }, { threshold: 0.1 });
+            observer.observe(timeline);
+            setTimeout(runAll, 3000);
+        }
 
-        /* ============ 名字逐字浮现（功能 20） ============ */
+        /* ============ 名字逐字浮现 ============ */
         function revealName() {
             var el = document.getElementById('nameTyping');
             if (!el || el.dataset.done === '1') return;
@@ -1025,6 +1016,9 @@ int main() {
                 document.getElementById('particleCanvas').classList.add('visible');
 
                 revealName();
+                setupReveal('.card, .section');
+                setupBars();
+                setupTimeline();
 
                 var music = document.getElementById('bgMusic');
                 var btn = document.getElementById('musicBtn');
@@ -1043,18 +1037,14 @@ int main() {
                         loader.style.display = 'none';
                     }, 600);
                 }, 300);
-
-                // 兜底：1.8 秒后无论如何都显示所有内容
-                setTimeout(function() {
-                    document.body.classList.add('force-reveal');
-                }, 1800);
             }, 3500);
         }
 
         document.getElementById('enterBtn').addEventListener('click', enterSite);
 
         /* ============ 音乐开关 ============ */
-        document.getElementById('musicBtn').addEventListener('click', function() {
+        document.getElementById('musicBtn').addEventListener('click', function(e) {
+            e.stopPropagation();
             var music = document.getElementById('bgMusic');
             var btn = document.getElementById('musicBtn');
             if (music.paused) {
@@ -1067,13 +1057,14 @@ int main() {
         });
 
         /* ============ 头像弹跳 ============ */
-        document.getElementById('avatarImg').addEventListener('click', function() {
+        document.getElementById('avatarImg').addEventListener('click', function(e) {
+            e.stopPropagation();
             this.classList.remove('pop');
             void this.offsetWidth;
             this.classList.add('pop');
         });
 
-        /* ============ 音游自动打（功能 13） ============ */
+        /* ============ 音游自动打 ============ */
         var BPM = 168;
         var beatInterval = 60000 / BPM;
         var noteTravelTime = 1800;
