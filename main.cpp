@@ -57,25 +57,78 @@ int main() {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
             background: #0f0c29;
             color: #fff;
+            cursor: none;
+        }
+        a, button { cursor: none; }
+
+        /* ========== 自定义鼠标 ========== */
+        .custom-cursor {
+            position: fixed;
+            width: 32px; height: 32px;
+            border: 1.5px solid rgba(167, 139, 250, 0.7);
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 9999;
+            transform: translate(-50%, -50%);
+            opacity: 0;
+            transition: width 0.25s ease, height 0.25s ease, border-color 0.25s ease, background 0.25s ease;
+        }
+        .custom-cursor.active { opacity: 1; }
+        .custom-cursor.hover {
+            width: 52px; height: 52px;
+            border-color: rgba(125, 211, 252, 1);
+            background: rgba(125, 211, 252, 0.1);
+        }
+        .custom-cursor-dot {
+            position: fixed;
+            width: 6px; height: 6px;
+            background: #a78bfa;
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 10000;
+            transform: translate(-50%, -50%);
+            opacity: 0;
+            box-shadow: 0 0 12px rgba(167, 139, 250, 1);
+        }
+        .custom-cursor-dot.active { opacity: 1; }
+
+        /* ========== 粒子背景 ========== */
+        .particle-canvas {
+            position: fixed;
+            inset: 0;
+            z-index: 1;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 1.2s ease;
+        }
+        .particle-canvas.visible { opacity: 0.7; }
+
+        /* ========== 键盘光波 ========== */
+        .key-ripple {
+            position: fixed;
+            width: 30px; height: 30px;
+            border: 2px solid rgba(125, 211, 252, 0.9);
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 9998;
+            transform: translate(-50%, -50%);
+            animation: rippleExpand 0.9s cubic-bezier(0.2, 0.6, 0.3, 1) forwards;
+        }
+        @keyframes rippleExpand {
+            to { width: 460px; height: 460px; opacity: 0; border-width: 1px; }
         }
 
         /* ========== 首页封面 ========== */
         .landing {
-            position: fixed;
-            inset: 0;
-            z-index: 100;
-            display: flex;
-            justify-content: center;
-            align-items: center;
+            position: fixed; inset: 0; z-index: 100;
+            display: flex; justify-content: center; align-items: center;
             background: #000;
             transition: opacity 0.8s ease, visibility 0.8s ease;
         }
         .landing.hidden { opacity: 0; visibility: hidden; pointer-events: none; }
         .landing-bg {
-            position: absolute;
-            inset: 0;
-            background-size: cover;
-            background-position: center;
+            position: absolute; inset: 0;
+            background-size: cover; background-position: center;
             filter: brightness(0.5);
             animation: slowZoom 20s ease-in-out infinite alternate;
         }
@@ -84,13 +137,11 @@ int main() {
             to { transform: scale(1.15); }
         }
         .landing-overlay {
-            position: absolute;
-            inset: 0;
+            position: absolute; inset: 0;
             background: linear-gradient(180deg, rgba(15,12,41,0.4) 0%, rgba(15,12,41,0.85) 100%);
         }
         .landing-content {
-            position: relative;
-            z-index: 2;
+            position: relative; z-index: 2;
             text-align: center;
             animation: fadeIn 1.2s ease-out;
         }
@@ -99,25 +150,19 @@ int main() {
             to { opacity: 1; transform: translateY(0); }
         }
         .landing-content h1 {
-            font-size: 42px;
-            font-weight: 700;
-            letter-spacing: 3px;
+            font-size: 42px; font-weight: 700; letter-spacing: 3px;
             margin-bottom: 40px;
             background: linear-gradient(135deg, #fff, #a78bfa);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
             background-clip: text;
         }
         .enter-btn {
             padding: 16px 48px;
-            font-size: 16px;
-            font-weight: 600;
-            letter-spacing: 2px;
+            font-size: 16px; font-weight: 600; letter-spacing: 2px;
             color: #fff;
             background: rgba(167, 139, 250, 0.2);
             border: 2px solid rgba(167, 139, 250, 0.6);
             border-radius: 50px;
-            cursor: pointer;
             backdrop-filter: blur(10px);
             transition: all 0.3s ease;
         }
@@ -129,33 +174,24 @@ int main() {
 
         /* ========== 签名加载 ========== */
         .loader {
-            position: fixed;
-            inset: 0;
-            z-index: 300;
+            position: fixed; inset: 0; z-index: 300;
             background: #0a0e1a;
             display: none;
-            justify-content: center;
-            align-items: center;
+            justify-content: center; align-items: center;
             opacity: 0;
             transition: opacity 0.6s ease;
         }
         .loader.show { display: flex; opacity: 1; }
-        .signature-svg {
-            width: 90%;
-            max-width: 560px;
-            height: auto;
-            overflow: visible;
-        }
+        .signature-svg { width: 90%; max-width: 560px; height: auto; overflow: visible; }
         #sigText {
             animation: drawSignature 3.5s cubic-bezier(0.45, 0, 0.3, 1) forwards;
             filter: drop-shadow(0 0 12px rgba(125, 211, 252, 0.8));
         }
-        @keyframes drawSignature {
-            to { stroke-dashoffset: 0; }
-        }
+        @keyframes drawSignature { to { stroke-dashoffset: 0; } }
 
         /* ========== 主页面 ========== */
         .main-page {
+            position: relative;
             min-height: 100vh;
             padding: 60px 20px;
             background-image:
@@ -166,23 +202,21 @@ int main() {
                     rgba(15,12,41,0.98) 100%),
                 url(')HTML" << me.bgImage << R"HTML(');
             background-size: cover, cover;
-            background-position: center, center;
+            background-position: center, 50% 50%;
             background-attachment: fixed, fixed;
             opacity: 0;
-            transition: opacity 0.8s ease;
+            transition: opacity 0.8s ease, background-position 0.6s ease-out;
         }
         .main-page.visible { opacity: 1; }
+        .main-page .card, .main-page .section { position: relative; z-index: 2; }
 
-        /* ========== 滚动入场（功能 2） ========== */
+        /* ========== 滚动入场 ========== */
         .section, .card {
             opacity: 0;
             transform: translateY(40px);
             transition: opacity 0.8s ease, transform 0.8s cubic-bezier(0.45, 0, 0.3, 1);
         }
-        .section.revealed, .card.revealed {
-            opacity: 1;
-            transform: translateY(0);
-        }
+        .section.revealed, .card.revealed { opacity: 1; transform: translateY(0); }
 
         /* ========== 卡片 ========== */
         .card {
@@ -199,32 +233,27 @@ int main() {
             text-align: center;
         }
 
-        /* ========== 打字机光标（功能 20） ========== */
-        #nameTyping::after {
-            content: '|';
-            color: #a78bfa;
-            animation: blink 0.8s ease-in-out infinite;
-            margin-left: 4px;
+        /* ========== 名字逐字浮现 ========== */
+        .name-char {
+            display: inline-block;
+            opacity: 0;
+            transform: translateY(15px) scale(0.7);
+            filter: blur(8px);
+            animation: charReveal 0.7s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
         }
-        @keyframes blink {
-            0%, 45% { opacity: 1; }
-            50%, 100% { opacity: 0; }
+        @keyframes charReveal {
+            to { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); }
         }
 
         /* 头像 */
         .avatar { margin-bottom: 20px; animation: float 3s ease-in-out infinite; }
         .avatar img {
-            width: 120px;
-            height: 120px;
-            border-radius: 50%;
+            width: 120px; height: 120px; border-radius: 50%;
             object-fit: cover;
             border: 3px solid rgba(167, 139, 250, 0.5);
             box-shadow: 0 8px 25px rgba(167, 139, 250, 0.3);
-            cursor: pointer;
         }
-        .avatar img.pop {
-            animation: avatarPop 0.7s cubic-bezier(0.34, 1.56, 0.64, 1);
-        }
+        .avatar img.pop { animation: avatarPop 0.7s cubic-bezier(0.34, 1.56, 0.64, 1); }
         @keyframes avatarPop {
             0%   { transform: scale(1) rotate(0); }
             20%  { transform: scale(1.3) rotate(-8deg); }
@@ -240,64 +269,45 @@ int main() {
 
         /* 标题 */
         .card h1 {
-            font-size: 32px;
-            font-weight: 700;
+            font-size: 32px; font-weight: 700;
             background: linear-gradient(135deg, #a78bfa, #60a5fa);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
             background-clip: text;
             margin-bottom: 8px;
             min-height: 40px;
         }
         .card .title {
-            font-size: 16px;
-            color: #a78bfa;
-            font-weight: 500;
-            letter-spacing: 1px;
-            margin-bottom: 16px;
+            font-size: 16px; color: #a78bfa; font-weight: 500;
+            letter-spacing: 1px; margin-bottom: 16px;
         }
-
-        /* 时钟 */
         .clock {
             font-family: 'Courier New', 'Consolas', monospace;
-            font-size: 22px;
-            font-weight: 700;
-            color: #7dd3fc;
-            letter-spacing: 8px;
+            font-size: 22px; font-weight: 700;
+            color: #7dd3fc; letter-spacing: 8px;
             margin-bottom: 12px;
             text-shadow: 0 0 18px rgba(125, 211, 252, 0.8);
         }
-
-        /* 状态 */
         .status {
             font-size: 13px;
             color: rgba(167, 139, 250, 0.9);
-            margin-bottom: 24px;
-            letter-spacing: 1px;
+            margin-bottom: 24px; letter-spacing: 1px;
         }
-
         .card .bio {
             font-size: 15px;
             color: rgba(255, 255, 255, 0.7);
             line-height: 1.8;
             margin-bottom: 30px;
         }
-
-        /* 技能标签 */
         .skills {
-            display: flex;
-            flex-wrap: wrap;
-            justify-content: center;
-            gap: 12px;
-            margin-bottom: 20px;
+            display: flex; flex-wrap: wrap; justify-content: center;
+            gap: 12px; margin-bottom: 20px;
         }
         .skill-tag {
             background: rgba(167, 139, 250, 0.15);
             color: #c4b5fd;
             padding: 10px 22px;
             border-radius: 22px;
-            font-size: 14px;
-            font-weight: 500;
+            font-size: 14px; font-weight: 500;
             border: 1px solid rgba(167, 139, 250, 0.3);
             transition: all 0.3s ease;
         }
@@ -306,19 +316,13 @@ int main() {
             transform: translateY(-3px);
             box-shadow: 0 8px 20px rgba(167, 139, 250, 0.3);
         }
-
-        /* 联系方式 */
         .contact {
-            display: flex;
-            justify-content: center;
-            gap: 16px;
-            flex-wrap: wrap;
-            font-size: 14px;
+            display: flex; justify-content: center; gap: 16px;
+            flex-wrap: wrap; font-size: 14px;
             margin-bottom: 20px;
         }
         .contact a {
-            color: #60a5fa;
-            text-decoration: none;
+            color: #60a5fa; text-decoration: none;
             padding: 10px 22px;
             border-radius: 12px;
             background: rgba(96, 165, 250, 0.1);
@@ -337,22 +341,17 @@ int main() {
 
         /* ========== 音乐开关 ========== */
         .music-toggle {
-            position: fixed;
-            top: 20px;
-            right: 20px;
+            position: fixed; top: 20px; right: 20px;
             z-index: 200;
-            width: 44px;
-            height: 44px;
+            width: 44px; height: 44px;
             border-radius: 50%;
             background: rgba(167, 139, 250, 0.2);
             border: 1px solid rgba(167, 139, 250, 0.5);
             color: #c4b5fd;
             font-size: 20px;
-            cursor: pointer;
             backdrop-filter: blur(10px);
             display: none;
-            align-items: center;
-            justify-content: center;
+            align-items: center; justify-content: center;
             transition: all 0.3s ease;
         }
         .music-toggle.visible { display: flex; }
@@ -369,13 +368,11 @@ int main() {
             padding: 40px 20px;
         }
         .section-title {
-            font-size: 28px;
-            font-weight: 700;
+            font-size: 28px; font-weight: 700;
             text-align: center;
             margin-bottom: 40px;
             background: linear-gradient(135deg, #a78bfa, #60a5fa);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
             background-clip: text;
         }
 
@@ -412,13 +409,11 @@ int main() {
             border-bottom: 1px solid rgba(255, 255, 255, 0.1);
         }
         .project-card a {
-            color: #60a5fa;
-            text-decoration: none;
-            font-size: 14px;
-            font-weight: 500;
+            color: #60a5fa; text-decoration: none;
+            font-size: 14px; font-weight: 500;
         }
 
-        /* ========== 时间线 ========== */
+        /* ========== 时间线（功能 15） ========== */
         .timeline { position: relative; max-width: 720px; margin: 0 auto; }
         .timeline::before {
             content: '';
@@ -431,7 +426,11 @@ int main() {
             position: relative;
             padding-left: 36px;
             margin-bottom: 36px;
+            opacity: 0;
+            transform: translateX(-40px);
+            transition: opacity 0.7s ease, transform 0.7s cubic-bezier(0.45, 0, 0.3, 1);
         }
+        .timeline-item.revealed { opacity: 1; transform: translateX(0); }
         .timeline-item::before {
             content: '';
             position: absolute;
@@ -442,9 +441,7 @@ int main() {
             box-shadow: 0 0 0 4px rgba(167, 139, 250, 0.2);
         }
         .timeline-period {
-            font-size: 13px;
-            color: #a78bfa;
-            font-weight: 600;
+            font-size: 13px; color: #a78bfa; font-weight: 600;
             margin-bottom: 6px;
         }
         .timeline-content h3 { font-size: 18px; margin-bottom: 4px; }
@@ -459,21 +456,15 @@ int main() {
             line-height: 1.7;
         }
 
-        /* ========== 技能条（功能 16 改造） ========== */
+        /* ========== 技能条（功能 16） ========== */
         .skill-bars {
-            max-width: 640px;
-            margin: 0 auto;
-            display: flex;
-            flex-direction: column;
-            gap: 22px;
+            max-width: 640px; margin: 0 auto;
+            display: flex; flex-direction: column; gap: 22px;
         }
         .skill-bar .skill-name {
-            font-size: 15px;
-            color: #e0f2fe;
+            font-size: 15px; color: #e0f2fe;
             margin-bottom: 10px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
+            display: flex; justify-content: space-between; align-items: center;
         }
         .skill-bar .skill-name span {
             font-size: 12px;
@@ -487,8 +478,7 @@ int main() {
             overflow: hidden;
         }
         .bar-fill {
-            height: 100%;
-            width: 0;
+            height: 100%; width: 0;
             background: linear-gradient(90deg, #a78bfa, #60a5fa);
             border-radius: 4px;
             box-shadow: 0 0 12px rgba(167, 139, 250, 0.6);
@@ -513,22 +503,17 @@ int main() {
             border-color: rgba(167, 139, 250, 0.4);
             box-shadow: 0 10px 30px rgba(167, 139, 250, 0.2);
         }
-        .learning-card h3 {
-            font-size: 16px;
-            margin-bottom: 12px;
-            color: #c4b5fd;
-        }
+        .learning-card h3 { font-size: 16px; margin-bottom: 12px; color: #c4b5fd; }
         .learning-card p {
             font-size: 14px;
             color: rgba(255, 255, 255, 0.65);
             line-height: 1.7;
         }
 
-        /* ========== 音游区域 ========== */
+        /* ========== 音游（功能 13） ========== */
         .rhythm-container {
             position: relative;
-            max-width: 560px;
-            margin: 0 auto;
+            max-width: 560px; margin: 0 auto;
             height: 520px;
             background: linear-gradient(180deg, rgba(10,14,26,0.9), rgba(10,14,26,0.5));
             border: 1px solid rgba(125, 211, 252, 0.3);
@@ -537,58 +522,66 @@ int main() {
             box-shadow: 0 0 50px rgba(125, 211, 252, 0.15) inset,
                         0 10px 40px rgba(0, 0, 0, 0.5);
         }
-        .lanes {
-            display: flex;
-            height: 100%;
-            position: relative;
-        }
+        .lanes { display: flex; height: 100%; position: relative; }
         .lane {
             flex: 1;
             border-right: 1px solid rgba(125, 211, 252, 0.08);
-            position: relative;
-            overflow: hidden;
+            position: relative; overflow: hidden;
         }
         .lane:last-child { border-right: none; }
         .judge-line {
             position: absolute;
-            bottom: 100px;
-            left: 0;
-            right: 0;
-            height: 3px;
-            background: #7dd3fc;
+            bottom: 100px; left: 0; right: 0;
+            height: 3px; background: #7dd3fc;
             box-shadow: 0 0 25px rgba(125, 211, 252, 1),
                         0 0 50px rgba(125, 211, 252, 0.6);
             z-index: 5;
         }
-        .judge-line.pulse {
-            animation: judgePulse 0.3s ease;
-        }
+        .judge-line.pulse { animation: judgePulse 0.3s ease; }
         @keyframes judgePulse {
             0% { box-shadow: 0 0 25px rgba(125,211,252,1), 0 0 50px rgba(125,211,252,0.6); }
             50% { box-shadow: 0 0 50px rgba(255,255,255,1), 0 0 100px rgba(125,211,252,1); }
             100% { box-shadow: 0 0 25px rgba(125,211,252,1), 0 0 50px rgba(125,211,252,0.6); }
         }
-        .combo-display {
+        .judge-text {
             position: absolute;
-            top: 30px;
-            left: 50%;
+            left: 50%; top: 45%;
+            transform: translate(-50%, -50%);
+            font-size: 34px; font-weight: 900;
+            letter-spacing: 4px;
+            pointer-events: none;
+            z-index: 20;
+            opacity: 0;
+            font-family: 'Courier New', monospace;
+        }
+        .judge-text.perfect {
+            color: #fbbf24;
+            text-shadow: 0 0 20px rgba(251, 191, 36, 0.9), 0 0 40px rgba(251, 191, 36, 0.5);
+        }
+        .judge-text.great {
+            color: #7dd3fc;
+            text-shadow: 0 0 20px rgba(125, 211, 252, 0.9), 0 0 40px rgba(125, 211, 252, 0.5);
+        }
+        .judge-text.show { animation: judgeShow 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; }
+        @keyframes judgeShow {
+            0%   { opacity: 0; transform: translate(-50%, -50%) scale(0.5); }
+            30%  { opacity: 1; transform: translate(-50%, -50%) scale(1.2); }
+            70%  { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+            100% { opacity: 0; transform: translate(-50%, -60%) scale(1); }
+        }
+        .combo-display {
+            position: absolute; top: 30px; left: 50%;
             transform: translateX(-50%);
-            text-align: center;
-            z-index: 10;
+            text-align: center; z-index: 10;
             pointer-events: none;
         }
         .combo-count {
-            font-size: 64px;
-            font-weight: 800;
-            color: #7dd3fc;
-            line-height: 1;
-            text-shadow: 0 0 40px rgba(125, 211, 252, 1),
-                         0 0 80px rgba(125, 211, 252, 0.6);
+            font-size: 64px; font-weight: 800;
+            color: #7dd3fc; line-height: 1;
+            text-shadow: 0 0 40px rgba(125, 211, 252, 1), 0 0 80px rgba(125, 211, 252, 0.6);
             font-family: 'Courier New', monospace;
         }
-        .combo-count.pop {
-            animation: comboPop 0.3s ease;
-        }
+        .combo-count.pop { animation: comboPop 0.3s ease; }
         @keyframes comboPop {
             0% { transform: scale(1); }
             50% { transform: scale(1.35); color: #fff; }
@@ -598,13 +591,11 @@ int main() {
             font-size: 13px;
             color: rgba(125, 211, 252, 0.7);
             letter-spacing: 8px;
-            margin-top: 8px;
-            font-weight: 700;
+            margin-top: 8px; font-weight: 700;
         }
         .note {
             position: absolute;
-            width: 70%;
-            left: 15%;
+            width: 70%; left: 15%;
             height: 16px;
             background: linear-gradient(180deg, #bae6fd, #7dd3fc);
             border-radius: 8px;
@@ -620,8 +611,7 @@ int main() {
 
         /* ========== 关于本站 ========== */
         .about-site {
-            max-width: 720px;
-            margin: 0 auto;
+            max-width: 720px; margin: 0 auto;
             background: rgba(255, 255, 255, 0.03);
             border-left: 3px solid #a78bfa;
             padding: 30px 36px;
@@ -659,10 +649,20 @@ int main() {
             .clock { font-size: 18px; letter-spacing: 4px; }
             .combo-count { font-size: 48px; }
             .rhythm-container { height: 420px; }
+            .custom-cursor, .custom-cursor-dot { display: none; }
+            html, body { cursor: auto; }
+            a, button { cursor: pointer; }
         }
     </style>
 </head>
 <body>
+
+    <!-- 自定义鼠标 -->
+    <div class="custom-cursor" id="customCursor"></div>
+    <div class="custom-cursor-dot" id="customCursorDot"></div>
+
+    <!-- 粒子背景 -->
+    <canvas class="particle-canvas" id="particleCanvas"></canvas>
 
     <!-- 首页封面 -->
     <div class="landing" id="landing">
@@ -670,7 +670,7 @@ int main() {
         <div class="landing-overlay"></div>
         <div class="landing-content">
             <h1>)HTML" << me.welcomeText << R"HTML(</h1>
-            <button class="enter-btn" onclick="enterSite();">点击进入</button>
+            <button class="enter-btn" id="enterBtn">点击进入</button>
         </div>
     </div>
 
@@ -688,14 +688,13 @@ int main() {
     </div>
 
     <!-- 音乐开关 -->
-    <button class="music-toggle" id="musicBtn" onclick="toggleMusic();" title="暂停/播放音乐">&#9834;</button>
+    <button class="music-toggle" id="musicBtn" title="暂停/播放音乐">&#9834;</button>
 
     <!-- 主页面 -->
     <div class="main-page" id="mainPage">
 
-        <!-- 个人卡片 -->
         <div class="card">
-            <div class="avatar"><img src=")HTML" << me.avatar << R"HTML(" alt="头像" onclick="popAvatar(this);"></div>
+            <div class="avatar"><img src=")HTML" << me.avatar << R"HTML(" alt="头像" id="avatarImg"></div>
             <h1 id="nameTyping" data-name=")HTML" << me.name << R"HTML("></h1>
             <div class="title">)HTML" << me.title << R"HTML(</div>
             <div class="clock" id="clock">00:00:00</div>
@@ -709,7 +708,6 @@ int main() {
             <div class="footer">Generated by C++ · Powered by GitHub Pages</div>
         </div>
 
-        <!-- 项目 -->
         <section class="section">
             <h2 class="section-title">Projects</h2>
             <div class="projects-grid">
@@ -728,10 +726,9 @@ int main() {
             </div>
         </section>
 
-        <!-- 经历 -->
         <section class="section">
             <h2 class="section-title">Experience</h2>
-            <div class="timeline">
+            <div class="timeline" id="timeline">
                 <div class="timeline-item">
                     <div class="timeline-period">2025 - 至今</div>
                     <div class="timeline-content">
@@ -759,7 +756,6 @@ int main() {
             </div>
         </section>
 
-        <!-- 技能条 -->
         <section class="section">
             <h2 class="section-title">技能</h2>
             <div class="skill-bars">
@@ -786,7 +782,6 @@ int main() {
             </div>
         </section>
 
-        <!-- 正在学习 -->
         <section class="section">
             <h2 class="section-title">正在学习</h2>
             <div class="learning-grid">
@@ -809,10 +804,10 @@ int main() {
             </div>
         </section>
 
-        <!-- 音游 -->
         <section class="section">
             <h2 class="section-title">Rhythm</h2>
             <div class="rhythm-container" id="rhythmContainer">
+                <div class="judge-text" id="judgeText"></div>
                 <div class="combo-display">
                     <div class="combo-count" id="comboCount">0</div>
                     <div class="combo-label">COMBO</div>
@@ -830,7 +825,6 @@ int main() {
             </div>
         </section>
 
-        <!-- 关于本站 -->
         <section class="section">
             <h2 class="section-title">关于本站</h2>
             <div class="about-site">
@@ -840,7 +834,6 @@ int main() {
             </div>
         </section>
 
-        <!-- 联系我 -->
         <section class="section section-contact">
             <h2 class="section-title">联系我</h2>
             <div class="contact">
@@ -883,6 +876,117 @@ int main() {
         setInterval(updateStatus, 60000);
         updateStatus();
 
+        /* ============ 自定义鼠标（功能 8） ============ */
+        (function() {
+            var cursor = document.getElementById('customCursor');
+            var dot = document.getElementById('customCursorDot');
+            var mx = 0, my = 0, cx = 0, cy = 0, dx = 0, dy = 0;
+            var lastMouseX = window.innerWidth / 2;
+            var lastMouseY = window.innerHeight / 2;
+
+            document.addEventListener('mousemove', function(e) {
+                mx = e.clientX; my = e.clientY;
+                lastMouseX = mx; lastMouseY = my;
+                cursor.classList.add('active');
+                dot.classList.add('active');
+            });
+            document.addEventListener('mouseleave', function() {
+                cursor.classList.remove('active');
+                dot.classList.remove('active');
+            });
+
+            function animate() {
+                cx += (mx - cx) * 0.15;
+                cy += (my - cy) * 0.15;
+                dx += (mx - dx) * 0.5;
+                dy += (my - dy) * 0.5;
+                cursor.style.left = cx + 'px';
+                cursor.style.top = cy + 'px';
+                dot.style.left = dx + 'px';
+                dot.style.top = dy + 'px';
+                requestAnimationFrame(animate);
+            }
+            animate();
+
+            var hoverables = document.querySelectorAll('a, button, .skill-tag, .project-card');
+            hoverables.forEach(function(el) {
+                el.addEventListener('mouseenter', function() { cursor.classList.add('hover'); });
+                el.addEventListener('mouseleave', function() { cursor.classList.remove('hover'); });
+            });
+
+            // 键盘光波（功能 10）
+            document.addEventListener('keydown', function() {
+                var ripple = document.createElement('div');
+                ripple.className = 'key-ripple';
+                ripple.style.left = lastMouseX + 'px';
+                ripple.style.top = lastMouseY + 'px';
+                document.body.appendChild(ripple);
+                setTimeout(function() { ripple.remove(); }, 900);
+            });
+        })();
+
+        /* ============ 鼠标视差（功能 17） ============ */
+        (function() {
+            var mp = document.getElementById('mainPage');
+            var targetX = 50, targetY = 50, curX = 50, curY = 50;
+            document.addEventListener('mousemove', function(e) {
+                targetX = 50 + (e.clientX / window.innerWidth - 0.5) * 4;
+                targetY = 50 + (e.clientY / window.innerHeight - 0.5) * 4;
+            });
+            function tick() {
+                curX += (targetX - curX) * 0.05;
+                curY += (targetY - curY) * 0.05;
+                mp.style.backgroundPosition = 'center, ' + curX + '% ' + curY + '%';
+                requestAnimationFrame(tick);
+            }
+            tick();
+        })();
+
+        /* ============ 粒子背景（功能 5） ============ */
+        (function() {
+            var canvas = document.getElementById('particleCanvas');
+            var ctx = canvas.getContext('2d');
+            var particles = [];
+            var w = 0, h = 0;
+
+            function resize() {
+                w = canvas.width = window.innerWidth;
+                h = canvas.height = window.innerHeight;
+            }
+            resize();
+            window.addEventListener('resize', resize);
+
+            for (var i = 0; i < 50; i++) {
+                particles.push({
+                    x: Math.random() * 2000,
+                    y: Math.random() * 1500,
+                    r: Math.random() * 2 + 0.6,
+                    vx: (Math.random() - 0.5) * 0.35,
+                    vy: (Math.random() - 0.5) * 0.35,
+                    a: Math.random() * 0.5 + 0.3
+                });
+            }
+
+            function draw() {
+                ctx.clearRect(0, 0, w, h);
+                for (var i = 0; i < particles.length; i++) {
+                    var p = particles[i];
+                    p.x += p.vx;
+                    p.y += p.vy;
+                    if (p.x < 0) p.x = w;
+                    if (p.x > w) p.x = 0;
+                    if (p.y < 0) p.y = h;
+                    if (p.y > h) p.y = 0;
+                    ctx.beginPath();
+                    ctx.fillStyle = 'rgba(125, 211, 252, ' + p.a + ')';
+                    ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+                requestAnimationFrame(draw);
+            }
+            draw();
+        })();
+
         /* ============ 滚动入场（功能 2） ============ */
         (function() {
             var targets = document.querySelectorAll('.card, .section');
@@ -914,23 +1018,36 @@ int main() {
             bars.forEach(function(b) { observer.observe(b); });
         })();
 
-        /* ============ 打字机（功能 20） ============ */
-        function startTyping() {
+        /* ============ 时间线动画（功能 15） ============ */
+        (function() {
+            var timeline = document.getElementById('timeline');
+            if (!timeline) return;
+            var items = timeline.querySelectorAll('.timeline-item');
+            var observer = new IntersectionObserver(function(entries) {
+                if (entries[0].isIntersecting) {
+                    items.forEach(function(item, i) {
+                        setTimeout(function() { item.classList.add('revealed'); }, i * 200);
+                    });
+                    observer.disconnect();
+                }
+            }, { threshold: 0.15 });
+            observer.observe(timeline);
+        })();
+
+        /* ============ 名字逐字浮现（功能 20） ============ */
+        function revealName() {
             var el = document.getElementById('nameTyping');
             if (!el || el.dataset.done === '1') return;
             el.dataset.done = '1';
-
             var text = el.getAttribute('data-name');
-            var i = 0;
             el.textContent = '';
-            function type() {
-                if (i < text.length) {
-                    el.textContent += text.charAt(i);
-                    i++;
-                    setTimeout(type, 180);
-                }
+            for (var i = 0; i < text.length; i++) {
+                var span = document.createElement('span');
+                span.className = 'name-char';
+                span.textContent = text.charAt(i);
+                span.style.animationDelay = (i * 0.12) + 's';
+                el.appendChild(span);
             }
-            type();
         }
 
         /* ============ 进入站点 ============ */
@@ -942,8 +1059,9 @@ int main() {
                 document.getElementById('landing').classList.add('hidden');
                 document.getElementById('mainPage').classList.add('visible');
                 document.body.style.overflowY = 'auto';
+                document.getElementById('particleCanvas').classList.add('visible');
 
-                setTimeout(startTyping, 800);
+                setTimeout(revealName, 600);
 
                 var music = document.getElementById('bgMusic');
                 var btn = document.getElementById('musicBtn');
@@ -965,8 +1083,10 @@ int main() {
             }, 3500);
         }
 
+        document.getElementById('enterBtn').addEventListener('click', enterSite);
+
         /* ============ 音乐开关 ============ */
-        function toggleMusic() {
+        document.getElementById('musicBtn').addEventListener('click', function() {
             var music = document.getElementById('bgMusic');
             var btn = document.getElementById('musicBtn');
             if (music.paused) {
@@ -976,16 +1096,16 @@ int main() {
                 music.pause();
                 btn.classList.add('paused');
             }
-        }
+        });
 
         /* ============ 头像弹跳 ============ */
-        function popAvatar(el) {
-            el.classList.remove('pop');
-            void el.offsetWidth;
-            el.classList.add('pop');
-        }
+        document.getElementById('avatarImg').addEventListener('click', function() {
+            this.classList.remove('pop');
+            void this.offsetWidth;
+            this.classList.add('pop');
+        });
 
-        /* ============ 音游自动打 ============ */
+        /* ============ 音游自动打（功能 13） ============ */
         var BPM = 168;
         var beatInterval = 60000 / BPM;
         var noteTravelTime = 1800;
@@ -999,6 +1119,8 @@ int main() {
             var lanes = document.querySelectorAll('#lanes .lane');
             var comboEl = document.getElementById('comboCount');
             var judgeLine = document.getElementById('judgeLine');
+            var judgeText = document.getElementById('judgeText');
+            var lastJudge = 0;
 
             function spawnNote() {
                 var laneIndex = Math.floor(Math.random() * lanes.length);
@@ -1033,6 +1155,18 @@ int main() {
                     judgeLine.classList.remove('pulse');
                     void judgeLine.offsetWidth;
                     judgeLine.classList.add('pulse');
+
+                    var isPerfect = Math.random() < 0.65;
+                    var word = isPerfect ? 'PERFECT' : 'GREAT';
+                    var cls = isPerfect ? 'perfect' : 'great';
+
+                    if (isPerfect || Date.now() - lastJudge > 200) {
+                        judgeText.textContent = word;
+                        judgeText.className = 'judge-text ' + cls;
+                        void judgeText.offsetWidth;
+                        judgeText.classList.add('show');
+                        lastJudge = Date.now();
+                    }
 
                     combo++;
                     comboEl.textContent = combo;
