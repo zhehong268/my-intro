@@ -57,6 +57,7 @@ int main() {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
             background: #0f0c29;
             color: #fff;
+            overflow: hidden;
         }
 
         /* ========== 点击光波 ========== */
@@ -74,17 +75,6 @@ int main() {
             to { width: 460px; height: 460px; opacity: 0; border-width: 1px; }
         }
 
-        /* ========== 粒子背景 ========== */
-        .particle-canvas {
-            position: fixed;
-            inset: 0;
-            z-index: 1;
-            pointer-events: none;
-            opacity: 0;
-            transition: opacity 1.2s ease;
-        }
-        .particle-canvas.visible { opacity: 0.6; }
-
         /* ========== 首页封面 ========== */
         .landing {
             position: fixed; inset: 0; z-index: 100;
@@ -97,11 +87,6 @@ int main() {
             position: absolute; inset: 0;
             background-size: cover; background-position: center;
             filter: brightness(0.5);
-            animation: slowZoom 20s ease-in-out infinite alternate;
-        }
-        @keyframes slowZoom {
-            from { transform: scale(1.05); }
-            to { transform: scale(1.15); }
         }
         .landing-overlay {
             position: absolute; inset: 0;
@@ -110,11 +95,6 @@ int main() {
         .landing-content {
             position: relative; z-index: 2;
             text-align: center;
-            animation: fadeIn 1.2s ease-out;
-        }
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
         }
         .landing-content h1 {
             font-size: 42px; font-weight: 700; letter-spacing: 3px;
@@ -132,12 +112,11 @@ int main() {
             border-radius: 50px;
             cursor: pointer;
             backdrop-filter: blur(10px);
-            transition: all 0.3s ease;
+            transition: background 0.3s ease, transform 0.3s ease;
         }
         .enter-btn:hover {
             background: rgba(167, 139, 250, 0.4);
             transform: translateY(-3px);
-            box-shadow: 0 10px 30px rgba(167, 139, 250, 0.4);
         }
 
         /* ========== 签名加载 ========== */
@@ -152,7 +131,7 @@ int main() {
         .loader.show { display: flex; opacity: 1; }
         .signature-svg { width: 90%; max-width: 560px; height: auto; overflow: visible; }
         #sigText {
-            animation: drawSignature 3.5s cubic-bezier(0.45, 0, 0.3, 1) forwards;
+            animation: drawSignature 3.2s cubic-bezier(0.45, 0, 0.3, 1) forwards;
             filter: drop-shadow(0 0 12px rgba(125, 211, 252, 0.8));
         }
         @keyframes drawSignature { to { stroke-dashoffset: 0; } }
@@ -170,16 +149,19 @@ int main() {
                     rgba(15,12,41,0.98) 100%),
                 url(')HTML" << me.bgImage << R"HTML(');
             background-size: cover, cover;
-            background-position: center, 50% 50%;
+            background-position: center, center;
             background-attachment: fixed, fixed;
             opacity: 0;
-            transition: opacity 0.8s ease, background-position 0.6s ease-out;
+            transition: opacity 0.8s ease;
         }
         .main-page.visible { opacity: 1; }
         .main-page .card, .main-page .section { position: relative; z-index: 2; }
 
         /* ========== 滚动入场（只作用于 section） ========== */
         .section {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 40px 20px;
             opacity: 0;
             transform: translateY(40px);
             transition: opacity 0.8s ease, transform 0.8s cubic-bezier(0.45, 0, 0.3, 1);
@@ -188,8 +170,12 @@ int main() {
             opacity: 1;
             transform: translateY(0);
         }
+        .section.section-contact {
+            text-align: center;
+            padding-bottom: 60px;
+        }
 
-        /* ========== 卡片（初始隐藏，通过 JS 加 revealed 触发滑入） ========== */
+        /* ========== 卡片 ========== */
         .card {
             background: rgba(255, 255, 255, 0.05);
             backdrop-filter: blur(20px);
@@ -202,29 +188,10 @@ int main() {
             margin: 0 auto 60px auto;
             box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5);
             text-align: center;
-            opacity: 0;
-            transform: translateY(40px);
-            transition: opacity 0.8s ease, transform 0.8s cubic-bezier(0.45, 0, 0.3, 1);
-        }
-        .card.revealed {
-            opacity: 1;
-            transform: translateY(0);
-        }
-
-        /* ========== 名字逐字浮现 ========== */
-        .name-char {
-            display: inline-block;
-            opacity: 0;
-            transform: translateY(15px) scale(0.7);
-            filter: blur(8px);
-            animation: charReveal 0.7s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
-        }
-        @keyframes charReveal {
-            to { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); }
         }
 
         /* 头像 */
-        .avatar { margin-bottom: 20px; animation: float 3s ease-in-out infinite; }
+        .avatar { margin-bottom: 20px; }
         .avatar img {
             width: 120px; height: 120px; border-radius: 50%;
             object-fit: cover;
@@ -232,7 +199,9 @@ int main() {
             box-shadow: 0 8px 25px rgba(167, 139, 250, 0.3);
             cursor: pointer;
         }
-        .avatar img.pop { animation: avatarPop 0.7s cubic-bezier(0.34, 1.56, 0.64, 1); }
+        .avatar img.pop {
+            animation: avatarPop 0.7s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
         @keyframes avatarPop {
             0%   { transform: scale(1) rotate(0); }
             20%  { transform: scale(1.3) rotate(-8deg); }
@@ -240,10 +209,6 @@ int main() {
             60%  { transform: scale(1.15) rotate(-4deg); }
             80%  { transform: scale(0.98) rotate(2deg); }
             100% { transform: scale(1) rotate(0); }
-        }
-        @keyframes float {
-            0%, 100% { transform: translateY(0); }
-            50% { transform: translateY(-10px); }
         }
 
         /* 标题 */
@@ -253,7 +218,6 @@ int main() {
             -webkit-background-clip: text; -webkit-text-fill-color: transparent;
             background-clip: text;
             margin-bottom: 8px;
-            min-height: 40px;
         }
         .card .title {
             font-size: 16px; color: #a78bfa; font-weight: 500;
@@ -288,12 +252,11 @@ int main() {
             border-radius: 22px;
             font-size: 14px; font-weight: 500;
             border: 1px solid rgba(167, 139, 250, 0.3);
-            transition: all 0.3s ease;
+            transition: background 0.3s ease, transform 0.3s ease;
         }
         .skill-tag:hover {
             background: rgba(167, 139, 250, 0.3);
             transform: translateY(-3px);
-            box-shadow: 0 8px 20px rgba(167, 139, 250, 0.3);
         }
         .contact {
             display: flex; justify-content: center; gap: 16px;
@@ -306,7 +269,7 @@ int main() {
             border-radius: 12px;
             background: rgba(96, 165, 250, 0.1);
             border: 1px solid rgba(96, 165, 250, 0.2);
-            transition: all 0.3s ease;
+            transition: background 0.3s ease, transform 0.3s ease;
         }
         .contact a:hover {
             background: rgba(96, 165, 250, 0.2);
@@ -332,7 +295,7 @@ int main() {
             backdrop-filter: blur(10px);
             display: none;
             align-items: center; justify-content: center;
-            transition: all 0.3s ease;
+            transition: background 0.3s ease, transform 0.3s ease;
         }
         .music-toggle.visible { display: flex; }
         .music-toggle:hover {
@@ -341,12 +304,7 @@ int main() {
         }
         .music-toggle.paused { color: #666; border-color: #666; }
 
-        /* ========== 区块 ========== */
-        .section {
-            max-width: 1000px;
-            margin: 0 auto;
-            padding: 40px 20px;
-        }
+        /* ========== 区块标题 ========== */
         .section-title {
             font-size: 28px; font-weight: 700;
             text-align: center;
@@ -367,12 +325,11 @@ int main() {
             border: 1px solid rgba(255, 255, 255, 0.1);
             border-radius: 16px;
             padding: 28px;
-            transition: all 0.3s ease;
+            transition: transform 0.3s ease, border-color 0.3s ease;
         }
         .project-card:hover {
             transform: translateY(-6px);
             border-color: rgba(167, 139, 250, 0.4);
-            box-shadow: 0 15px 40px rgba(167, 139, 250, 0.2);
         }
         .project-card h3 { font-size: 18px; margin-bottom: 10px; }
         .project-card p {
@@ -461,7 +418,6 @@ int main() {
             height: 100%; width: 0;
             background: linear-gradient(90deg, #a78bfa, #60a5fa);
             border-radius: 4px;
-            box-shadow: 0 0 12px rgba(167, 139, 250, 0.6);
             transition: width 1.2s cubic-bezier(0.45, 0, 0.3, 1);
         }
 
@@ -476,12 +432,11 @@ int main() {
             border: 1px solid rgba(255, 255, 255, 0.1);
             border-radius: 16px;
             padding: 24px;
-            transition: all 0.3s ease;
+            transition: transform 0.3s ease, border-color 0.3s ease;
         }
         .learning-card:hover {
             transform: translateY(-4px);
             border-color: rgba(167, 139, 250, 0.4);
-            box-shadow: 0 10px 30px rgba(167, 139, 250, 0.2);
         }
         .learning-card h3 { font-size: 16px; margin-bottom: 12px; color: #c4b5fd; }
         .learning-card p {
@@ -499,8 +454,6 @@ int main() {
             border: 1px solid rgba(125, 211, 252, 0.3);
             border-radius: 16px;
             overflow: hidden;
-            box-shadow: 0 0 50px rgba(125, 211, 252, 0.15) inset,
-                        0 10px 40px rgba(0, 0, 0, 0.5);
         }
         .lanes { display: flex; height: 100%; position: relative; }
         .lane {
@@ -513,41 +466,14 @@ int main() {
             position: absolute;
             bottom: 100px; left: 0; right: 0;
             height: 3px; background: #7dd3fc;
-            box-shadow: 0 0 25px rgba(125, 211, 252, 1),
-                        0 0 50px rgba(125, 211, 252, 0.6);
+            box-shadow: 0 0 25px rgba(125, 211, 252, 1);
             z-index: 5;
         }
         .judge-line.pulse { animation: judgePulse 0.3s ease; }
         @keyframes judgePulse {
-            0% { box-shadow: 0 0 25px rgba(125,211,252,1), 0 0 50px rgba(125,211,252,0.6); }
-            50% { box-shadow: 0 0 50px rgba(255,255,255,1), 0 0 100px rgba(125,211,252,1); }
-            100% { box-shadow: 0 0 25px rgba(125,211,252,1), 0 0 50px rgba(125,211,252,0.6); }
-        }
-        .judge-text {
-            position: absolute;
-            left: 50%; top: 45%;
-            transform: translate(-50%, -50%);
-            font-size: 34px; font-weight: 900;
-            letter-spacing: 4px;
-            pointer-events: none;
-            z-index: 20;
-            opacity: 0;
-            font-family: 'Courier New', monospace;
-        }
-        .judge-text.perfect {
-            color: #fbbf24;
-            text-shadow: 0 0 20px rgba(251, 191, 36, 0.9), 0 0 40px rgba(251, 191, 36, 0.5);
-        }
-        .judge-text.great {
-            color: #7dd3fc;
-            text-shadow: 0 0 20px rgba(125, 211, 252, 0.9), 0 0 40px rgba(125, 211, 252, 0.5);
-        }
-        .judge-text.show { animation: judgeShow 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; }
-        @keyframes judgeShow {
-            0%   { opacity: 0; transform: translate(-50%, -50%) scale(0.5); }
-            30%  { opacity: 1; transform: translate(-50%, -50%) scale(1.2); }
-            70%  { opacity: 1; transform: translate(-50%, -50%) scale(1); }
-            100% { opacity: 0; transform: translate(-50%, -60%) scale(1); }
+            0% { box-shadow: 0 0 25px rgba(125,211,252,1); }
+            50% { box-shadow: 0 0 50px rgba(255,255,255,1); }
+            100% { box-shadow: 0 0 25px rgba(125,211,252,1); }
         }
         .combo-display {
             position: absolute; top: 30px; left: 50%;
@@ -558,13 +484,12 @@ int main() {
         .combo-count {
             font-size: 64px; font-weight: 800;
             color: #7dd3fc; line-height: 1;
-            text-shadow: 0 0 40px rgba(125, 211, 252, 1), 0 0 80px rgba(125, 211, 252, 0.6);
             font-family: 'Courier New', monospace;
         }
         .combo-count.pop { animation: comboPop 0.3s ease; }
         @keyframes comboPop {
             0% { transform: scale(1); }
-            50% { transform: scale(1.35); color: #fff; }
+            50% { transform: scale(1.3); }
             100% { transform: scale(1); }
         }
         .combo-label {
@@ -579,14 +504,12 @@ int main() {
             height: 16px;
             background: linear-gradient(180deg, #bae6fd, #7dd3fc);
             border-radius: 8px;
-            box-shadow: 0 0 18px rgba(125, 211, 252, 0.9),
-                        0 0 35px rgba(125, 211, 252, 0.5);
+            box-shadow: 0 0 18px rgba(125, 211, 252, 0.9);
             z-index: 3;
         }
         .note.hit {
             background: #fff;
-            box-shadow: 0 0 30px rgba(255, 255, 255, 1),
-                        0 0 60px rgba(125, 211, 252, 1);
+            box-shadow: 0 0 30px rgba(255, 255, 255, 1);
         }
 
         /* ========== 关于本站 ========== */
@@ -634,8 +557,6 @@ int main() {
 </head>
 <body>
 
-    <canvas class="particle-canvas" id="particleCanvas"></canvas>
-
     <div class="landing" id="landing">
         <div class="landing-bg" style="background-image: url(')HTML" << me.coverImage << R"HTML(');"></div>
         <div class="landing-overlay"></div>
@@ -661,9 +582,9 @@ int main() {
 
     <div class="main-page" id="mainPage">
 
-        <div class="card" id="mainCard">
+        <div class="card">
             <div class="avatar"><img src=")HTML" << me.avatar << R"HTML(" alt="头像" id="avatarImg"></div>
-            <h1 id="nameTyping" data-name=")HTML" << me.name << R"HTML("></h1>
+            <h1>)HTML" << me.name << R"HTML(</h1>
             <div class="title">)HTML" << me.title << R"HTML(</div>
             <div class="clock" id="clock">00:00:00</div>
             <div class="status" id="status">加载中...</div>
@@ -775,7 +696,6 @@ int main() {
         <section class="section">
             <h2 class="section-title">Rhythm</h2>
             <div class="rhythm-container" id="rhythmContainer">
-                <div class="judge-text" id="judgeText"></div>
                 <div class="combo-display">
                     <div class="combo-count" id="comboCount">0</div>
                     <div class="combo-label">COMBO</div>
@@ -813,7 +733,7 @@ int main() {
 
     </div>
 
-    <audio id="bgMusic" loop>
+    <audio id="bgMusic" loop preload="auto">
         <source src=")HTML" << me.bgMusic << R"HTML(" type="audio/mpeg">
     </audio>
 
@@ -854,72 +774,9 @@ int main() {
             setTimeout(function() { ripple.remove(); }, 900);
         });
 
-        /* ============ 鼠标视差 ============ */
-        (function() {
-            var mp = document.getElementById('mainPage');
-            var targetX = 50, targetY = 50, curX = 50, curY = 50;
-            document.addEventListener('mousemove', function(e) {
-                targetX = 50 + (e.clientX / window.innerWidth - 0.5) * 4;
-                targetY = 50 + (e.clientY / window.innerHeight - 0.5) * 4;
-            });
-            function tick() {
-                curX += (targetX - curX) * 0.05;
-                curY += (targetY - curY) * 0.05;
-                mp.style.backgroundPosition = 'center, ' + curX + '% ' + curY + '%';
-                requestAnimationFrame(tick);
-            }
-            tick();
-        })();
-
-        /* ============ 粒子背景 ============ */
-        (function() {
-            var canvas = document.getElementById('particleCanvas');
-            var ctx = canvas.getContext('2d');
-            var particles = [];
-            var w = 0, h = 0;
-
-            function resize() {
-                w = canvas.width = window.innerWidth;
-                h = canvas.height = window.innerHeight;
-            }
-            resize();
-            window.addEventListener('resize', resize);
-
-            for (var i = 0; i < 45; i++) {
-                particles.push({
-                    x: Math.random() * 2000,
-                    y: Math.random() * 1500,
-                    r: Math.random() * 1.8 + 0.6,
-                    vx: (Math.random() - 0.5) * 0.3,
-                    vy: (Math.random() - 0.5) * 0.3,
-                    a: Math.random() * 0.45 + 0.25
-                });
-            }
-
-            function draw() {
-                ctx.clearRect(0, 0, w, h);
-                for (var i = 0; i < particles.length; i++) {
-                    var p = particles[i];
-                    p.x += p.vx;
-                    p.y += p.vy;
-                    if (p.x < 0) p.x = w;
-                    if (p.x > w) p.x = 0;
-                    if (p.y < 0) p.y = h;
-                    if (p.y > h) p.y = 0;
-                    ctx.beginPath();
-                    ctx.fillStyle = 'rgba(125, 211, 252, ' + p.a + ')';
-                    ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
-                    ctx.fill();
-                }
-                requestAnimationFrame(draw);
-            }
-            draw();
-        })();
-
-        /* ============ 滚动入场（只作用于 section） ============ */
+        /* ============ 滚动入场 ============ */
         function setupReveal() {
             var targets = document.querySelectorAll('.section');
-            // 兜底：浏览器不支持 IntersectionObserver 时直接显示
             if (!('IntersectionObserver' in window)) {
                 targets.forEach(function(el) { el.classList.add('revealed'); });
                 return;
@@ -976,63 +833,46 @@ int main() {
             observer.observe(timeline);
         }
 
-        /* ============ 名字逐字浮现 ============ */
-        function revealName() {
-            var el = document.getElementById('nameTyping');
-            var text = el.getAttribute('data-name');
-            el.textContent = '';
-            for (var i = 0; i < text.length; i++) {
-                var span = document.createElement('span');
-                span.className = 'name-char';
-                span.textContent = text.charAt(i);
-                span.style.animationDelay = (i * 0.12) + 's';
-                el.appendChild(span);
-            }
-        }
-
         /* ============ 进入站点 ============ */
+        var entered = false;
+
         function enterSite() {
+            if (entered) return;
+            entered = true;
+
             var loader = document.getElementById('loader');
+            var music = document.getElementById('bgMusic');
+            var btn = document.getElementById('musicBtn');
+
+            // 1. 立即开始播音乐（在用户点击的手势上下文中，权限最好，且不阻塞后续）
+            music.play().then(function() {
+                btn.classList.remove('paused');
+            }).catch(function(err) {
+                console.log('音乐播放失败:', err);
+                btn.classList.add('paused');
+            });
+
+            // 2. 显示签名 loading
             loader.classList.add('show');
 
-            // 1. 签名动画播 3.5 秒
+            // 3. 3.2 秒后，签名动画播完，切到主页面
             setTimeout(function() {
-                // 2. 隐藏 landing，显示 mainPage
+                document.documentElement.style.overflow = 'auto';
+                document.body.style.overflow = 'auto';
+
                 document.getElementById('landing').classList.add('hidden');
                 document.getElementById('mainPage').classList.add('visible');
-                document.body.style.overflowY = 'auto';
-                document.getElementById('particleCanvas').classList.add('visible');
-
-                // 3. 播音乐
-                var music = document.getElementById('bgMusic');
-                var btn = document.getElementById('musicBtn');
                 btn.classList.add('visible');
-                music.play().then(function() {
-                    btn.classList.remove('paused');
-                }).catch(function(err) {
-                    console.log('音乐播放失败:', err);
-                    btn.classList.add('paused');
-                });
 
-                // 4. loader 开始淡出
                 loader.classList.remove('show');
-
-                // 5. loader 完全消失后，正式开始动画
                 setTimeout(function() {
                     loader.style.display = 'none';
-
-                    // 卡片先滑入
-                    document.getElementById('mainCard').classList.add('revealed');
-
-                    // 卡片滑入 400ms 后，名字逐个浮现
-                    setTimeout(revealName, 400);
-
-                    // 其他 section 注册滚动入场
+                    // 等 loader 彻底消失后再注册滚动动画
                     setupReveal();
                     setupBars();
                     setupTimeline();
-                }, 500);
-            }, 3500);
+                }, 600);
+            }, 3200);
         }
 
         document.getElementById('enterBtn').addEventListener('click', enterSite);
@@ -1059,7 +899,7 @@ int main() {
             this.classList.add('pop');
         });
 
-        /* ============ 音游 ============ */
+        /* ============ 音游自动打 ============ */
         var BPM = 168;
         var beatInterval = 60000 / BPM;
         var noteTravelTime = 1800;
@@ -1073,8 +913,6 @@ int main() {
             var lanes = document.querySelectorAll('#lanes .lane');
             var comboEl = document.getElementById('comboCount');
             var judgeLine = document.getElementById('judgeLine');
-            var judgeText = document.getElementById('judgeText');
-            var lastJudge = 0;
 
             function spawnNote() {
                 var laneIndex = Math.floor(Math.random() * lanes.length);
@@ -1109,18 +947,6 @@ int main() {
                     judgeLine.classList.remove('pulse');
                     void judgeLine.offsetWidth;
                     judgeLine.classList.add('pulse');
-
-                    var isPerfect = Math.random() < 0.65;
-                    var word = isPerfect ? 'PERFECT' : 'GREAT';
-                    var cls = isPerfect ? 'perfect' : 'great';
-
-                    if (isPerfect || Date.now() - lastJudge > 200) {
-                        judgeText.textContent = word;
-                        judgeText.className = 'judge-text ' + cls;
-                        void judgeText.offsetWidth;
-                        judgeText.classList.add('show');
-                        lastJudge = Date.now();
-                    }
 
                     combo++;
                     comboEl.textContent = combo;
