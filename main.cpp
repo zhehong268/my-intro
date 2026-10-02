@@ -57,51 +57,7 @@ int main() {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
             background: #0f0c29;
             color: #fff;
-            cursor: none;
         }
-        a, button { cursor: none; }
-
-        /* ========== 自定义鼠标 ========== */
-        .custom-cursor {
-            position: fixed;
-            width: 32px; height: 32px;
-            border: 1.5px solid rgba(167, 139, 250, 0.7);
-            border-radius: 50%;
-            pointer-events: none;
-            z-index: 9999;
-            transform: translate(-50%, -50%);
-            opacity: 0;
-            transition: width 0.25s ease, height 0.25s ease, border-color 0.25s ease, background 0.25s ease;
-        }
-        .custom-cursor.active { opacity: 1; }
-        .custom-cursor.hover {
-            width: 52px; height: 52px;
-            border-color: rgba(125, 211, 252, 1);
-            background: rgba(125, 211, 252, 0.1);
-        }
-        .custom-cursor-dot {
-            position: fixed;
-            width: 6px; height: 6px;
-            background: #a78bfa;
-            border-radius: 50%;
-            pointer-events: none;
-            z-index: 10000;
-            transform: translate(-50%, -50%);
-            opacity: 0;
-            box-shadow: 0 0 12px rgba(167, 139, 250, 1);
-        }
-        .custom-cursor-dot.active { opacity: 1; }
-
-        /* ========== 粒子背景 ========== */
-        .particle-canvas {
-            position: fixed;
-            inset: 0;
-            z-index: 1;
-            pointer-events: none;
-            opacity: 0;
-            transition: opacity 1.2s ease;
-        }
-        .particle-canvas.visible { opacity: 0.7; }
 
         /* ========== 键盘光波 ========== */
         .key-ripple {
@@ -117,6 +73,17 @@ int main() {
         @keyframes rippleExpand {
             to { width: 460px; height: 460px; opacity: 0; border-width: 1px; }
         }
+
+        /* ========== 粒子背景 ========== */
+        .particle-canvas {
+            position: fixed;
+            inset: 0;
+            z-index: 1;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 1.2s ease;
+        }
+        .particle-canvas.visible { opacity: 0.6; }
 
         /* ========== 首页封面 ========== */
         .landing {
@@ -163,6 +130,7 @@ int main() {
             background: rgba(167, 139, 250, 0.2);
             border: 2px solid rgba(167, 139, 250, 0.6);
             border-radius: 50px;
+            cursor: pointer;
             backdrop-filter: blur(10px);
             transition: all 0.3s ease;
         }
@@ -210,13 +178,18 @@ int main() {
         .main-page.visible { opacity: 1; }
         .main-page .card, .main-page .section { position: relative; z-index: 2; }
 
-        /* ========== 滚动入场 ========== */
+        /* ========== 滚动入场（带兜底） ========== */
         .section, .card {
             opacity: 0;
             transform: translateY(40px);
             transition: opacity 0.8s ease, transform 0.8s cubic-bezier(0.45, 0, 0.3, 1);
         }
         .section.revealed, .card.revealed { opacity: 1; transform: translateY(0); }
+        /* 兜底：如果 1.8 秒后还没有 revealed，强制显示 */
+        .force-reveal .section, .force-reveal .card {
+            opacity: 1 !important;
+            transform: translateY(0) !important;
+        }
 
         /* ========== 卡片 ========== */
         .card {
@@ -244,6 +217,13 @@ int main() {
         @keyframes charReveal {
             to { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); }
         }
+        /* 兜底 */
+        .force-reveal .name-char {
+            opacity: 1 !important;
+            transform: none !important;
+            filter: none !important;
+            animation: none !important;
+        }
 
         /* 头像 */
         .avatar { margin-bottom: 20px; animation: float 3s ease-in-out infinite; }
@@ -252,6 +232,7 @@ int main() {
             object-fit: cover;
             border: 3px solid rgba(167, 139, 250, 0.5);
             box-shadow: 0 8px 25px rgba(167, 139, 250, 0.3);
+            cursor: pointer;
         }
         .avatar img.pop { animation: avatarPop 0.7s cubic-bezier(0.34, 1.56, 0.64, 1); }
         @keyframes avatarPop {
@@ -349,6 +330,7 @@ int main() {
             border: 1px solid rgba(167, 139, 250, 0.5);
             color: #c4b5fd;
             font-size: 20px;
+            cursor: pointer;
             backdrop-filter: blur(10px);
             display: none;
             align-items: center; justify-content: center;
@@ -413,7 +395,7 @@ int main() {
             font-size: 14px; font-weight: 500;
         }
 
-        /* ========== 时间线（功能 15） ========== */
+        /* ========== 时间线 ========== */
         .timeline { position: relative; max-width: 720px; margin: 0 auto; }
         .timeline::before {
             content: '';
@@ -430,7 +412,8 @@ int main() {
             transform: translateX(-40px);
             transition: opacity 0.7s ease, transform 0.7s cubic-bezier(0.45, 0, 0.3, 1);
         }
-        .timeline-item.revealed { opacity: 1; transform: translateX(0); }
+        .timeline-item.revealed,
+        .force-reveal .timeline-item { opacity: 1; transform: translateX(0); }
         .timeline-item::before {
             content: '';
             position: absolute;
@@ -456,7 +439,7 @@ int main() {
             line-height: 1.7;
         }
 
-        /* ========== 技能条（功能 16） ========== */
+        /* ========== 技能条 ========== */
         .skill-bars {
             max-width: 640px; margin: 0 auto;
             display: flex; flex-direction: column; gap: 22px;
@@ -484,6 +467,7 @@ int main() {
             box-shadow: 0 0 12px rgba(167, 139, 250, 0.6);
             transition: width 1.2s cubic-bezier(0.45, 0, 0.3, 1);
         }
+        .force-reveal .bar-fill { width: attr(data-width); }
 
         /* ========== 正在学习 ========== */
         .learning-grid {
@@ -510,7 +494,7 @@ int main() {
             line-height: 1.7;
         }
 
-        /* ========== 音游（功能 13） ========== */
+        /* ========== 音游 ========== */
         .rhythm-container {
             position: relative;
             max-width: 560px; margin: 0 auto;
@@ -649,17 +633,10 @@ int main() {
             .clock { font-size: 18px; letter-spacing: 4px; }
             .combo-count { font-size: 48px; }
             .rhythm-container { height: 420px; }
-            .custom-cursor, .custom-cursor-dot { display: none; }
-            html, body { cursor: auto; }
-            a, button { cursor: pointer; }
         }
     </style>
 </head>
 <body>
-
-    <!-- 自定义鼠标 -->
-    <div class="custom-cursor" id="customCursor"></div>
-    <div class="custom-cursor-dot" id="customCursorDot"></div>
 
     <!-- 粒子背景 -->
     <canvas class="particle-canvas" id="particleCanvas"></canvas>
@@ -876,54 +853,25 @@ int main() {
         setInterval(updateStatus, 60000);
         updateStatus();
 
-        /* ============ 自定义鼠标（功能 8） ============ */
-        (function() {
-            var cursor = document.getElementById('customCursor');
-            var dot = document.getElementById('customCursorDot');
-            var mx = 0, my = 0, cx = 0, cy = 0, dx = 0, dy = 0;
-            var lastMouseX = window.innerWidth / 2;
-            var lastMouseY = window.innerHeight / 2;
+        /* ============ 鼠标位置记录（供键盘光波用） ============ */
+        var mouseX = window.innerWidth / 2;
+        var mouseY = window.innerHeight / 2;
+        document.addEventListener('mousemove', function(e) {
+            mouseX = e.clientX;
+            mouseY = e.clientY;
+        });
 
-            document.addEventListener('mousemove', function(e) {
-                mx = e.clientX; my = e.clientY;
-                lastMouseX = mx; lastMouseY = my;
-                cursor.classList.add('active');
-                dot.classList.add('active');
-            });
-            document.addEventListener('mouseleave', function() {
-                cursor.classList.remove('active');
-                dot.classList.remove('active');
-            });
-
-            function animate() {
-                cx += (mx - cx) * 0.15;
-                cy += (my - cy) * 0.15;
-                dx += (mx - dx) * 0.5;
-                dy += (my - dy) * 0.5;
-                cursor.style.left = cx + 'px';
-                cursor.style.top = cy + 'px';
-                dot.style.left = dx + 'px';
-                dot.style.top = dy + 'px';
-                requestAnimationFrame(animate);
-            }
-            animate();
-
-            var hoverables = document.querySelectorAll('a, button, .skill-tag, .project-card');
-            hoverables.forEach(function(el) {
-                el.addEventListener('mouseenter', function() { cursor.classList.add('hover'); });
-                el.addEventListener('mouseleave', function() { cursor.classList.remove('hover'); });
-            });
-
-            // 键盘光波（功能 10）
-            document.addEventListener('keydown', function() {
-                var ripple = document.createElement('div');
-                ripple.className = 'key-ripple';
-                ripple.style.left = lastMouseX + 'px';
-                ripple.style.top = lastMouseY + 'px';
-                document.body.appendChild(ripple);
-                setTimeout(function() { ripple.remove(); }, 900);
-            });
-        })();
+        /* ============ 键盘光波（功能 10） ============ */
+        document.addEventListener('keydown', function(e) {
+            // 输入框里打字时不触发
+            if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+            var ripple = document.createElement('div');
+            ripple.className = 'key-ripple';
+            ripple.style.left = mouseX + 'px';
+            ripple.style.top = mouseY + 'px';
+            document.body.appendChild(ripple);
+            setTimeout(function() { ripple.remove(); }, 900);
+        });
 
         /* ============ 鼠标视差（功能 17） ============ */
         (function() {
@@ -956,14 +904,14 @@ int main() {
             resize();
             window.addEventListener('resize', resize);
 
-            for (var i = 0; i < 50; i++) {
+            for (var i = 0; i < 45; i++) {
                 particles.push({
                     x: Math.random() * 2000,
                     y: Math.random() * 1500,
-                    r: Math.random() * 2 + 0.6,
-                    vx: (Math.random() - 0.5) * 0.35,
-                    vy: (Math.random() - 0.5) * 0.35,
-                    a: Math.random() * 0.5 + 0.3
+                    r: Math.random() * 1.8 + 0.6,
+                    vx: (Math.random() - 0.5) * 0.3,
+                    vy: (Math.random() - 0.5) * 0.3,
+                    a: Math.random() * 0.45 + 0.25
                 });
             }
 
@@ -990,32 +938,43 @@ int main() {
         /* ============ 滚动入场（功能 2） ============ */
         (function() {
             var targets = document.querySelectorAll('.card, .section');
-            var observer = new IntersectionObserver(function(entries) {
-                entries.forEach(function(entry) {
-                    if (entry.isIntersecting) {
-                        entry.target.classList.add('revealed');
-                        observer.unobserve(entry.target);
-                    }
-                });
-            }, { threshold: 0.1, rootMargin: '0px 0px -80px 0px' });
-            targets.forEach(function(el) { observer.observe(el); });
+            try {
+                var observer = new IntersectionObserver(function(entries) {
+                    entries.forEach(function(entry) {
+                        if (entry.isIntersecting) {
+                            entry.target.classList.add('revealed');
+                            observer.unobserve(entry.target);
+                        }
+                    });
+                }, { threshold: 0.05, rootMargin: '0px 0px -60px 0px' });
+                targets.forEach(function(el) { observer.observe(el); });
+            } catch (e) {
+                // 浏览器不支持 IntersectionObserver 时直接显示
+                document.body.classList.add('force-reveal');
+            }
         })();
 
         /* ============ 技能条滚入（功能 16） ============ */
         (function() {
             var bars = document.querySelectorAll('.bar-fill');
-            var observer = new IntersectionObserver(function(entries) {
-                entries.forEach(function(entry) {
-                    if (entry.isIntersecting) {
-                        var bar = entry.target;
-                        setTimeout(function() {
-                            bar.style.width = bar.getAttribute('data-width');
-                        }, 200);
-                        observer.unobserve(bar);
-                    }
+            try {
+                var observer = new IntersectionObserver(function(entries) {
+                    entries.forEach(function(entry) {
+                        if (entry.isIntersecting) {
+                            var bar = entry.target;
+                            setTimeout(function() {
+                                bar.style.width = bar.getAttribute('data-width');
+                            }, 200);
+                            observer.unobserve(bar);
+                        }
+                    });
+                }, { threshold: 0.3 });
+                bars.forEach(function(b) { observer.observe(b); });
+            } catch (e) {
+                bars.forEach(function(bar) {
+                    bar.style.width = bar.getAttribute('data-width');
                 });
-            }, { threshold: 0.3 });
-            bars.forEach(function(b) { observer.observe(b); });
+            }
         })();
 
         /* ============ 时间线动画（功能 15） ============ */
@@ -1023,15 +982,19 @@ int main() {
             var timeline = document.getElementById('timeline');
             if (!timeline) return;
             var items = timeline.querySelectorAll('.timeline-item');
-            var observer = new IntersectionObserver(function(entries) {
-                if (entries[0].isIntersecting) {
-                    items.forEach(function(item, i) {
-                        setTimeout(function() { item.classList.add('revealed'); }, i * 200);
-                    });
-                    observer.disconnect();
-                }
-            }, { threshold: 0.15 });
-            observer.observe(timeline);
+            try {
+                var observer = new IntersectionObserver(function(entries) {
+                    if (entries[0].isIntersecting) {
+                        items.forEach(function(item, i) {
+                            setTimeout(function() { item.classList.add('revealed'); }, i * 200);
+                        });
+                        observer.disconnect();
+                    }
+                }, { threshold: 0.1 });
+                observer.observe(timeline);
+            } catch (e) {
+                items.forEach(function(item) { item.classList.add('revealed'); });
+            }
         })();
 
         /* ============ 名字逐字浮现（功能 20） ============ */
@@ -1061,7 +1024,7 @@ int main() {
                 document.body.style.overflowY = 'auto';
                 document.getElementById('particleCanvas').classList.add('visible');
 
-                setTimeout(revealName, 600);
+                revealName();
 
                 var music = document.getElementById('bgMusic');
                 var btn = document.getElementById('musicBtn');
@@ -1080,6 +1043,11 @@ int main() {
                         loader.style.display = 'none';
                     }, 600);
                 }, 300);
+
+                // 兜底：1.8 秒后无论如何都显示所有内容
+                setTimeout(function() {
+                    document.body.classList.add('force-reveal');
+                }, 1800);
             }, 3500);
         }
 
