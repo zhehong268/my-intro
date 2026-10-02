@@ -29,7 +29,7 @@ int main() {
     Profile me;
     me.name = "遮鸿";
     me.title = "C++ 开发者";
-    me.bio = "在学 C++，目前还在打基础，写点小项目练手。平时喜欢看动漫：邦多利、jojo、鬼灭、轻音、咒术、孤独摇滚、闺泣等。";
+    me.bio = "在学 C++，目前还在打基础，写点小项目练手。平时喜欢看动漫：邦多利、jojo、鬼灭、轻音、咒术、孤独摇滚、闺泣、fate等。";
     me.avatar = "avatar.jpg";
     me.coverImage = "cover.jpg";
     me.bgImage = "bg.webp";
@@ -173,6 +173,17 @@ int main() {
         }
         .main-page.visible { opacity: 1; }
 
+        /* ========== 滚动入场（功能 2） ========== */
+        .section, .card {
+            opacity: 0;
+            transform: translateY(40px);
+            transition: opacity 0.8s ease, transform 0.8s cubic-bezier(0.45, 0, 0.3, 1);
+        }
+        .section.revealed, .card.revealed {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
         /* ========== 卡片 ========== */
         .card {
             background: rgba(255, 255, 255, 0.05);
@@ -186,11 +197,18 @@ int main() {
             margin: 0 auto 60px auto;
             box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5);
             text-align: center;
-            animation: fadeInUp 0.8s ease-out;
         }
-        @keyframes fadeInUp {
-            from { opacity: 0; transform: translateY(30px); }
-            to { opacity: 1; transform: translateY(0); }
+
+        /* ========== 打字机光标（功能 20） ========== */
+        #nameTyping::after {
+            content: '|';
+            color: #a78bfa;
+            animation: blink 0.8s ease-in-out infinite;
+            margin-left: 4px;
+        }
+        @keyframes blink {
+            0%, 45% { opacity: 1; }
+            50%, 100% { opacity: 0; }
         }
 
         /* 头像 */
@@ -229,6 +247,7 @@ int main() {
             -webkit-text-fill-color: transparent;
             background-clip: text;
             margin-bottom: 8px;
+            min-height: 40px;
         }
         .card .title {
             font-size: 16px;
@@ -440,7 +459,7 @@ int main() {
             line-height: 1.7;
         }
 
-        /* ========== 技能条 ========== */
+        /* ========== 技能条（功能 16 改造） ========== */
         .skill-bars {
             max-width: 640px;
             margin: 0 auto;
@@ -469,15 +488,11 @@ int main() {
         }
         .bar-fill {
             height: 100%;
+            width: 0;
             background: linear-gradient(90deg, #a78bfa, #60a5fa);
             border-radius: 4px;
             box-shadow: 0 0 12px rgba(167, 139, 250, 0.6);
-            animation: barGrow 1.2s cubic-bezier(0.45, 0, 0.3, 1) forwards;
-            transform-origin: left;
-        }
-        @keyframes barGrow {
-            from { transform: scaleX(0); }
-            to { transform: scaleX(1); }
+            transition: width 1.2s cubic-bezier(0.45, 0, 0.3, 1);
         }
 
         /* ========== 正在学习 ========== */
@@ -681,7 +696,7 @@ int main() {
         <!-- 个人卡片 -->
         <div class="card">
             <div class="avatar"><img src=")HTML" << me.avatar << R"HTML(" alt="头像" onclick="popAvatar(this);"></div>
-            <h1>)HTML" << me.name << R"HTML(</h1>
+            <h1 id="nameTyping" data-name=")HTML" << me.name << R"HTML("></h1>
             <div class="title">)HTML" << me.title << R"HTML(</div>
             <div class="clock" id="clock">00:00:00</div>
             <div class="status" id="status">加载中...</div>
@@ -750,23 +765,23 @@ int main() {
             <div class="skill-bars">
                 <div class="skill-bar">
                     <div class="skill-name">C++ <span>入门</span></div>
-                    <div class="bar"><div class="bar-fill" style="width: 40%;"></div></div>
+                    <div class="bar"><div class="bar-fill" data-width="40%"></div></div>
                 </div>
                 <div class="skill-bar">
                     <div class="skill-name">Python <span>了解</span></div>
-                    <div class="bar"><div class="bar-fill" style="width: 30%;"></div></div>
+                    <div class="bar"><div class="bar-fill" data-width="30%"></div></div>
                 </div>
                 <div class="skill-bar">
                     <div class="skill-name">Git / GitHub <span>会用</span></div>
-                    <div class="bar"><div class="bar-fill" style="width: 50%;"></div></div>
+                    <div class="bar"><div class="bar-fill" data-width="50%"></div></div>
                 </div>
                 <div class="skill-bar">
                     <div class="skill-name">HTML / CSS <span>够用</span></div>
-                    <div class="bar"><div class="bar-fill" style="width: 45%;"></div></div>
+                    <div class="bar"><div class="bar-fill" data-width="45%"></div></div>
                 </div>
                 <div class="skill-bar">
                     <div class="skill-name">Linux <span>在学</span></div>
-                    <div class="bar"><div class="bar-fill" style="width: 25%;"></div></div>
+                    <div class="bar"><div class="bar-fill" data-width="25%"></div></div>
                 </div>
             </div>
         </section>
@@ -868,6 +883,56 @@ int main() {
         setInterval(updateStatus, 60000);
         updateStatus();
 
+        /* ============ 滚动入场（功能 2） ============ */
+        (function() {
+            var targets = document.querySelectorAll('.card, .section');
+            var observer = new IntersectionObserver(function(entries) {
+                entries.forEach(function(entry) {
+                    if (entry.isIntersecting) {
+                        entry.target.classList.add('revealed');
+                        observer.unobserve(entry.target);
+                    }
+                });
+            }, { threshold: 0.1, rootMargin: '0px 0px -80px 0px' });
+            targets.forEach(function(el) { observer.observe(el); });
+        })();
+
+        /* ============ 技能条滚入（功能 16） ============ */
+        (function() {
+            var bars = document.querySelectorAll('.bar-fill');
+            var observer = new IntersectionObserver(function(entries) {
+                entries.forEach(function(entry) {
+                    if (entry.isIntersecting) {
+                        var bar = entry.target;
+                        setTimeout(function() {
+                            bar.style.width = bar.getAttribute('data-width');
+                        }, 200);
+                        observer.unobserve(bar);
+                    }
+                });
+            }, { threshold: 0.3 });
+            bars.forEach(function(b) { observer.observe(b); });
+        })();
+
+        /* ============ 打字机（功能 20） ============ */
+        function startTyping() {
+            var el = document.getElementById('nameTyping');
+            if (!el || el.dataset.done === '1') return;
+            el.dataset.done = '1';
+
+            var text = el.getAttribute('data-name');
+            var i = 0;
+            el.textContent = '';
+            function type() {
+                if (i < text.length) {
+                    el.textContent += text.charAt(i);
+                    i++;
+                    setTimeout(type, 180);
+                }
+            }
+            type();
+        }
+
         /* ============ 进入站点 ============ */
         function enterSite() {
             var loader = document.getElementById('loader');
@@ -877,6 +942,8 @@ int main() {
                 document.getElementById('landing').classList.add('hidden');
                 document.getElementById('mainPage').classList.add('visible');
                 document.body.style.overflowY = 'auto';
+
+                setTimeout(startTyping, 800);
 
                 var music = document.getElementById('bgMusic');
                 var btn = document.getElementById('musicBtn');
