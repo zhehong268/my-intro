@@ -1331,7 +1331,7 @@ int main() {
     };
 
     std::vector<TimelineItem> timeline = {
-        {"2025 - 至今", "BanGDream 高级工程师", "沈阳理工大学", "游玩并严肃观看邦邦所有内容，最喜欢高松灯。"},
+        {"2026 - 至今", "大学生", "沈阳理工大学", "开始读大学，课余继续打游戏、看番，顺便写点代码。"},
         {"2023 - 2026", "苦逼高中生", "成都某不知名高中", "天天打游戏，上课就睡觉。"},
         {"2014 - 2023", "小初生", "成都某不知名学校", "搞忘天天干啥了。"}
     };
@@ -1507,7 +1507,7 @@ int main() {
     </div>
   </div>
   <div class="quote reveal" style="--d:180ms">
-    <p>「还在入门，但每一行代码都是自己敲的。」</p>
+    <p>「手搓 + AI 辅助，还在入门，但知道自己在写什么。」</p>
     <span class="mono">—— 关于学习态度</span>
   </div>
 </section>
@@ -1528,7 +1528,7 @@ int main() {
   <div class="section-head reveal">
     <span class="eyebrow mono">02 / PROJECTS</span>
     <h2 class="section-title">项目</h2>
-    <p class="section-desc">数量不多，都是自己一行行写出来、能跑起来的东西。</p>
+    <p class="section-desc">数量不多，都是手搓 + AI 辅助做出来、能真跑起来的东西。</p>
   </div>
   <div class="grid grid-3">
 )HTML";
@@ -1628,7 +1628,8 @@ int main() {
   <div class="site-box reveal">
     <p>页面上看到的所有内容——包括导航、卡片、开关——都由 <code>main.cpp</code> 生成。运行生成器会输出 <code>index.html</code> 和 <code>favicon.svg</code>，仓库里没有手写的 HTML。</p>
     <p>每次推送到 <code>main</code> 分支，GitHub Actions 会用 <code>g++</code> 编译并运行生成器，再把产物部署到 GitHub Pages。</p>
-    <p>写这个站点的过程本身就是练习：结构怎么拆、动画为什么卡、部署怎么跑通，都是从零开始自己摸索的。</p>
+    <p>没有一行行纯手打那么硬核，也没法一键生成这么省事：主体自己手搓，卡住的地方让 AI 搭把手，写完再自己读一遍改到能看懂为止。</p>
+    <p>写这个站点的过程本身就是练习：结构怎么拆、动画为什么卡、部署怎么跑通，都是一处处自己试出来的。</p>
     <p>性能上的取舍写在这里，方便以后自己回看：动画只用 <code>transform</code> 与 <code>opacity</code>；不使用 <code>backdrop-filter</code> 与 <code>background-attachment: fixed</code>；倾斜、聚光、视差全部 rAF 节流且只在桌面端启用；音游跑在单个 <code>canvas</code> 上；背景音乐在首次交互后才加载。</p>
     <div class="site-tech">
       <ul class="tools">
