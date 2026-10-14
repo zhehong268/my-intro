@@ -2300,7 +2300,7 @@ int main() {
     <p>没有一行行纯手打那么硬核，也没法一键生成这么省事：主体自己手搓，卡住的地方让 AI 搭把手，写完再自己读一遍改到能看懂为止。</p>
     <p>写这个站点的过程本身就是练习：结构怎么拆、动画为什么卡、部署怎么跑通，都是一处处自己试出来的。</p>
     <p>性能上的取舍写在这里，方便以后自己回看：动画只用 <code>transform</code> 与 <code>opacity</code>；不使用 <code>backdrop-filter</code> 与 <code>background-attachment: fixed</code>；倾斜、聚光、视差全部 rAF 节流且只在桌面端启用；音游跑在单个 <code>canvas</code> 上；背景音乐在首次交互后才加载。</p>
-    <p>整站默认按「没有 JavaScript」渲染：脚本挂了，内容、技能条长度、数字条也都还是对的；入口门与入场动画是脚本跑起来之后才加上去的装饰。音游的谱面由 <code>rhythm_core.cpp</code> 编译成的 WebAssembly 在浏览器里算，生成器另用同一份算法算一份用来做加载时的自检。</p>
+    <p>整站默认按「没有 JavaScript」渲染：脚本挂了，内容、技能条长度、数字条也都还是对的；入口门与入场动画是脚本跑起来之后才加上去的装饰。音游的谱面由 <code>rhythm_core.cpp</code> 编译成的 WebAssembly 在浏览器里算，点开始挑战之后判定窗口与准确率也由它给；生成器另用同一份头文件算一份谱面加两组探针（±45 / ±90ms 的边界），加载时逐条比对，对不上页面会自己说「自检不一致」。</p>
     <div class="en-abstract" lang="en">
       <span class="en-tag mono">In short / English</span>
       <p>This page is a static site written by a single-file <strong>C++17 generator</strong>: no template engine, no framework, no hand-written HTML. Feature code, styles and scripts all live in <code>main.cpp</code>.</p>
