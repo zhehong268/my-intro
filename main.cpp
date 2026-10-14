@@ -1323,12 +1323,13 @@ const char* kJS = R"JS(
       var c = navigator.connection || {};
       if (c.saveData || /(^|-)(slow-)?2g$/.test(c.effectiveType || '')) { window.__musicWarm = 'skipped'; return; }
       if (!window.fetch) return;
-      fetch('music.mp3', { headers: { Range: 'bytes=0-163839' }, cache: 'force-cache' })
+      fetch('music.mp3', { headers: { Range: 'bytes=0-163839' }, cache: 'force-cache', priority: 'low' })
         .then(function (r) { window.__musicWarm = r.status; })
         .catch(function () { window.__musicWarm = 'error'; });
     } catch (e) {}
   }
-  setTimeout(warmMusic, 300);
+  /* 立刻发，但压到最低优先级：封面是 fetchpriority=high 的 LCP，预热不能抢它的带宽 */
+  warmMusic();
   ['pointermove', 'touchstart', 'keydown'].forEach(function (evName) {
     window.addEventListener(evName, warmMusic, { once: true, passive: true });
   });
