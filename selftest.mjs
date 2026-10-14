@@ -85,6 +85,17 @@ const evaluate = async (expr) => {
 };
 const shot = () => send("Page.captureScreenshot", { format: "jpeg", quality: 60 });
 const load = async (q = "") => { await send("Page.navigate", { url: URL_ + q }); await sleep(2500); };
+/* 点「进入主页」必须用真事件：`element.click()` 不是可信手势，Chrome 的自动播放策略会
+   把 play() 挡掉（实测 headless 下 currentTime 一直是 0、AudioContext 根本没建）。
+   真用户点的就是真事件，自检也该这么点。 */
+const enter = async () => {
+  const b = await evaluate(`(() => { const e = document.getElementById('enterBtn'); if (!e) return null; const r = e.getBoundingClientRect(); return { x: Math.round(r.x + r.width / 2), y: Math.round(r.y + r.height / 2) }; })()`);
+  if (!b) return false;
+  await send("Input.dispatchMouseEvent", { type: "mouseMoved", x: b.x, y: b.y, button: "none" });
+  await send("Input.dispatchMouseEvent", { type: "mousePressed", x: b.x, y: b.y, button: "left", clickCount: 1 });
+  await send("Input.dispatchMouseEvent", { type: "mouseReleased", x: b.x, y: b.y, button: "left", clickCount: 1 });
+  return true;
+};
 
 const results = [];
 const check = (name, ok, detail = "") => { results.push({ name, ok: !!ok, detail }); console.log(`${ok ? "PASS" : "FAIL"}  ${name}${detail ? "  — " + detail : ""}`); };
@@ -127,7 +138,7 @@ await send("Emulation.setScriptExecutionDisabled", { value: false });
 await load();
 const gate = await evaluate(`(() => { const l = document.getElementById('landing'); return { display: getComputedStyle(l).display, btn: !!document.getElementById('enterBtn') }; })()`);
 check("js: 入口门存在", gate.display !== "none" && gate.btn, JSON.stringify(gate));
-await evaluate(`document.getElementById('enterBtn').click(); true`);
+await enter();
 await sleep(2000);
 const st = await evaluate(`(() => {
   const cs = (el) => getComputedStyle(el);
@@ -329,7 +340,7 @@ check("audio: 降级后仍在放、页面只剩一个 audio", fb.paused === fals
 
 /* ?audio=plain：一点都不碰 Web Audio */
 await load("?audio=plain");
-await evaluate(`document.getElementById('enterBtn').click(); true`);
+await enter();
 await sleep(2200);
 const plain = await evaluate(`(() => { const m = document.querySelector('#bgMusic'); return {
   mode: window.__audioMode(), ctx: window.__audioCtxInfo(), paused: m.paused, t: m.currentTime
@@ -341,23 +352,34 @@ check("audio: ?audio=plain 不建图也照样放", plain.mode === "plain-forced"
    用户报过「进去之后要等几秒才播放」：原因是 preload="none" + 图建在 play() 前面。
    现在入口门摆着的时候就预热首包，并且先 play() 再建图。 */
 await load();
-await sleep(900);
-const warm = await evaluate(`({ warm: window.__musicWarm || null, preload: document.querySelector('#bgMusic').getAttribute('preload') })`);
+/* 等主脚本真的跑起来（它会挂出 __audioMode），否则按钮上还没有事件，点了不算数 */
+for (let i = 0; i < 40; i++) {
+  if (await evaluate(`typeof window.__audioMode === 'function' && !!document.getElementById('enterBtn')`)) break;
+  await sleep(250);
+}
+/* 预热是异步的：线上 160KB 有时要 1–3 秒才回来，轮询到状态出现为止 */
+let warm = { warm: null, preload: null };
+for (let i = 0; i < 40; i++) {
+  warm = await evaluate(`({ warm: window.__musicWarm || null, preload: document.querySelector('#bgMusic').getAttribute('preload') })`);
+  if (warm.warm) break;
+  await sleep(250);
+}
 check("audio: 入口门期间预热音频首包（省流量模式除外）", warm.warm === 206 || warm.warm === "skipped",
   `warm=${warm.warm} preload=${warm.preload}`);
-const soundMs = await evaluate(`new Promise((res) => {
+const soundPromise = evaluate(`window.__soundMs = new Promise((res) => {
   const m = document.querySelector('#bgMusic'); const t0 = performance.now();
   const iv = setInterval(function () {
     if (m.currentTime > 0.15) { clearInterval(iv); res(Math.round(performance.now() - t0)); }
   }, 40);
   setTimeout(function () { clearInterval(iv); res(-1); }, 6000);
-  document.getElementById('enterBtn').click();
-})`);
+})`).catch(() => {});
+await enter();
+const soundMs = await evaluate(`window.__soundMs`);
 check("audio: 点进入主页到出声 <= 1.2s", soundMs >= 0 && soundMs <= 1200, `${soundMs} ms`);
 
 /* 刷新后最好成绩仍在（localStorage 持久化） */
 await load();
-await evaluate(`document.getElementById('enterBtn').click(); true`);
+await enter();
 await sleep(2200);
 const persisted = await evaluate(`(() => ({
   best: document.getElementById('rBest').textContent,
@@ -384,7 +406,7 @@ const fnv = (str) => { let h = 2166136261; for (let i = 0; i < str.length; i++) 
 const KSEED = 0x5eed2026;   /* rhythm_core.hpp 里的 kSeed */
 
 await load("?enter=1");
-await evaluate(`document.getElementById('enterBtn').click(); true`);
+await enter();
 await sleep(2200);
 const seedDefault = await evaluate(`(() => { window.__rhythmApplySeed(''); return window.__rhythmSeedState(); })()`);
 check("seed: 默认 seed 的 16 音符与 Node 独立实现一致",
@@ -403,7 +425,7 @@ check("seed: 换 seed 确实换了谱面（对 Node 也是新的）",
 check("seed: 页面上写出核对结论", /一致/.test(seedCustom.info), seedCustom.info.slice(0, 72));
 
 await load("?enter=1&seed=zhehong");
-await evaluate(`document.getElementById('enterBtn').click(); true`);
+await enter();
 await sleep(2200);
 const seedQuery = await evaluate(`(() => { const s = window.__rhythmSeedState(); return Object.assign(s, { input: document.getElementById('seedInput').value }); })()`);
 check("seed: ?seed=zhehong 直接进来就生效（输入框也回填）",
