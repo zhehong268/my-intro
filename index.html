@@ -1211,8 +1211,9 @@ window.__RHYTHM_ACC_EXPECT = [0,1000,600,800,333,888];
      判到这个组合就把音频换成原生元素继续放（同一首、同一进度），
      代价是频谱关掉 —— 频谱是装饰，音乐不是。 */
   var audioFallback = false;
-  var audioWatch = { waiting: 0, stalled: 0, frozen: 0, last: 0, timer: 0 };
-  var playStartedAt = 0;
+  var audioWatch = { waiting: 0, stalled: 0, frozen: 0, last: 0, tickAt: 0, timer: 0 };
+  var playStartedAt = 0;      /* 真正出声之后（或每次起步宽限重算）的时刻 */
+  var playRequestedAt = 0;    /* 用户按下播放的时刻 */
 
   function bufferedAhead(el) {
     try {
@@ -1224,27 +1225,45 @@ window.__RHYTHM_ACC_EXPECT = [0,1000,600,800,333,888];
      免得在正常网络上误触发降级 */
   function settled() { return playStartedAt > 0 && performance.now() - playStartedAt > 3000; }
 
+  /* 还没出声之前的一切等待（元数据、首包）都算「起步」，不算抖动：计数清零重来。
+     线上实测过不这么做的后果 —— 一次正常的起步等待被当成抖动，频谱被白关掉。 */
+  function resetWatch(now) {
+    audioWatch.waiting = 0; audioWatch.stalled = 0; audioWatch.frozen = 0;
+    audioWatch.last = music.currentTime; audioWatch.tickAt = now; playStartedAt = now;
+  }
+
   function bindMusic(el) {
     el.addEventListener('play', function () { setMuted(false); startViz(); watchAudio(); });
     el.addEventListener('pause', function () { setMuted(true); stopViz(); });
     el.addEventListener('ended', function () { setMuted(true); stopViz(); });
     el.addEventListener('waiting', function () { if (settled()) audioWatch.waiting++; });
     el.addEventListener('stalled', function () { if (settled()) audioWatch.stalled++; });
+    /* 真的出声了（且还在开头）→ 起步结束，抖动计数从这一刻重新开始 */
+    el.addEventListener('playing', function () { if (el.currentTime < 1.0) resetWatch(performance.now()); });
   }
 
   function watchAudio() {
     if (audioWatch.timer) return;
-    playStartedAt = performance.now();
-    audioWatch.last = music.currentTime;
+    playRequestedAt = performance.now();
+    resetWatch(playRequestedAt);
     audioWatch.timer = setInterval(function () {
-      if (music.paused || document.hidden) return;
-      var buf = bufferedAhead(music);
-      if (!settled()) { audioWatch.last = music.currentTime; return; }
-      /* 1 秒里进度几乎没动 = 这一秒被吞了 */
-      if (music.currentTime - audioWatch.last < 0.2) audioWatch.frozen++;
-      audioWatch.last = music.currentTime;
+      var now = performance.now();
+      if (music.paused || document.hidden) { audioWatch.last = music.currentTime; audioWatch.tickAt = now; return; }
+      var starting = music.currentTime < 0.3 || music.readyState < 2;
+      var grace = now - playRequestedAt < 8000;      /* 起步最多宽限 8 秒 */
+      if (starting) {
+        if (grace) { resetWatch(now); return; }
+        audioWatch.frozen++;      /* 8 秒还没出声就别再等了：这条通路有问题 */
+      } else {
+        if (!settled()) { audioWatch.last = music.currentTime; audioWatch.tickAt = now; return; }
+        var dt = Math.max(0.2, (now - audioWatch.tickAt) / 1000);
+        var adv = music.currentTime - audioWatch.last;
+        /* 这一秒里进度落下真实时间一截（丢了 25% 以上）就是用户听到的「断断续续」 */
+        if (adv < dt * 0.75) audioWatch.frozen++;
+      }
+      audioWatch.last = music.currentTime; audioWatch.tickAt = now;
       var bad = audioWatch.waiting + audioWatch.stalled + audioWatch.frozen;
-      if (!AUDIO_PLAIN && !audioFallback && bad >= 2 && buf > 6) switchToPlain();
+      if (!AUDIO_PLAIN && !audioFallback && bad >= 2 && bufferedAhead(music) > 6) switchToPlain();
     }, 1000);
   }
 

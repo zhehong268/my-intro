@@ -291,17 +291,28 @@ check("play: 回到自动演奏", back.stats.mode === "auto" && back.tag === "AU
 const fps = await evaluate(`new Promise((res) => { let n = 0; const t0 = performance.now(); const tick = () => { n++; if (performance.now() - t0 < 1200) requestAnimationFrame(tick); else res(Math.round(n / ((performance.now() - t0) / 1000))); }; requestAnimationFrame(tick); })`);
 check("js: rAF 帧率 >= 40", fps >= 40, fps + " fps");
 
-/* ---------- 音频通路（音乐断断续续的修法）---------- */
-const audioNow = await evaluate(`(() => { const m = document.querySelector('#bgMusic'); return {
+/* ---------- 音频通路（音乐断断续续的修法）----------
+   本地静态服务器上要求严格：图必须是 44100、一次 waiting/stalled 都不许有。
+   线上受 CDN 影响会有正常的缓冲抖动，此时有意义的是「用户听感不断」：
+   要么零等待，要么已经自动降级到原生通路，且 currentTime 仍在跟着真实时间走。 */
+const LOCAL_RUN = !!DIR;
+const audioSnap = () => evaluate(`(() => { const m = document.querySelector('#bgMusic'); return {
   mode: window.__audioMode ? window.__audioMode() : 'n/a',
   ctx: window.__audioCtxInfo ? window.__audioCtxInfo() : 'n/a',
   watch: window.__audioWatch ? { w: window.__audioWatch.waiting, s: window.__audioWatch.stalled, f: window.__audioWatch.frozen } : null,
   t: m ? m.currentTime : -1, paused: m ? m.paused : null
 }; })()`);
-check("audio: 走 Web Audio 图且采样率=文件(44100)", audioNow.mode === "graph" && audioNow.ctx === "44100/running", `mode=${audioNow.mode} ctx=${audioNow.ctx}`);
-check("audio: 放了几十秒没有 waiting/stalled/frozen",
-  audioNow.watch && audioNow.watch.w === 0 && audioNow.watch.s === 0 && audioNow.watch.f === 0 && audioNow.paused === false,
-  `watch=${JSON.stringify(audioNow.watch)} t=${audioNow.t.toFixed(1)}s paused=${audioNow.paused}`);
+const audioNow = await audioSnap();
+check("audio: 走 Web Audio 图且采样率=文件(44100)",
+  (audioNow.mode === "graph" && audioNow.ctx === "44100/running") || (!LOCAL_RUN && audioNow.mode.indexOf("plain") === 0),
+  `mode=${audioNow.mode} ctx=${audioNow.ctx}${LOCAL_RUN ? " (本地：必须是图)" : " (线上：已降级也算过)"}`);
+await sleep(1600);
+const audioThen = await audioSnap();
+const advanced = audioThen.t - audioNow.t;
+const clean = audioThen.watch && audioThen.watch.w === 0 && audioThen.watch.s === 0 && audioThen.watch.f === 0;
+check("audio: 播放不中断（零等待，或抖动后已自动降级且进度仍在推进）",
+  audioThen.paused === false && advanced >= 1.3 && (LOCAL_RUN ? clean : (clean || audioThen.mode.indexOf("plain") === 0)),
+  `advanced=${advanced.toFixed(2)}s/1.6s watch=${JSON.stringify(audioThen.watch)} mode=${audioThen.mode}`);
 
 /* 播放中强制降级：进度要接上，不能回到开头 */
 const beforeT = await evaluate(`document.querySelector('#bgMusic').currentTime`);
