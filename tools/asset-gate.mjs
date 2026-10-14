@@ -28,11 +28,15 @@ for (const m of html.matchAll(/[\w./:-]+\.(?:png|jpe?g|webp|svg|gif|mp3|wav|ogg|
 }
 
 const external = (u) => /^(https?:|mailto:|tel:|data:|#|\/\/|\/)/.test(u);
+/* index.html?enter=1 / index.html#rhythm 这种带查询或锚点的引用，按文件本身算 */
+const clean = (u) => u.split("#")[0].split("?")[0];
 let bad = 0, checked = 0;
 for (const r of [...refs].sort()) {
   if (external(r)) continue;
+  const f = clean(r);
+  if (!f) continue;
   checked++;
-  if (!fs.existsSync(path.join(DIR, r))) { console.log("::error::引用了但发布目录里没有: " + r); bad = 1; }
+  if (!fs.existsSync(path.join(DIR, f))) { console.log("::error::引用了但发布目录里没有: " + r); bad = 1; }
 }
 console.log(bad ? "asset gate FAILED" : "asset gate OK - " + checked + " 个本地引用都在 " + DIR + "/ 里");
 process.exit(bad);

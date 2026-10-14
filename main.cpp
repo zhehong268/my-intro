@@ -712,6 +712,22 @@ html.js .bar-fill.grow{transform:scaleX(var(--w,1))}
   background:#fff;border:1px solid var(--line);border-left:3px solid var(--sky);
   font-family:var(--mono);font-size:13px;color:var(--ink-dim);line-height:1.7;
   box-shadow:0 20px 46px -38px rgba(60,70,140,.5)}
+/* ?audio=debug：左下角的播放状态读数（只在带参数时才创建这个元素） */
+.audio-debug{position:fixed;left:12px;bottom:12px;z-index:60;max-width:92vw;padding:8px 12px;
+  border-radius:10px;background:rgba(11,16,32,.86);border:1px solid rgba(109,77,250,.35);
+  color:#c7d2fe;font-size:11.5px;line-height:1.5;pointer-events:none}
+@media (max-width:620px){.audio-debug{font-size:10.5px;left:8px;bottom:8px}}
+/* 谱面 seed 输入：改一行数字就换一份谱面 */
+.seed-row{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:6px 0 0}
+.seed-label{font-size:11.5px;letter-spacing:1.6px;color:var(--ink-faint)}
+.seed-input{padding:9px 12px;border-radius:10px;border:1px solid var(--line);background:#fff;color:var(--ink);
+  font-family:var(--mono);font-size:13px;min-width:180px;max-width:100%}
+.seed-input:focus{outline:2px solid rgba(109,77,250,.35);outline-offset:1px}
+.seed-info{margin-top:10px;font-size:12.5px;color:var(--ink-dim);word-break:break-all}
+.site-box a{color:var(--violet);text-decoration:none;border-bottom:1px solid rgba(109,77,250,.32)}
+.site-box a:hover{border-bottom-color:var(--violet)}
+.footer a{color:var(--violet);text-decoration:none}
+.footer a:hover{text-decoration:underline}
 
 /* ---------- 关于本站 ---------- */
 .site-box{background:#fff;border:1px solid var(--line);border-left:3px solid var(--violet);
@@ -1077,7 +1093,16 @@ const char* kJS = R"JS(
   var musicBtn = $('#musicBtn');
   var viz = $('#viz');
   var vctx = viz ? viz.getContext('2d') : null;
-  var audioCtx = null, analyser = null, freq = null, vGrad = null, vizRaf = 0;
+  var audioCtx = null, analyser = null, freq = null, vGrad = null, vizRaf = 0, vizLast = 0;
+
+  /* 音频通路有两个模式，都能用 URL 切：
+       默认     —— 接 Web Audio 图（频谱要拿 AnalyserNode 的数据）；
+       ?audio=plain —— 完全不碰 Web Audio，<audio> 走浏览器原生媒体通道。
+     接进 Web Audio 之后音频不再由媒体通道直接播放，中间多一次重采样
+     （文件 44.1kHz、设备常是 48kHz），个别机器上就是爆音/断续的来源；
+     频谱只是导航栏上一个装饰，不值得拿主音频去换。 */
+  var AUDIO_PLAIN = /[?&]audio=plain\b/.test(location.search);
+  var AUDIO_DEBUG = /[?&]audio=debug\b/.test(location.search);
 
   function initVizCanvas() {
     if (!viz) return;
@@ -1091,12 +1116,20 @@ const char* kJS = R"JS(
     vGrad.addColorStop(1, '#0ea5e9');
   }
 
+  /* 频谱画布不可见时（手机上是 display:none）根本不需要 Web Audio 图 */
+  function vizUsable() {
+    if (!viz || !vctx) return false;
+    var rect = viz.getBoundingClientRect();
+    return rect.width >= 8 && rect.height >= 8;
+  }
+
   function setupAudioGraph() {
-    if (audioCtx) return;
+    if (audioCtx || AUDIO_PLAIN || !vizUsable()) return;
     var AC = window.AudioContext || window.webkitAudioContext;
     if (!AC) return;
     try {
-      audioCtx = new AC();
+      /* 用文件自己的采样率建上下文：44.1kHz 的音频进 48kHz 的图要多过一层重采样 */
+      try { audioCtx = new AC({ sampleRate: 44100 }); } catch (e0) { audioCtx = new AC(); }
       var src = audioCtx.createMediaElementSource(music);
       analyser = audioCtx.createAnalyser();
       analyser.fftSize = 64;
@@ -1109,9 +1142,12 @@ const char* kJS = R"JS(
     }
   }
 
-  function drawViz() {
-    vizRaf = 0;
-    if (!analyser || music.paused || document.hidden) return;
+  /* 频谱按 ~30fps 画：这条 rAF 只在音乐播放时活着，没必要跟着 60fps 抢主线程 */
+  function drawViz(t) {
+    if (!analyser || music.paused || document.hidden || !vizUsable()) { vizRaf = 0; return; }
+    vizRaf = requestAnimationFrame(drawViz);
+    if (t && vizLast && t - vizLast < 33) return;
+    vizLast = t || 0;
     analyser.getByteFrequencyData(freq);
     var w = viz.width, h = viz.height;
     vctx.clearRect(0, 0, w, h);
@@ -1122,7 +1158,6 @@ const char* kJS = R"JS(
       var bh = Math.max(2, v * h * 0.95);
       vctx.fillRect(i * bw + 1, h - bh, Math.max(1, bw - 3), bh);
     }
-    vizRaf = requestAnimationFrame(drawViz);
   }
 
   function startViz() {
@@ -1137,6 +1172,119 @@ const char* kJS = R"JS(
     if (viz) viz.classList.remove('on');
   }
 
+  /* ============ 播放健康度与自动降级 ============
+     症状是「音乐断断续续」。断流有两个来源：网络没供上数据，或者这条
+     Web Audio 通路在这台设备上抖。两者可分：缓冲明明还有好几秒、
+     却仍然 waiting / 时间不走，那就不是网络。
+     判到这个组合就把音频换成原生元素继续放（同一首、同一进度），
+     代价是频谱关掉 —— 频谱是装饰，音乐不是。 */
+  var audioFallback = false;
+  var audioWatch = { waiting: 0, stalled: 0, frozen: 0, last: 0, timer: 0 };
+  var playStartedAt = 0;
+
+  function bufferedAhead(el) {
+    try {
+      return el.buffered.length ? el.buffered.end(el.buffered.length - 1) - el.currentTime : 0;
+    } catch (e) { return 0; }
+  }
+
+  /* 刚开播的头几秒本来就要等数据，那不算抖动 —— 只统计稳定播放之后的事件，
+     免得在正常网络上误触发降级 */
+  function settled() { return playStartedAt > 0 && performance.now() - playStartedAt > 3000; }
+
+  function bindMusic(el) {
+    el.addEventListener('play', function () { setMuted(false); startViz(); watchAudio(); });
+    el.addEventListener('pause', function () { setMuted(true); stopViz(); });
+    el.addEventListener('ended', function () { setMuted(true); stopViz(); });
+    el.addEventListener('waiting', function () { if (settled()) audioWatch.waiting++; });
+    el.addEventListener('stalled', function () { if (settled()) audioWatch.stalled++; });
+  }
+
+  function watchAudio() {
+    if (audioWatch.timer) return;
+    playStartedAt = performance.now();
+    audioWatch.last = music.currentTime;
+    audioWatch.timer = setInterval(function () {
+      if (music.paused || document.hidden) return;
+      var buf = bufferedAhead(music);
+      if (!settled()) { audioWatch.last = music.currentTime; return; }
+      /* 1 秒里进度几乎没动 = 这一秒被吞了 */
+      if (music.currentTime - audioWatch.last < 0.2) audioWatch.frozen++;
+      audioWatch.last = music.currentTime;
+      var bad = audioWatch.waiting + audioWatch.stalled + audioWatch.frozen;
+      if (!AUDIO_PLAIN && !audioFallback && bad >= 2 && buf > 6) switchToPlain();
+    }, 1000);
+  }
+
+  function switchToPlain() {
+    if (audioFallback || AUDIO_PLAIN) return;
+    if (!music.parentNode) return;
+    audioFallback = true;
+    window.__audioFallback = 'plain';
+    var old = music, at = old.currentTime, vol = old.volume, wasPlaying = !old.paused;
+    var fresh = document.createElement('audio');
+    fresh.id = 'bgMusic';
+    old.id = '';
+    fresh.loop = true;
+    fresh.preload = 'auto';
+    fresh.setAttribute('aria-hidden', 'true');
+    fresh.volume = vol;
+    fresh.muted = old.muted;
+
+    /* 等新元素能放了再交接：先 seek 到同一进度、开始放，再把旧的停掉，
+       中间不留静音空档，也不会两个元素同时出声 */
+    var started = false;
+    function begin() {
+      if (started) return;
+      started = true;
+      window.__audioSeekTarget = at;
+      window.__audioSeekable = fresh.seekable && fresh.seekable.length > 0;
+      try { fresh.currentTime = at; } catch (e) {}
+      fresh.addEventListener('seeked', function () { window.__audioSeekLanded = fresh.currentTime; }, { once: true });
+      if (wasPlaying) {
+        var p = fresh.play();
+        if (p && p.catch) p.catch(function () { setMuted(true); });
+        playStartedAt = performance.now();   /* 新元素也给它几秒起步宽限 */
+      }
+      try { old.pause(); } catch (e) {}
+      if (old.parentNode) old.parentNode.removeChild(old);
+      if (audioCtx) { try { audioCtx.close(); } catch (e) {} audioCtx = null; }
+      analyser = null;                   /* 新元素不在图里，频谱没有数据源了 */
+      stopViz();
+      if (viz) viz.classList.remove('on');
+      if (dbgEl) dbgEl.textContent = 'audio 已降级为原生通路（检测到播放抖动，频谱关闭）';
+    }
+    fresh.addEventListener('loadedmetadata', begin, { once: true });
+    fresh.addEventListener('canplay', begin, { once: true });
+    fresh.addEventListener('error', function () { setMuted(true); });
+    fresh.src = old.getAttribute('src') || 'music.mp3';
+    old.parentNode.insertBefore(fresh, old.nextSibling);
+    music = fresh;                       /* 所有闭包读的都是这个变量 */
+    bindMusic(fresh);
+    if (dbgEl) dbgEl.textContent = 'audio 正在降级为原生通路…';
+    /* 万一 loadedmetadata/canplay 都没来（极少见），也别把音乐卡死 */
+    setTimeout(function () { if (!started && fresh.readyState >= 1) begin(); }, 1200);
+  }
+
+  /* ?audio=debug：把播放状态摊在左下角，出问题时能直接读数字 */
+  var dbgEl = null, dbgIv = 0;
+  function startAudioDebug() {
+    if (!AUDIO_DEBUG) return;
+    dbgEl = document.createElement('div');
+    dbgEl.className = 'audio-debug mono';
+    dbgEl.setAttribute('aria-hidden', 'true');
+    document.body.appendChild(dbgEl);
+    dbgIv = setInterval(function () {
+      dbgEl.textContent =
+        'audio ' + (AUDIO_PLAIN ? 'plain(强制)' : audioFallback ? 'plain(降级)' : 'graph') +
+        ' | ctx ' + (audioCtx ? audioCtx.sampleRate + '/' + audioCtx.state : 'none') +
+        ' | readyState ' + music.readyState +
+        ' | buffered +' + bufferedAhead(music).toFixed(1) + 's' +
+        ' | waiting/stalled/frozen ' + audioWatch.waiting + '/' + audioWatch.stalled + '/' + audioWatch.frozen +
+        ' | t ' + music.currentTime.toFixed(1) + 's';
+    }, 400);
+  }
+
   function setMuted(m) {
     musicBtn.classList.toggle('off', !!m);
     musicBtn.innerHTML = m ? window.__ICON_OFF : window.__ICON_ON;
@@ -1144,9 +1292,7 @@ const char* kJS = R"JS(
     musicBtn.setAttribute('aria-pressed', m ? 'false' : 'true');
   }
 
-  music.addEventListener('play', function () { setMuted(false); startViz(); });
-  music.addEventListener('pause', function () { setMuted(true); stopViz(); });
-  music.addEventListener('ended', function () { setMuted(true); stopViz(); });
+  bindMusic(music);
 
   musicBtn.addEventListener('click', function (e) {
     e.stopPropagation();
@@ -1284,12 +1430,13 @@ const char* kJS = R"JS(
     var b64 = window.__RHYTHM_WASM;
     if (!b64 || typeof WebAssembly === 'undefined' || !WebAssembly.instantiate) {
       window.__rhythmParity = 'no-wasm'; window.__rhythmLaneSource = 'generator'; window.__rhythmJudgeParity = 'no-wasm';
-      updateKernelBadge(); return;
+      updateKernelBadge(); applySeedFromQuery(); return;
     }
     WebAssembly.instantiate(base64ToBytes(b64), { env: kernelImports, wasi_snapshot_preview1: kernelImports })
       .then(function (res) {
         var ex = res.instance ? res.instance.exports : res.exports;
         if (!ex || typeof ex.chart_next !== 'function') throw new Error('chart_next missing');
+        kernelExports = ex;
         var seed = window.__RHYTHM_SEED, lanes = window.__RHYTHM_LANES;
         ex.chart_reset(seed, lanes);
         var ok = true;
@@ -1319,16 +1466,115 @@ const char* kJS = R"JS(
         if (ok) { kernelNext = function () { return ex.chart_next(); }; window.__rhythmParity = 'ok'; window.__rhythmLaneSource = 'wasm'; }
         else { window.__rhythmParity = 'mismatch'; window.__rhythmLaneSource = 'generator'; }
         updateKernelBadge();
+        applySeedFromQuery();
         refreshStats();
       })
-      .catch(function () { window.__rhythmParity = 'error'; window.__rhythmLaneSource = 'generator'; window.__rhythmJudgeParity = 'error'; updateKernelBadge(); });
+      .catch(function () { window.__rhythmParity = 'error'; window.__rhythmLaneSource = 'generator'; window.__rhythmJudgeParity = 'error'; updateKernelBadge(); applySeedFromQuery(); });
   }
 
   function chartLane() {
+    if (seededChart) return seededChart[chartPos++ % seededChart.length];
     if (kernelNext) return kernelNext();
     if (!CHART.length) return 0;
     return CHART.charCodeAt(chartPos++ % CHART.length) - 48;
   }
+
+  /* ============ 自定义谱面：?seed=xxx 或页面上的输入框 ============
+     同一份 C++ 算法有两个独立实现：浏览器里跑的 wasm 内核，和这里的 JS 镜像。
+     换 seed 之后由内核算 256 个音符，镜像再算一遍逐位核对，
+     结论写进 window.__rhythmSeedParity（ok / mismatch / mirror-only），页面照实标出来源。 */
+  var SEED_DEFAULT = Number(window.__RHYTHM_SEED) || 0;
+  var LANES_N = Number(window.__RHYTHM_LANES) || 7;
+  var SEED_CHART_LEN = 256;
+  var seedActive = SEED_DEFAULT, seededChart = null, kernelExports = null;
+
+  function seedToUint(v) {
+    if (v === null || v === undefined || String(v).trim() === '') return SEED_DEFAULT;
+    var s = String(v).trim();
+    if (/^\d+$/.test(s)) return (parseInt(s, 10) >>> 0) || SEED_DEFAULT;
+    if (/^0x[0-9a-fA-F]+$/.test(s)) return (parseInt(s.slice(2), 16) >>> 0) || SEED_DEFAULT;
+    var h = 2166136261;
+    for (var i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619) >>> 0; }
+    return h >>> 0;
+  }
+
+  /* 与 rhythm_core.hpp 的 Rng::next / nextLane 同构：被比对的第二个实现 */
+  function mirrorChart(seed, lanes, n) {
+    var s = (seed >>> 0) || 0x9e3779b9, last = -1, out = [];
+    function nxt() {
+      s = (s ^ (s << 13)) >>> 0; s = (s ^ (s >>> 17)) >>> 0; s = (s ^ (s << 5)) >>> 0;
+      return s;
+    }
+    for (var i = 0; i < n; i++) {
+      var l = nxt() % lanes;
+      if (l === last) l = (l + 1 + (nxt() % (lanes - 1))) % lanes;
+      last = l; out.push(l);
+    }
+    return out;
+  }
+
+  function applySeed(value, silent) {
+    var seed = seedToUint(value);
+    seedActive = seed;
+    var parity = 'mirror-only', src = 'js-mirror', first = -1, i;
+    if (kernelExports && typeof kernelExports.chart_reset === 'function') {
+      kernelExports.chart_reset(seed, LANES_N);
+      var k = [];
+      for (i = 0; i < SEED_CHART_LEN; i++) k.push(kernelExports.chart_next());
+      var m = mirrorChart(seed, LANES_N, SEED_CHART_LEN);
+      for (i = 0; i < SEED_CHART_LEN; i++) { if (k[i] !== m[i]) { first = i; break; } }
+      parity = first < 0 ? 'ok' : 'mismatch';
+      src = first < 0 ? 'wasm' : 'wasm(mismatch)';
+      seededChart = k;
+      kernelExports.chart_reset(seed, LANES_N);
+    } else {
+      seededChart = mirrorChart(seed, LANES_N, SEED_CHART_LEN);
+    }
+    window.__rhythmSeedParity = parity;
+    window.__rhythmSeedSource = src;
+    window.__rhythmSeedFirstDiff = first;
+    window.__rhythmActiveSeed = seed;
+    window.__rhythmLaneSource = src === 'wasm' ? 'wasm' : (kernelExports ? 'generator' : 'generator');
+    chartPos = 0;
+    var hex = '0x' + seed.toString(16);
+    var note = seed === SEED_DEFAULT ? '（生成器内联的那份）' : '';
+    var el = $('#seedInfo');
+    if (el) {
+      if (parity === 'ok') {
+        el.textContent = '当前 seed ' + hex + note + ' · 内核算了 ' + SEED_CHART_LEN +
+          ' 个音符，JS 镜像逐位复核：一致（前 16 个 ' + seededChart.slice(0, 16).join('') + '）';
+      } else if (parity === 'mismatch') {
+        el.textContent = '当前 seed ' + hex + ' · 内核与 JS 镜像在第 ' + (first + 1) +
+          ' 个音符分叉（轨 ' + seededChart[first] + ' vs ' + mirrorChart(seed, LANES_N, first + 1)[first] + '），已按内核为准';
+      } else {
+        el.textContent = '当前 seed ' + hex + ' · 这台浏览器没有 wasm 内核，用 JS 镜像算（与 C++ 同一份算法）';
+      }
+    }
+    if (!silent) {
+      try { history.replaceState(null, '', '?seed=' + encodeURIComponent(String(value === '' || value === undefined ? 'default' : value))); } catch (e) {}
+    }
+    if (mode === 'play' && roundActive) { startRound(); }
+    return parity;
+  }
+
+  function applySeedFromQuery() {
+    var q = /[?&]seed=([^&#]*)/.exec(location.search);
+    if (!q || !q[1] || q[1] === 'default') return false;
+    var v = decodeURIComponent(q[1]);
+    var input = $('#seedInput');
+    if (input) input.value = v;
+    applySeed(v, true);
+    return true;
+  }
+
+  window.__rhythmApplySeed = applySeed;
+  window.__rhythmSeedState = function () {
+    return {
+      seed: seedActive, parity: window.__rhythmSeedParity, source: window.__rhythmSeedSource,
+      firstDiff: window.__rhythmSeedFirstDiff, len: seededChart ? seededChart.length : 0,
+      head: seededChart ? seededChart.slice(0, 16).join('') : ''
+    };
+  };
 
   /* ============ 可玩模式：判定与算分也交给 C++ / WASM 内核 ============
      内核导出（rhythm_core.hpp 里唯一的实现）：
@@ -1685,6 +1931,14 @@ const char* kJS = R"JS(
     if (playBtn) playBtn.addEventListener('click', function () { startRound(); });
     if (stopBtn) stopBtn.addEventListener('click', function () { backToAuto(); });
 
+    /* 谱面 seed：输入框 / 回车 / 回默认（也可以直接 ?seed=xxx 进来） */
+    var seedBtn = $('#seedApply'), seedReset = $('#seedReset'), seedInput = $('#seedInput');
+    if (seedBtn) seedBtn.addEventListener('click', function () { applySeed(seedInput ? seedInput.value : ''); });
+    if (seedInput) seedInput.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter') { e.preventDefault(); applySeed(seedInput.value); }
+    });
+    if (seedReset) seedReset.addEventListener('click', function () { if (seedInput) seedInput.value = ''; applySeed(''); });
+
     /* 键盘：D F G H J K L 对应七条轨道，数字 1–7 也行（只在挑战进行中生效） */
     document.addEventListener('keydown', function (e) {
       if (e.repeat || e.metaKey || e.ctrlKey || e.altKey) return;
@@ -1743,6 +1997,14 @@ const char* kJS = R"JS(
 
   window.addEventListener('load', function () { initVizCanvas(); });
   setMuted(true);
+
+  /* 音频通路自检用：强制走一次降级，验证换元素后音乐还在放 */
+  window.__audioForceFallback = switchToPlain;
+  window.__audioWatch = audioWatch;
+  window.__audioIsPlain = function () { return audioFallback || AUDIO_PLAIN; };
+  window.__audioMode = function () { return AUDIO_PLAIN ? 'plain-forced' : audioFallback ? 'plain-fallback' : 'graph'; };
+  window.__audioCtxInfo = function () { return audioCtx ? audioCtx.sampleRate + '/' + audioCtx.state : 'none'; };
+  startAudioDebug();
 
   /* 预览/截图用：index.html?enter=1 跳过封面直接进入 */
   if (/[?&]enter=1/.test(location.search)) setTimeout(enterSite, 120);
@@ -1920,7 +2182,539 @@ std::string buildSitemap(const Profile& me) {
            "<urlset xmlns=\"http://www.sitemaps.org/schemas/sitemap/0.9\">\n"
            "  <url><loc>" + me.site + "</loc><changefreq>monthly</changefreq>"
            "<priority>1.0</priority></url>\n"
+           "  <url><loc>" + me.site + "kernel.html</loc><changefreq>monthly</changefreq>"
+           "<priority>0.6</priority></url>\n"
+           "  <url><loc>" + me.site + "nojs.html</loc><changefreq>monthly</changefreq>"
+           "<priority>0.6</priority></url>\n"
            "</urlset>\n";
+}
+
+/* ==================================================================
+ *  工具页：kernel.html（内核控制台）与 nojs.html（无 JS 对照）
+ *  两个页面都由生成器写出，与主页共用同一套 CSS 与内联常量。
+ *  表格里的期望值由生成器用 rhythm_core.hpp 算好写进 HTML；页面里的
+ *  JS 再用 WebAssembly 内核算一遍逐行比对，不一致就在表格里标红。
+ * ================================================================== */
+
+const char* kToolCSS = R"TSS(
+/* 工具页：沿用主页的令牌与组件，只补控制台/对照页需要的块 */
+.tool-main{max-width:1080px;margin:0 auto;padding:104px 24px 72px}
+.tool-h1{font-size:clamp(30px,4.6vw,46px);font-weight:800;letter-spacing:-.5px;margin:10px 0 14px}
+.tool-lead{color:var(--ink-dim);font-size:15.5px;line-height:1.95;max-width:76ch}
+.tool-lead code,.tbl code{font-family:var(--mono);font-size:.94em;padding:1px 5px;border-radius:5px;background:rgba(109,77,250,.09)}
+.tool-links{display:flex;flex-wrap:wrap;gap:8px 18px;margin-top:20px;font-size:14px}
+.tool-links a{color:var(--violet);text-decoration:none;border-bottom:1px solid rgba(109,77,250,.3)}
+.tool-links a:hover{border-bottom-color:var(--violet)}
+.panel{margin-top:26px;padding:24px 24px 20px;border-radius:18px;background:var(--panel);border:1px solid var(--line);
+  box-shadow:0 34px 74px -64px rgba(40,50,110,.8)}
+.panel h2{font-size:19px;margin-bottom:8px}
+.panel p{color:var(--ink-dim);font-size:14.5px;line-height:1.9}
+.ctl{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:18px 0 4px}
+.ctl label{font-family:var(--mono);font-size:11.5px;letter-spacing:1.6px;color:var(--ink-faint)}
+.ctl input,.ctl select{padding:10px 12px;border-radius:10px;border:1px solid var(--line);background:#fff;color:var(--ink);
+  font-family:var(--mono);font-size:13.5px;min-width:150px}
+.ctl input:focus,.ctl select:focus{outline:2px solid rgba(109,77,250,.35);outline-offset:1px}
+.rbtn{font-family:inherit}
+.mono-line{font-family:var(--mono);font-size:12.5px;color:var(--ink-dim);word-break:break-all;line-height:1.9;margin-top:10px}
+.mono-line b{color:var(--violet)}
+.ok-text{color:#0f766e}
+.bad-text{color:#b91c1c;font-weight:700}
+.grid-wrap{margin-top:16px;padding:12px;border-radius:14px;background:#0d1224;border:1px solid rgba(109,77,250,.3)}
+#grid{display:block;width:100%;height:250px}
+.tbl{width:100%;border-collapse:collapse;margin-top:14px;font-family:var(--mono);font-size:13px}
+.tbl th,.tbl td{padding:8px 10px;text-align:left;border-bottom:1px solid var(--line)}
+.tbl th{color:var(--ink-faint);font-weight:600;letter-spacing:1px;font-size:11px;text-transform:uppercase}
+.tbl td.ok{color:#0f766e}
+.tbl td.bad{color:#b91c1c;font-weight:700}
+.tbl tr[data-bad="1"]{background:rgba(185,28,28,.06)}
+.frames{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:22px}
+@media (max-width:900px){.frames{grid-template-columns:1fr}}
+.frame-card{display:flex;flex-direction:column;border-radius:16px;overflow:hidden;border:1px solid var(--line);background:#fff}
+.frame-card header{display:flex;align-items:center;gap:8px;padding:10px 14px;border-bottom:1px solid var(--line);
+  font-family:var(--mono);font-size:11.5px;letter-spacing:1px;color:var(--ink-dim)}
+.frame-card iframe{width:100%;height:520px;border:0;background:#fff}
+@media (max-width:620px){.frame-card iframe{height:420px}}
+.tool-foot{margin-top:36px;padding-top:18px;border-top:1px solid var(--line);color:var(--ink-faint);font-size:13px}
+)TSS";
+
+const char* kBrandMark = R"BM(<svg viewBox="0 0 64 64" aria-hidden="true">
+      <defs><linearGradient id="bg1" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0" stop-color="#6d4dfa"/><stop offset="1" stop-color="#0ea5e9"/></linearGradient></defs>
+      <rect width="64" height="64" rx="15" fill="#ffffff"/>
+      <rect x="2" y="2" width="60" height="60" rx="13.5" fill="none" stroke="url(#bg1)" stroke-width="2.6"/>
+      <path d="M25 22 L15.5 32 L25 42" fill="none" stroke="url(#bg1)" stroke-width="4.6" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M39 22 L48.5 32 L39 42" fill="none" stroke="url(#bg1)" stroke-width="4.6" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M35.5 17.5 L28.5 46.5" fill="none" stroke="#c026d3" stroke-width="4" stroke-linecap="round"/>
+    </svg>)BM";
+
+std::string toolHead(const Profile& me, const std::string& title, const std::string& desc, const std::string& slug) {
+    std::string s;
+    s += "<!DOCTYPE html>\n<html lang=\"zh-CN\">\n<head>\n<meta charset=\"UTF-8\">\n";
+    s += "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n";
+    /* 工具页没有入口门：内容本身不需要等脚本，只打一个 js 标记给「实时部分」用 */
+    s += "<script>document.documentElement.classList.add('js')</script>\n";
+    s += "<meta name=\"description\" content=\"" + desc + "\">\n";
+    s += "<meta name=\"theme-color\" content=\"#f6f7fc\">\n";
+    s += "<link rel=\"canonical\" href=\"" + me.site + slug + "\">\n";
+    s += "<meta property=\"og:type\" content=\"website\">\n";
+    s += "<meta property=\"og:title\" content=\"" + title + "\">\n";
+    s += "<meta property=\"og:description\" content=\"" + desc + "\">\n";
+    s += "<meta property=\"og:image\" content=\"" + me.site + "og-image.jpg\">\n";
+    s += "<meta name=\"twitter:card\" content=\"summary_large_image\">\n";
+    s += "<link rel=\"icon\" type=\"image/svg+xml\" href=\"favicon.svg\">\n";
+    s += "<title>" + title + "</title>\n<style>\n";
+    s += kCSS;
+    s += kToolCSS;
+    s += "</style>\n</head>\n<body>\n";
+    return s;
+}
+
+std::string toolNav(const Profile& me) {
+    std::string s;
+    s += "<nav class=\"nav visible\" id=\"nav\" aria-label=\"站内导航\">\n";
+    s += "  <a class=\"brand\" href=\"index.html\">\n    " + std::string(kBrandMark) + "\n";
+    s += "    <span>" + me.name + "<span class=\"brand-sub mono\"> / TOOLS</span></span>\n  </a>\n";
+    s += "</nav>\n";
+    return s;
+}
+
+/* 工具页共用的一组内联常量：与主页同一套（内核 base64 + seed + 轨道数 + 探针） */
+std::string toolConstants(const std::string& chart, const std::string& wasmB64, const std::string& judgeProbe,
+                          const std::string& judgeExpect, const std::string& accProbe, const std::string& accExpect) {
+    std::string s = "<script>\n";
+    s += "window.__RHYTHM_CHART = '" + chart + "';\n";
+    s += "window.__RHYTHM_SEED = '" + std::to_string(rhythm::kSeed) + "';\n";
+    s += "window.__RHYTHM_LANES = '" + std::to_string(rhythm::kLanes) + "';\n";
+    s += "window.__RHYTHM_WASM = '" + wasmB64 + "';\n";
+    s += "window.__RHYTHM_JUDGE_PROBE = [" + judgeProbe + "];\n";
+    s += "window.__RHYTHM_JUDGE_EXPECT = [" + judgeExpect + "];\n";
+    s += "window.__RHYTHM_ACC_PROBE = [" + accProbe + "];\n";
+    s += "window.__RHYTHM_ACC_EXPECT = [" + accExpect + "];\n";
+    s += "</script>\n";
+    return s;
+}
+
+/* 内核控制台页面的脚本：跑 wasm、画谱面、逐行核对两张表 */
+const char* kKernelJS = R"KJS(
+(function () {
+  'use strict';
+  var LANES = window.__RHYTHM_LANES, DEFAULT_SEED = window.__RHYTHM_SEED >>> 0;
+  var ex = null, kernelBytes = 0;
+  function $(s) { return document.querySelector(s); }
+  function b64ToBytes(b64) {
+    var bin = atob(b64), n = bin.length, out = new Uint8Array(n);
+    for (var i = 0; i < n; i++) out[i] = bin.charCodeAt(i);
+    return out;
+  }
+  function hexOf(u8) {
+    var s = '';
+    for (var i = 0; i < u8.length; i++) s += ('0' + u8[i].toString(16)).slice(-2);
+    return s;
+  }
+
+  /* 第二个实现：与 rhythm_core.hpp 的 Rng::next / nextLane 逐位同构。
+     它存在的意义是被比对 —— 内核和它不一致，页面就得说出来。 */
+  function mirrorChart(seed, lanes, n) {
+    var s = (seed >>> 0) || 0x9e3779b9, last = -1, out = [];
+    function nxt() {
+      s = (s ^ (s << 13)) >>> 0; s = (s ^ (s >>> 17)) >>> 0; s = (s ^ (s << 5)) >>> 0;
+      return s;
+    }
+    for (var i = 0; i < n; i++) {
+      var l = nxt() % lanes;
+      if (l === last) l = (l + 1 + (nxt() % (lanes - 1))) % lanes;
+      last = l; out.push(l);
+    }
+    return out;
+  }
+
+  /* seed 折成 32 位：纯数字/0x 直接用，其余按 FNV-1a 折（与主页同一套折法） */
+  function seedToUint(v) {
+    if (v === null || v === undefined || String(v).trim() === '') return DEFAULT_SEED;
+    var s = String(v).trim();
+    if (/^\d+$/.test(s)) return (parseInt(s, 10) >>> 0) || DEFAULT_SEED;
+    if (/^0x[0-9a-fA-F]+$/.test(s)) return (parseInt(s.slice(2), 16) >>> 0) || DEFAULT_SEED;
+    var h = 2166136261;
+    for (var i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619) >>> 0; }
+    return h >>> 0;
+  }
+
+  function kernelChart(seed, n) {
+    if (!ex || typeof ex.chart_reset !== 'function') return null;
+    ex.chart_reset(seed, LANES);
+    var out = [], i;
+    for (i = 0; i < n; i++) out.push(ex.chart_next());
+    return out;
+  }
+
+  function drawGrid(list, badIndex) {
+    var cvs = $('#grid');
+    if (!cvs) return;
+    var dpr = Math.min(window.devicePixelRatio || 1, 2);
+    var W = cvs.clientWidth || 900, H = 250;
+    cvs.width = Math.round(W * dpr);
+    cvs.height = Math.round(H * dpr);
+    var g = cvs.getContext('2d');
+    g.setTransform(dpr, 0, 0, dpr, 0, 0);
+    g.clearRect(0, 0, W, H);
+    var padL = 52, padR = 14, padT = 18, padB = 18;
+    var plotW = W - padL - padR, rowH = (H - padT - padB) / LANES;
+    var n = list.length || 1, cell = plotW / n;
+    g.font = '10px Consolas, monospace';
+    for (var lane = 0; lane < LANES; lane++) {
+      var cy = padT + lane * rowH + rowH / 2;
+      g.fillStyle = 'rgba(255,255,255,.05)';
+      g.fillRect(padL, Math.round(cy) - 0.5, plotW, 1);
+      g.fillStyle = 'rgba(199,210,254,.5)';
+      g.fillText('L' + (lane + 1), 14, cy + 3.5);
+    }
+    for (var i = 0; i < n; i++) {
+      var x = padL + i * cell + cell / 2;
+      var y = padT + list[i] * rowH + rowH / 2;
+      var w = Math.max(1.5, cell * 0.55), h = Math.max(3, rowH * 0.42);
+      if (i === badIndex) { g.fillStyle = '#f87171'; }
+      else {
+        var t = LANES > 1 ? list[i] / (LANES - 1) : 0;
+        g.fillStyle = 'rgb(' + Math.round(109 + t * (14 - 109)) + ',' + Math.round(77 + t * (165 - 77)) + ',' + Math.round(250 + t * (233 - 250)) + ')';
+      }
+      g.fillRect(x - w / 2, y - h / 2, w, h);
+    }
+  }
+
+  function render(seed, n) {
+    var k = kernelChart(seed, n), m = mirrorChart(seed, LANES, n);
+    var first = -1, i;
+    if (k) for (i = 0; i < n; i++) { if (k[i] !== m[i]) { first = i; break; } }
+    var list = k || m;
+    drawGrid(list, first);
+    var seqEl = $('#seq');
+    var text = list.join('');
+    seqEl.textContent = n <= 64 ? text : text.slice(0, 128) + ' …（共 ' + n + ' 个）';
+    var label = $('#seedLabel');
+    label.innerHTML = 'seed <b>0x' + seed.toString(16) + '</b> (' + seed + ') · 轨道 ' + LANES + ' 条 · 步数 ' + n +
+      ' · 内核版本 ' + (ex && ex.kernel_version ? ex.kernel_version() : '—');
+    var chk = $('#seedCheck');
+    if (!ex) {
+      chk.innerHTML = '<span class="bad-text">内核没有加载</span>：下面这张图是 JS 镜像按同一份算法算的，仅供参考。';
+    } else if (first < 0) {
+      chk.innerHTML = '<span class="ok-text">一致</span>：内核（WebAssembly）与 JS 镜像各自算了 ' + n +
+        ' 个音符，逐位相同（内核出 ' + k.slice(0, 16).join('') + '…）。';
+    } else {
+      chk.innerHTML = '<span class="bad-text">不一致</span>：第 ' + (first + 1) + ' 个音符内核给 ' + k[first] +
+        '、镜像给 ' + m[first] + '。';
+    }
+    window.__kernelConsole = window.__kernelConsole || {};
+    window.__kernelConsole.seed = seed;
+    window.__kernelConsole.steps = n;
+    window.__kernelConsole.seedParity = !ex ? 'no-wasm' : (first < 0 ? 'ok' : 'mismatch');
+    window.__kernelConsole.firstDiff = first;
+    window.__kernelConsole.chartHead = list.slice(0, 16).join('');
+  }
+
+  function verifyJudge() {
+    var rows = document.querySelectorAll('#judgeTable tbody tr');
+    var el = $('#judgeCheck'), ok = 0, bad = 0;
+    if (!ex || typeof ex.judge_ms !== 'function') {
+      el.innerHTML = '<span class="bad-text">内核没有 judge_ms</span>：只显示生成器写好的期望值。';
+      return;
+    }
+    for (var i = 0; i < rows.length; i++) {
+      var d = Number(rows[i].getAttribute('data-delta'));
+      var want = Number(rows[i].getAttribute('data-expect'));
+      var got = ex.judge_ms(d);
+      var cell = rows[i].querySelector('td[data-r]');
+      cell.textContent = got === 2 ? 'PERFECT' : got === 1 ? 'GOOD' : 'MISS';
+      var same = got === want;
+      cell.className = same ? 'ok' : 'bad';
+      rows[i].setAttribute('data-bad', same ? '0' : '1');
+      if (same) ok++; else bad++;
+    }
+    el.innerHTML = bad === 0
+      ? '<span class="ok-text">' + ok + ' / ' + rows.length + ' 行一致</span>：内核的 judge_ms 与生成器（编译期）算出的期望值逐行相同。'
+      : '<span class="bad-text">' + bad + ' 行不一致</span>：内核与生成器的判定窗口对不上，见标红行。';
+    window.__kernelConsole.judgeRows = rows.length;
+    window.__kernelConsole.judgeBad = bad;
+  }
+
+  function verifyAcc() {
+    var rows = document.querySelectorAll('#accTable tbody tr');
+    var el = $('#accCheck'), ok = 0, bad = 0;
+    if (!ex || typeof ex.accuracy_permille !== 'function') {
+      el.innerHTML = '<span class="bad-text">内核没有 accuracy_permille</span>：只显示生成器写好的期望值。';
+      return;
+    }
+    for (var i = 0; i < rows.length; i++) {
+      var p = Number(rows[i].getAttribute('data-p')), g2 = Number(rows[i].getAttribute('data-g')), n2 = Number(rows[i].getAttribute('data-n'));
+      var want = Number(rows[i].getAttribute('data-expect'));
+      var got = ex.accuracy_permille(p, g2, n2);
+      var cell = rows[i].querySelector('td[data-r]');
+      cell.textContent = (got / 10).toFixed(1) + '%';
+      var same = got === want;
+      cell.className = same ? 'ok' : 'bad';
+      rows[i].setAttribute('data-bad', same ? '0' : '1');
+      if (same) ok++; else bad++;
+    }
+    el.innerHTML = bad === 0
+      ? '<span class="ok-text">' + ok + ' / ' + rows.length + ' 行一致</span>：PERFECT 记 1.0、GOOD 记 0.6，先乘后除取整。'
+      : '<span class="bad-text">' + bad + ' 行不一致</span>：内核与生成器的算分公式对不上，见标红行。';
+    window.__kernelConsole.accRows = rows.length;
+    window.__kernelConsole.accBad = bad;
+  }
+
+  function verifyProbes() {
+    var jp = window.__RHYTHM_JUDGE_PROBE || [], je = window.__RHYTHM_JUDGE_EXPECT || [];
+    var ap = window.__RHYTHM_ACC_PROBE || [], ae = window.__RHYTHM_ACC_EXPECT || [];
+    var el = $('#probeCheck');
+    if (!ex) { el.innerHTML = '<span class="bad-text">内核没有加载</span>：探针没有比对。'; window.__kernelConsole.probeParity = 'no-wasm'; return; }
+    var ok = true, i;
+    for (i = 0; ok && i < jp.length; i++) if (ex.judge_ms(jp[i]) !== je[i]) ok = false;
+    for (i = 0; ok && i < ap.length; i++) if (ex.accuracy_permille(ap[i][0], ap[i][1], ap[i][2]) !== ae[i]) ok = false;
+    el.innerHTML = ok
+      ? '<span class="ok-text">探针全过</span>：' + jp.length + ' 个判定边界点 + ' + ap.length + ' 个算分用例，与生成器的期望值全部一致。'
+      : '<span class="bad-text">探针不一致</span>：内核与生成器在边界点或算分用例上分叉。';
+    window.__kernelConsole.probeParity = ok ? 'ok' : 'mismatch';
+  }
+
+  function initInfo(bytes) {
+    var el = $('#kinfo');
+    var lines = [];
+    lines.push('kernel_version = ' + (ex && ex.kernel_version ? ex.kernel_version() : '—'));
+    lines.push('内联 wasm = ' + kernelBytes + ' 字节（base64 ' + (window.__RHYTHM_WASM || '').length + ' 字符），import 0 个');
+    lines.push('导出 = ' + (ex ? Object.keys(ex).sort().join(', ') : '—'));
+    el.innerHTML = lines.join('<br>');
+    window.__kernelConsole.kernelVersion = ex && ex.kernel_version ? ex.kernel_version() : 0;
+    window.__kernelConsole.wasmBytes = kernelBytes;
+    if (window.crypto && crypto.subtle && crypto.subtle.digest) {
+      crypto.subtle.digest('SHA-256', bytes).then(function (d) {
+        var h = hexOf(new Uint8Array(d));
+        $('#khash').textContent = h;
+        window.__kernelConsole.sha256 = h;
+      }).catch(function () { $('#khash').textContent = '（这个环境算不了 SHA-256）'; });
+    } else {
+      $('#khash').textContent = '（这个环境算不了 SHA-256）';
+    }
+  }
+
+  function run() {
+    var v = $('#seedInput').value;
+    var n = Number($('#steps').value) || 64;
+    render(seedToUint(v), n);
+    var url = location.pathname + '?seed=' + encodeURIComponent(v === '' ? 'default' : v) + '&steps=' + n;
+    try { history.replaceState(null, '', url); } catch (e) {}
+  }
+
+  var bytes = b64ToBytes(window.__RHYTHM_WASM || '');
+  kernelBytes = bytes.length;
+  window.__kernelConsole = { loaded: false };
+  $('#seedApply').addEventListener('click', run);
+  $('#seedInput').addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); run(); } });
+
+  var q = /[?&]seed=([^&#]*)/.exec(location.search);
+  var qs = /[?&]steps=(\d+)/.exec(location.search);
+  if (q && q[1] && q[1] !== 'default') $('#seedInput').value = decodeURIComponent(q[1]);
+  if (qs && $('#steps').querySelector('option[value="' + qs[1] + '"]')) $('#steps').value = qs[1];
+
+  if (!bytes.length || typeof WebAssembly === 'undefined') {
+    $('#kinfo').innerHTML = '这个页面里没有内联 wasm（生成时没有 rhythm_core.wasm），下面只有 JS 镜像的结果。';
+    verifyJudge(); verifyAcc(); verifyProbes(); run();
+    return;
+  }
+  WebAssembly.instantiate(bytes, { env: {}, wasi_snapshot_preview1: {} }).then(function (res) {
+    ex = res.instance ? res.instance.exports : res.exports;
+    window.__kernelConsole.loaded = true;
+    initInfo(bytes);
+    verifyJudge(); verifyAcc(); verifyProbes();
+    run();
+  }).catch(function (err) {
+    $('#kinfo').innerHTML = '<span class="bad-text">wasm 实例化失败</span>：' + (err && err.message ? err.message : err);
+    verifyJudge(); verifyAcc(); verifyProbes(); run();
+  });
+})();
+)KJS";
+
+/* 无 JS 对照页的脚本：只做自检并把结论写在页面上（页面本身不依赖它） */
+const char* kNojsJS = R"NJS(
+(function () {
+  'use strict';
+  var probe = { frames: 0, sandboxHasAllowScripts: null, sandboxOpaque: null, jsFrameEntered: null, jsFrameText: 0 };
+  var frames = document.querySelectorAll('iframe');
+  probe.frames = frames.length;
+  if (frames.length >= 2) {
+    var attr = frames[0].getAttribute('sandbox') || '';
+    probe.sandboxHasAllowScripts = /allow-scripts/.test(attr);
+    try { probe.sandboxOpaque = frames[0].contentDocument === null; }
+    catch (e) { probe.sandboxOpaque = true; }
+  }
+  function paint() {
+    var el = document.getElementById('probe');
+    if (!el) return;
+    var d = frames[1] && frames[1].contentDocument;
+    var entered = !!(d && d.documentElement.classList.contains('js') && d.querySelector('#page.visible'));
+    probe.jsFrameEntered = entered;
+    probe.jsFrameText = d ? (d.body.innerText || '').length : 0;
+    el.innerHTML = '本页自检：两个 iframe（' + probe.frames + '）· 左边 sandbox 属性 = "' +
+      (frames[0] ? frames[0].getAttribute('sandbox') || '' : '') + '"（不含 allow-scripts = ' +
+      (probe.sandboxHasAllowScripts === false) + '）· 左边文档对象取不到（跨源隔离 = ' + probe.sandboxOpaque + '）· 右边已跑脚本并进入主页 = ' +
+      entered + '（可见文字 ' + probe.jsFrameText + ' 字）';
+    window.__nojsProbe = probe;
+  }
+  window.addEventListener('load', function () { setTimeout(paint, 2600); });
+  setTimeout(paint, 2600);
+})();
+)NJS";
+
+std::string buildKernelPage(const Profile& me, const std::string& chart, const std::string& wasmB64,
+                            const std::string& judgeProbe, const std::string& judgeExpect,
+                            const std::string& accProbe, const std::string& accExpect) {
+    std::string repo = me.github + "/my-intro";
+    std::string s = toolHead(me, me.name + " · 音游内核控制台",
+                             "把 rhythm_core.cpp 编译成的 WebAssembly 内核摊开看：任意 seed 的谱面、判定窗口、准确率算法，逐项与 JS 镜像和生成器写死的期望值比对。",
+                             "kernel.html");
+    s += toolNav(me);
+    s += R"KP(<main class="tool-main page visible" id="page">
+  <span class="eyebrow mono">TOOL 01 / KERNEL CONSOLE</span>
+  <h1 class="tool-h1">音游内核控制台</h1>
+  <p class="tool-lead">这一页把主页音游用的那个内核摊开：<b>谱面</b>（哪个音符落在哪条轨）、<b>判定窗口</b>、<b>准确率算法</b>。
+  三样东西都有两个独立实现 —— 浏览器里跑的 <code>rhythm_core.wasm</code>（emcc 编译的 C++），
+  以及生成器在构建时用同一份 <code>rhythm_core.hpp</code> 算好、写死在 HTML 里的期望值。
+  下面每张表都是「期望值 vs 内核实算」逐行比对，对不上会标红。</p>
+  <div class="tool-links">
+    <a href="index.html">← 回主页</a>
+    <a href="index.html#rhythm">主页里的音游</a>
+    <a href="nojs.html">无 JS 对照页</a>
+    <a href=")KP" + repo + R"KP(/blob/main/rhythm_core.cpp" target="_blank" rel="noopener">rhythm_core.cpp</a>
+    <a href=")KP" + repo + R"KP(/blob/main/rhythm_core.hpp" target="_blank" rel="noopener">rhythm_core.hpp</a>
+  </div>
+
+  <section class="panel">
+    <h2>谱面：内核现算 vs JS 镜像</h2>
+    <p>换个 seed 就是另一份谱面。同一个 seed 在任何机器上都该算出同一串轨道 ——
+    右边这串数字是内核（WebAssembly）给的，JS 镜像用同一套算法自己再算一遍逐位核对。</p>
+    <div class="ctl">
+      <label for="seedInput">SEED</label>
+      <input id="seedInput" type="text" autocomplete="off" spellcheck="false" value="" placeholder="数字、0x 十六进制或任意文字">
+      <label for="steps">步数</label>
+      <select id="steps"><option value="32">32</option><option value="64" selected>64</option><option value="128">128</option><option value="256">256</option></select>
+      <button class="rbtn primary" id="seedApply" type="button">生成</button>
+    </div>
+    <p class="mono-line" id="seedLabel">seed —</p>
+    <div class="grid-wrap"><canvas id="grid" width="900" height="250" role="img" aria-label="谱面网格：七条轨道上音符的落点"></canvas></div>
+    <p class="mono-line" id="seq">—</p>
+    <p class="mono-line" id="seedCheck">等待内核…</p>
+  </section>
+
+  <section class="panel">
+    <h2>判定窗口：期望值 vs 内核</h2>
+    <p>窗口写在 <code>rhythm_core.hpp</code>（<code>kPerfectMs = 45</code>、<code>kGoodMs = 90</code>），
+    生成器按它算出这一列期望值；页面加载后再问一次内核。边界点（±45 / ±90 与各自差 1ms）都在表里。</p>
+    <table class="tbl" id="judgeTable">
+      <thead><tr><th>Δ 时间差</th><th>期望（生成器）</th><th>内核实算</th></tr></thead>
+      <tbody>
+)KP";
+    static const int kDeltas[] = {-200, -91, -90, -89, -46, -45, -44, -30, -1, 0, 1, 30, 44, 45, 46, 89, 90, 91, 200};
+    for (int d : kDeltas) {
+        int want = rhythm::judge(d);
+        s += "<tr data-delta=\"" + std::to_string(d) + "\" data-expect=\"" + std::to_string(want) + "\">";
+        s += "<td>" + std::to_string(d) + " ms</td><td>" +
+             (want == 2 ? "PERFECT" : want == 1 ? "GOOD" : "MISS") + "</td><td data-r=\"1\">—</td></tr>\n";
+    }
+    s += R"KP(      </tbody>
+    </table>
+    <p class="mono-line" id="judgeCheck">等待内核…</p>
+  </section>
+
+  <section class="panel">
+    <h2>准确率：期望值 vs 内核</h2>
+    <p>公式在 <code>rhythm_core.hpp</code>：<code>(perfect × 1000 + good × 600) / total</code>（先乘后除、整数取整）。</p>
+    <table class="tbl" id="accTable">
+      <thead><tr><th>PERFECT</th><th>GOOD</th><th>总数</th><th>期望（生成器）</th><th>内核实算</th></tr></thead>
+      <tbody>
+)KP";
+    struct AccCase { int p, g, n; };
+    static const AccCase kCases[] = {{0, 0, 0}, {64, 0, 64}, {0, 64, 64}, {32, 32, 64}, {63, 1, 64},
+                                     {1, 0, 3}, {8, 0, 9}, {100, 0, 100}, {0, 100, 100}, {7, 3, 10}, {2, 2, 6}, {1, 1, 3}};
+    for (const AccCase& c : kCases) {
+        int want = rhythm::accuracyPermille(c.p, c.g, c.n);
+        s += "<tr data-p=\"" + std::to_string(c.p) + "\" data-g=\"" + std::to_string(c.g) +
+             "\" data-n=\"" + std::to_string(c.n) + "\" data-expect=\"" + std::to_string(want) + "\">";
+        s += "<td>" + std::to_string(c.p) + "</td><td>" + std::to_string(c.g) + "</td><td>" + std::to_string(c.n) +
+             "</td><td>" + std::to_string(want / 10) + "." + std::to_string(want % 10) + "%</td><td data-r=\"1\">—</td></tr>\n";
+    }
+    s += R"KP(      </tbody>
+    </table>
+    <p class="mono-line" id="accCheck">等待内核…</p>
+  </section>
+
+  <section class="panel">
+    <h2>内核本体与探针</h2>
+    <p>内核没有任何 import（<code>emcc --no-entry -sSTANDALONE_WASM=1</code> 的产物），
+    所以它算出来的东西不依赖页面里的任何 JS 状态 —— 这也是「换个实现也对得上」能成立的前提。</p>
+    <p class="mono-line" id="kinfo">等待内核…</p>
+    <p class="mono-line">内联内核的 SHA-256：<span id="khash">计算中…</span></p>
+    <p class="mono-line" id="probeCheck">等待内核…</p>
+    <div class="tool-foot">这一页同样由 <code>main.cpp</code> 生成：表里的期望值是编译期用 <code>rhythm_core.hpp</code> 算的，页面里的比对是运行期用 WebAssembly 内核做的。</div>
+  </section>
+</main>
+)KP";
+    s += toolConstants(chart, wasmB64, judgeProbe, judgeExpect, accProbe, accExpect);
+    s += "<script>\n";
+    s += kKernelJS;
+    s += "</script>\n</body>\n</html>\n";
+    return s;
+}
+
+std::string buildNojsPage(const Profile& me) {
+    std::string s = toolHead(me, me.name + " · 无 JS 对照",
+                             "同一份 index.html 并排跑两遍：左边 iframe 带 sandbox（等于禁用脚本），右边正常加载。整站的「没有 JavaScript 也能读完」就是这么验的。",
+                             "nojs.html");
+    s += toolNav(me);
+    s += R"NJ(<main class="tool-main page visible" id="page">
+  <span class="eyebrow mono">TOOL 02 / NO-JS COMPARISON</span>
+  <h1 class="tool-h1">无 JS 对照</h1>
+  <p class="tool-lead">左右两框装的是<b>同一份</b> <code>index.html</code>：左边那个 iframe 带 <code>sandbox</code> 属性、
+  没有 <code>allow-scripts</code>，等于浏览器层面禁用脚本；右边正常加载。
+  整站的默认样式就是终态 —— 数字直接是 5 / 3 / 9 / 8，技能条直接是最终长度，所以左边一样能读完。</p>
+  <div class="tool-links">
+    <a href="index.html">← 回主页</a>
+    <a href="kernel.html">内核控制台</a>
+    <a href="index.html" target="_blank" rel="noopener">单独打开主页（新标签）</a>
+  </div>
+  <div class="frames">
+    <div class="frame-card">
+      <header>LEFT · &lt;iframe sandbox&gt; —— 禁用脚本</header>
+      <iframe src="index.html" sandbox title="禁用脚本渲染的 index.html"></iframe>
+    </div>
+    <div class="frame-card">
+      <header>RIGHT · &lt;iframe&gt; —— 脚本正常执行</header>
+      <iframe src="index.html?enter=1" title="脚本正常执行的 index.html"></iframe>
+    </div>
+  </div>
+  <p class="mono-line" id="probe">自检中…（这一段是脚本写的；脚本没跑，这一行就一直是「自检中…」）</p>
+
+  <section class="panel">
+    <h2>两边差在哪</h2>
+    <table class="tbl">
+      <thead><tr><th>项目</th><th>左边（禁脚本）</th><th>右边（有脚本）</th></tr></thead>
+      <tbody>
+        <tr><td>入场门</td><td>直接是正文（<code>html:not(.js) .landing</code> 隐藏）</td><td>先封面，点「进入主页」</td></tr>
+        <tr><td>正文</td><td>全都在，可滚动读完</td><td>一样都在，多一层入场动画</td></tr>
+        <tr><td>统计数字</td><td>直接是终值 5 / 3 / 9 / 8</td><td>从 0 滚到终值</td></tr>
+        <tr><td>技能条</td><td>直接是最终长度</td><td>从 0 长出来</td></tr>
+        <tr><td>实时时钟</td><td>隐藏（没有时间就没有意义）</td><td>每秒走字</td></tr>
+        <tr><td>音游</td><td>看到说明与静态画布，不跑动画</td><td>跑起来，可挑战 64 个音符</td></tr>
+        <tr><td>背景音乐</td><td>不加载（<code>preload="none"</code>）</td><td>进入后可播放</td></tr>
+        <tr><td>滚动进度条 / 导航高亮</td><td>不显示</td><td>随滚动更新</td></tr>
+      </tbody>
+    </table>
+    <div class="tool-foot">做法：默认样式写成终态，脚本跑起来才在 <code>&lt;html&gt;</code> 上加 <code>js</code> 标记，
+    再由 <code>html.js …</code> 这些规则把「入场 / 从 0 开始 / 隐藏」的状态叠上去。脚本挂了，页面退回默认样式，内容不会少一行。</div>
+  </section>
+</main>
+)NJ";
+    s += "<script>\n";
+    s += kNojsJS;
+    s += "</script>\n</body>\n</html>\n";
+    return s;
 }
 
 int main() {
@@ -2255,6 +3049,14 @@ int main() {
     <p class="section-desc">轨道不是随机数表：<code>rhythm_core.cpp</code> 编译成 WebAssembly 在浏览器里跑，每个音符落在哪条轨由 C++ 决定；点开始挑战后，<b>判定窗口与准确率也由同一个 wasm 内核算</b>，生成器再用同一份头文件算一份探针逐条比对。</p>
     <p class="kernel-badge mono" id="kernelBadge">C++ / WASM 内核 · 检测中…</p>
   </div>
+  <div class="seed-row reveal">
+    <label class="seed-label mono" for="seedInput">谱面 SEED</label>
+    <input class="seed-input mono" id="seedInput" type="text" autocomplete="off" spellcheck="false"
+           placeholder="数字 / 0x… / 任意文字" aria-label="输入 seed，用 C++ 内核算一份自己的谱面">
+    <button class="rbtn ghost" id="seedApply" type="button">用这个 seed 生成</button>
+    <button class="rbtn ghost" id="seedReset" type="button">回默认谱面</button>
+  </div>
+  <p class="seed-info mono reveal" id="seedInfo">当前 seed 是生成器内联的那份 · 加载内核后会与 JS 镜像逐位核对</p>
   <div class="rhythm-wrap reveal">
     <div class="rhythm-bg" aria-hidden="true"></div>
     <canvas id="rhythmCanvas" role="img" aria-label="节奏小游戏：七条轨道上落下的音符，默认自动演奏，也可以自己按键挑战打分"></canvas>
@@ -2301,6 +3103,7 @@ int main() {
     <p>写这个站点的过程本身就是练习：结构怎么拆、动画为什么卡、部署怎么跑通，都是一处处自己试出来的。</p>
     <p>性能上的取舍写在这里，方便以后自己回看：动画只用 <code>transform</code> 与 <code>opacity</code>；不使用 <code>backdrop-filter</code> 与 <code>background-attachment: fixed</code>；倾斜、聚光、视差全部 rAF 节流且只在桌面端启用；音游跑在单个 <code>canvas</code> 上；背景音乐在首次交互后才加载。</p>
     <p>整站默认按「没有 JavaScript」渲染：脚本挂了，内容、技能条长度、数字条也都还是对的；入口门与入场动画是脚本跑起来之后才加上去的装饰。音游的谱面由 <code>rhythm_core.cpp</code> 编译成的 WebAssembly 在浏览器里算，点开始挑战之后判定窗口与准确率也由它给；生成器另用同一份头文件算一份谱面加两组探针（±45 / ±90ms 的边界），加载时逐条比对，对不上页面会自己说「自检不一致」。</p>
+    <p>音游的谱面可以换：在音游那一栏填一个 seed（数字、<code>0x…</code> 或任意文字都行），或者直接开 <code>?seed=你的名字</code>。换完之后是 C++ 内核算的 256 个音符，JS 镜像再算一遍逐位核对，结论写在页面上。另外两个工具页也是这份生成器写出来的：<a href="kernel.html">内核控制台</a>把内核摊开（任意 seed 的谱面网格、判定窗口表、准确率用例，全部「期望值 vs 内核实算」逐行比对），<a href="nojs.html">无 JS 对照</a>把同一份 <code>index.html</code> 用「带 sandbox（禁脚本）」和「正常」两个 iframe 并排跑。</p>
     <div class="en-abstract" lang="en">
       <span class="en-tag mono">In short / English</span>
       <p>This page is a static site written by a single-file <strong>C++17 generator</strong>: no template engine, no framework, no hand-written HTML. Feature code, styles and scripts all live in <code>main.cpp</code>.</p>
@@ -2345,7 +3148,7 @@ int main() {
   </div>
   <div class="footer">
     <span>__NAME__ · © 2026</span>
-    <span>Generated by C++ · GitHub Pages</span>
+    <span><a href="kernel.html">内核控制台</a> · <a href="nojs.html">无 JS 对照</a> · Generated by C++ · GitHub Pages</span>
   </div>
 </section>
 )HTML";
@@ -2416,10 +3219,20 @@ __JS__
     bool okRob  = writeFile("robots.txt", buildRobots(me));
     bool okMap  = writeFile("sitemap.xml", buildSitemap(me));
 
+    /* 工具页：内核控制台 + 无 JS 对照（同样由这份 main.cpp 生成） */
+    std::string kernelHtml = replaceAll(buildKernelPage(me, chart, wasmB64, judgeProbe, judgeExpect, accProbe, accExpect), "__BG__", me.bgImage);
+    std::string nojsHtml = replaceAll(buildNojsPage(me), "__BG__", me.bgImage);
+    bool okKernel = writeFile("kernel.html", kernelHtml);
+    bool okNojs   = writeFile("nojs.html", nojsHtml);
+
     std::cout << "生成成功：index.html (" << html.size() << " 字节) + favicon.svg"
               << (ok404 ? " + 404.html" : " (404.html 写入失败)")
               << (okRob ? " + robots.txt" : " (robots.txt 写入失败)")
               << (okMap ? " + sitemap.xml" : " (sitemap.xml 写入失败)")
+              << (okKernel ? std::string(" + kernel.html (") + std::to_string(kernelHtml.size()) + " 字节)"
+                           : std::string(" (kernel.html 写入失败)"))
+              << (okNojs ? std::string(" + nojs.html (") + std::to_string(nojsHtml.size()) + " 字节)"
+                         : std::string(" (nojs.html 写入失败)"))
               << std::endl;
     if (wasmB64.empty()) {
         std::cout << "提示：当前目录没有 rhythm_core.wasm，音游使用生成器算好的谱面。"

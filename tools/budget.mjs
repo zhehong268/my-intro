@@ -24,7 +24,11 @@ const NOT_FIRST_LOAD = {
 
 const html = fs.readFileSync(path.join(ROOT, "index.html"), "utf8");
 const refs = new Set();
-for (const m of html.matchAll(/(?:src|href)="([^"]+)"/g)) refs.add(m[1]);
+/* 只数真正会被下载的引用：src="..."、<link href="...">、CSS 里的 url(...)。
+   页面之间的 <a href="kernel.html"> 是点击才加载，不算首屏——这是这个门禁
+   最容易误判的地方（工具页一挂到页脚，首屏就虚增 90 KB）。 */
+for (const m of html.matchAll(/\bsrc="([^"]+)"/g)) refs.add(m[1]);
+for (const m of html.matchAll(/<link\b[^>]*\bhref="([^"]+)"/g)) refs.add(m[1]);
 for (const m of html.matchAll(/url\(\s*[\x22\x27]?([^)\x22\x27\s]+)/g)) refs.add(m[1]);
 const external = (u) => /^(https?:|mailto:|tel:|data:|#|\/\/|\/)/.test(u);
 
@@ -52,6 +56,17 @@ console.log("-".repeat(40));
 console.log("首屏合计        " + kb(firstLoad).padStart(12) + "  预算 " + kb(BUDGET.firstLoad));
 console.log("index.html gzip " + kb(htmlGz).padStart(12) + "  预算 " + kb(BUDGET.htmlGzip));
 console.log("music.mp3       " + kb(music).padStart(12) + "  预算 " + kb(BUDGET.music));
+
+/* 工具页各自独立预算：它们不是首屏的一部分，但也不该越做越重 */
+const TOOL_BUDGET = { raw: 160 * 1024, gzip: 45 * 1024 };
+for (const name of ["kernel.html", "nojs.html"]) {
+  const p = path.join(ROOT, name);
+  if (!fs.existsSync(p)) { console.log("::error::缺少工具页: " + name); bad = 1; continue; }
+  const raw = fs.statSync(p).size;
+  const gz = zlib.gzipSync(fs.readFileSync(p), { level: 9 }).length;
+  console.log(name.padEnd(16) + kb(raw).padStart(12) + "  工具页（gzip " + kb(gz) + "，预算 " + kb(TOOL_BUDGET.raw) + " / " + kb(TOOL_BUDGET.gzip) + "）");
+  if (raw > TOOL_BUDGET.raw || gz > TOOL_BUDGET.gzip) { console.log("::error::" + name + " 超预算"); bad = 1; }
+}
 
 if (firstLoad > BUDGET.firstLoad) { console.log("::error::首屏超预算"); bad = 1; }
 if (htmlGz > BUDGET.htmlGzip) { console.log("::error::HTML 压缩后超预算"); bad = 1; }

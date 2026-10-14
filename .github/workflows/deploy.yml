@@ -45,15 +45,19 @@ jobs:
         run: |
           mkdir -p _site
           cp index.html 404.html robots.txt sitemap.xml favicon.svg _site/
+          cp kernel.html nojs.html _site/
           cp cover.jpg avatar.jpg bg.webp music.mp3 og-image.jpg _site/
           ls -l _site
 
-      # 资产门：index.html 里引用到的每个本地文件都必须真的在 _site 里，
+      # 资产门：三个页面里引用到的每个本地文件都必须真的在 _site 里，
       # 否则宁可让部署失败，也不要发一个图裂的页面出去。
       # 规则放在 tools/asset-gate.mjs 里（src/href、url() 带不带引号、以及藏在
       # <meta content> 里的 og:image —— 靠媒体后缀兜住），本地也能跑同一条命令。
       - name: Gate - every referenced asset must exist
-        run: node tools/asset-gate.mjs --dir=_site
+        run: |
+          node tools/asset-gate.mjs --dir=_site --html=index.html
+          node tools/asset-gate.mjs --dir=_site --html=kernel.html
+          node tools/asset-gate.mjs --dir=_site --html=nojs.html
 
       # 内核契约门：导出齐不齐、版本号、谱面前 12 个轨道、判定窗口边界、
       # 准确率权重——页面里那份「自检 ok」的徽章就是拿这些当依据的。

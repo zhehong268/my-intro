@@ -23,12 +23,28 @@ const MIME = { ".html": "text/html; charset=utf-8", ".js": "text/javascript", ".
 let server = null;
 let URL_ = arg("url", "");
 if (DIR) {
+  /* 带 Range 支持：GitHub Pages 支持分段请求，本地服务器不支持的话
+     <audio> 的 seek 会被判为不可用，测出来的行为和线上不一致 */
   server = http.createServer((req, res) => {
     const p = decodeURIComponent(req.url.split("?")[0]);
     let f = path.join(DIR, p === "/" ? "index.html" : p);
     if (!fs.existsSync(f) || fs.statSync(f).isDirectory()) { res.writeHead(404, { "content-type": "text/plain" }); res.end("404"); return; }
-    res.writeHead(200, { "content-type": MIME[path.extname(f).toLowerCase()] || "application/octet-stream" });
-    res.end(fs.readFileSync(f));
+    const type = MIME[path.extname(f).toLowerCase()] || "application/octet-stream";
+    const size = fs.statSync(f).size;
+    const range = req.headers.range;
+    if (range) {
+      const m = /bytes=(\d*)-(\d*)/.exec(range);
+      let start = m && m[1] ? parseInt(m[1], 10) : 0;
+      let end = m && m[2] ? parseInt(m[2], 10) : size - 1;
+      if (!isFinite(start) || start < 0) start = 0;
+      if (!isFinite(end) || end >= size) end = size - 1;
+      if (start > end) { res.writeHead(416, { "content-range": "bytes */" + size }); res.end(); return; }
+      res.writeHead(206, { "content-type": type, "accept-ranges": "bytes", "content-range": `bytes ${start}-${end}/${size}`, "content-length": end - start + 1 });
+      fs.createReadStream(f, { start, end }).pipe(res);
+      return;
+    }
+    res.writeHead(200, { "content-type": type, "accept-ranges": "bytes", "content-length": size });
+    fs.createReadStream(f).pipe(res);
   });
   await new Promise((r) => server.listen(PORT_HTTP, "127.0.0.1", r));
   URL_ = `http://127.0.0.1:${PORT_HTTP}/`;
@@ -37,6 +53,7 @@ if (DIR) {
 const profile = path.join(process.env.TEMP || ".", "selftest-edge-" + PORT_CDP);
 const edge = spawn(EDGE, ["--headless=new", `--remote-debugging-port=${PORT_CDP}`, `--user-data-dir=${profile}`,
   "--no-first-run", "--no-default-browser-check", "--disable-gpu", "--hide-scrollbars", "--mute-audio",
+  "--autoplay-policy=no-user-gesture-required",
   "--window-size=1440,900", "about:blank"], { stdio: "ignore" });
 
 async function target() {
@@ -66,7 +83,7 @@ const evaluate = async (expr) => {
   return r.result.value;
 };
 const shot = () => send("Page.captureScreenshot", { format: "jpeg", quality: 60 });
-const load = async () => { await send("Page.navigate", { url: URL_ }); await sleep(2500); };
+const load = async (q = "") => { await send("Page.navigate", { url: URL_ + q }); await sleep(2500); };
 
 const results = [];
 const check = (name, ok, detail = "") => { results.push({ name, ok: !!ok, detail }); console.log(`${ok ? "PASS" : "FAIL"}  ${name}${detail ? "  — " + detail : ""}`); };
@@ -273,6 +290,41 @@ check("play: 回到自动演奏", back.stats.mode === "auto" && back.tag === "AU
 const fps = await evaluate(`new Promise((res) => { let n = 0; const t0 = performance.now(); const tick = () => { n++; if (performance.now() - t0 < 1200) requestAnimationFrame(tick); else res(Math.round(n / ((performance.now() - t0) / 1000))); }; requestAnimationFrame(tick); })`);
 check("js: rAF 帧率 >= 40", fps >= 40, fps + " fps");
 
+/* ---------- 音频通路（音乐断断续续的修法）---------- */
+const audioNow = await evaluate(`(() => { const m = document.querySelector('#bgMusic'); return {
+  mode: window.__audioMode ? window.__audioMode() : 'n/a',
+  ctx: window.__audioCtxInfo ? window.__audioCtxInfo() : 'n/a',
+  watch: window.__audioWatch ? { w: window.__audioWatch.waiting, s: window.__audioWatch.stalled, f: window.__audioWatch.frozen } : null,
+  t: m ? m.currentTime : -1, paused: m ? m.paused : null
+}; })()`);
+check("audio: 走 Web Audio 图且采样率=文件(44100)", audioNow.mode === "graph" && audioNow.ctx === "44100/running", `mode=${audioNow.mode} ctx=${audioNow.ctx}`);
+check("audio: 放了几十秒没有 waiting/stalled/frozen",
+  audioNow.watch && audioNow.watch.w === 0 && audioNow.watch.s === 0 && audioNow.watch.f === 0 && audioNow.paused === false,
+  `watch=${JSON.stringify(audioNow.watch)} t=${audioNow.t.toFixed(1)}s paused=${audioNow.paused}`);
+
+/* 播放中强制降级：进度要接上，不能回到开头 */
+const beforeT = await evaluate(`document.querySelector('#bgMusic').currentTime`);
+await evaluate(`window.__audioForceFallback(); true`);
+await sleep(2600);
+const fb = await evaluate(`(() => { const m = document.querySelector('#bgMusic'); return {
+  mode: window.__audioMode(), ctx: window.__audioCtxInfo(), t: m.currentTime, paused: m.paused,
+  n: document.querySelectorAll('audio').length, id: m.id,
+  landed: window.__audioSeekLanded || null, seekable: window.__audioSeekable
+}; })()`);
+check("audio: 抖动时降级到原生通路并退出图", fb.mode === "plain-fallback" && fb.ctx === "none", `mode=${fb.mode} ctx=${fb.ctx}`);
+check("audio: 降级把进度接上（seek 到位）", fb.seekable === true && fb.landed !== null && Math.abs(fb.landed - beforeT) < 1.5, `landed=${fb.landed} before=${beforeT.toFixed(2)}`);
+check("audio: 降级后仍在放、页面只剩一个 audio", fb.paused === false && fb.t >= beforeT - 0.4 && fb.n === 1 && fb.id === "bgMusic", `t ${beforeT.toFixed(2)} → ${fb.t.toFixed(2)} n=${fb.n}`);
+
+/* ?audio=plain：一点都不碰 Web Audio */
+await load("?audio=plain");
+await evaluate(`document.getElementById('enterBtn').click(); true`);
+await sleep(2200);
+const plain = await evaluate(`(() => { const m = document.querySelector('#bgMusic'); return {
+  mode: window.__audioMode(), ctx: window.__audioCtxInfo(), paused: m.paused, t: m.currentTime
+}; })()`);
+check("audio: ?audio=plain 不建图也照样放", plain.mode === "plain-forced" && plain.ctx === "none" && plain.paused === false && plain.t > 0.3,
+  `mode=${plain.mode} ctx=${plain.ctx} t=${plain.t.toFixed(2)}`);
+
 /* 刷新后最好成绩仍在（localStorage 持久化） */
 await load();
 await evaluate(`document.getElementById('enterBtn').click(); true`);
@@ -285,6 +337,101 @@ const persisted = await evaluate(`(() => ({
 check("play: 刷新后最好成绩仍在且默认自动演奏",
   persisted.stored && /%/.test(persisted.best) && persisted.mode === "auto",
   `best=${persisted.best} mode=${persisted.mode}`);
+
+/* ---------- 谱面 seed：第三份实现（Node 自己算一遍）---------- */
+/* 内核 = C++/wasm，页面的 JS 镜像 = 浏览器，这里是 Node —— 三份独立实现比同一串数字 */
+const nodeChart = (seed, lanes, n) => {
+  let s = (seed >>> 0) || 0x9e3779b9, last = -1, out = [];
+  const nxt = () => { s = (s ^ (s << 13)) >>> 0; s = (s ^ (s >>> 17)) >>> 0; s = (s ^ (s << 5)) >>> 0; return s; };
+  for (let i = 0; i < n; i++) {
+    let l = nxt() % lanes;
+    if (l === last) l = (l + 1 + (nxt() % (lanes - 1))) % lanes;
+    last = l; out.push(l);
+  }
+  return out;
+};
+const fnv = (str) => { let h = 2166136261; for (let i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = Math.imul(h, 16777619) >>> 0; } return h >>> 0; };
+const KSEED = 0x5eed2026;   /* rhythm_core.hpp 里的 kSeed */
+
+await load("?enter=1");
+await evaluate(`document.getElementById('enterBtn').click(); true`);
+await sleep(2200);
+const seedDefault = await evaluate(`(() => { window.__rhythmApplySeed(''); return window.__rhythmSeedState(); })()`);
+check("seed: 默认 seed 的 16 音符与 Node 独立实现一致",
+  seedDefault.parity === "ok" && seedDefault.len === 256 && seedDefault.head === nodeChart(KSEED, 7, 16).join(""),
+  `parity=${seedDefault.parity} head=${seedDefault.head} node=${nodeChart(KSEED, 7, 16).join("")}`);
+
+const seedCustom = await evaluate(`(() => { window.__rhythmApplySeed('zhehong'); const s = window.__rhythmSeedState();
+  return Object.assign(s, { info: (document.getElementById('seedInfo') || {}).textContent || "" }); })()`);
+check("seed: 任意文字 seed（FNV 折成 32 位）内核与镜像仍逐位一致",
+  seedCustom.parity === "ok" && seedCustom.source === "wasm" && seedCustom.seed === fnv("zhehong") &&
+  seedCustom.head === nodeChart(fnv("zhehong"), 7, 16).join(""),
+  `seed=0x${seedCustom.seed.toString(16)} head=${seedCustom.head}`);
+check("seed: 换 seed 确实换了谱面（对 Node 也是新的）",
+  seedCustom.head !== nodeChart(KSEED, 7, 16).join("") && seedCustom.head !== nodeChart(fnv("other"), 7, 16).join(""),
+  seedCustom.head);
+check("seed: 页面上写出核对结论", /一致/.test(seedCustom.info), seedCustom.info.slice(0, 72));
+
+await load("?enter=1&seed=zhehong");
+await evaluate(`document.getElementById('enterBtn').click(); true`);
+await sleep(2200);
+const seedQuery = await evaluate(`(() => { const s = window.__rhythmSeedState(); return Object.assign(s, { input: document.getElementById('seedInput').value }); })()`);
+check("seed: ?seed=zhehong 直接进来就生效（输入框也回填）",
+  seedQuery.seed === fnv("zhehong") && seedQuery.parity === "ok" && seedQuery.input === "zhehong",
+  `seed=0x${seedQuery.seed.toString(16)} input=${seedQuery.input} parity=${seedQuery.parity}`);
+
+/* ---------- kernel.html：内核控制台 ---------- */
+await load("kernel.html");
+await sleep(2600);
+const kc = await evaluate(`(() => { const c = window.__kernelConsole || {}; return {
+  loaded: c.loaded, judgeBad: c.judgeBad, accBad: c.accBad, probe: c.probeParity, parity: c.seedParity,
+  head: c.chartHead, ver: c.kernelVersion, bytes: c.wasmBytes, sha: (c.sha256 || "").length,
+  rows: document.querySelectorAll('#judgeTable tbody tr').length,
+  arows: document.querySelectorAll('#accTable tbody tr').length,
+  badRows: document.querySelectorAll('.tbl tr[data-bad="1"]').length,
+  okCells: document.querySelectorAll('.tbl td.ok').length
+}; })()`);
+check("kernel 页: 内核加载、三张表跑完（19 判定 + 12 算分 + 探针全对）",
+  kc.loaded === true && kc.judgeBad === 0 && kc.accBad === 0 && kc.probe === "ok" &&
+  kc.rows === 19 && kc.arows === 12 && kc.badRows === 0 && kc.okCells === 31,
+  JSON.stringify(kc));
+check("kernel 页: 默认 seed 谱面与 Node 一致 + kernel_version/SHA-256",
+  kc.parity === "ok" && kc.head === nodeChart(KSEED, 7, 16).join("") && kc.ver === 2 && kc.sha === 64 && kc.bytes === 732,
+  `head=${kc.head} ver=${kc.ver} sha=${kc.sha} wasm=${kc.bytes}B`);
+
+const kc2 = await evaluate(`(() => { document.getElementById('seedInput').value = 'myintro';
+  document.getElementById('seedApply').click(); const c = window.__kernelConsole;
+  return { parity: c.seedParity, head: c.chartHead, seed: c.seed, q: location.search,
+    label: document.getElementById('seedLabel').textContent }; })()`);
+check("kernel 页: 换 seed 后内核/镜像仍一致且地址栏同步",
+  kc2.parity === "ok" && kc2.seed === fnv("myintro") && kc2.head === nodeChart(fnv("myintro"), 7, 16).join("") &&
+  /seed=myintro/.test(kc2.q) && /0x/.test(kc2.label),
+  `q=${kc2.q} head=${kc2.head}`);
+
+/* ---------- nojs.html：无 JS 对照页 ---------- */
+await load("nojs.html");
+await sleep(3400);
+const np = await evaluate(`(() => { const f = document.querySelectorAll('iframe'); const p = window.__nojsProbe || null;
+  return { frames: f.length, sandbox: f[0] ? f[0].getAttribute('sandbox') : 'missing',
+    src0: f[0] ? f[0].getAttribute('src') : '', src1: f[1] ? f[1].getAttribute('src') : '',
+    probe: p, text: (document.getElementById('probe') || {}).textContent || "" }; })()`);
+check("nojs 页: 两个 iframe，左边 sandbox 不含 allow-scripts",
+  np.frames === 2 && np.sandbox !== null && !/allow-scripts/.test(np.sandbox) &&
+  np.src0 === "index.html" && /enter=1/.test(np.src1),
+  `sandbox="${np.sandbox}" src0=${np.src0} src1=${np.src1}`);
+check("nojs 页: 左框跨源隔离（父页读不到）+ 右框已跑脚本进入主页",
+  !!np.probe && np.probe.sandboxOpaque === true && np.probe.sandboxHasAllowScripts === false &&
+  np.probe.jsFrameEntered === true && np.probe.jsFrameText > 1500,
+  JSON.stringify(np.probe));
+
+/* ---------- 生成物不该留下任何 __PLACEHOLDER__ ---------- */
+if (DIR) {
+  const files = ["index.html", "kernel.html", "nojs.html", "404.html"].filter((f) => fs.existsSync(path.join(DIR, f)));
+  const leftover = files.map((f) => [f, [...new Set(fs.readFileSync(path.join(DIR, f), "utf8").match(/__[A-Z_]+__/g) || [])]])
+    .filter(([, m]) => m.length);
+  check("生成物: 四个页面都没有占位符残留", leftover.length === 0 && files.length === 4,
+    leftover.length ? leftover.map(([f, m]) => f + ":" + m.join(",")).join(" ") : files.length + " 个文件干净");
+}
 
 check("js: 控制台无异常", consoleMsgs.length === 0, consoleMsgs.slice(0, 3).join(" | "));
 
