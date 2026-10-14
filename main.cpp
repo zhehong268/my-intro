@@ -142,6 +142,10 @@ std::string icon(const std::string& name) {
         return svgWrap(R"ICON(<path d="M12 21s6.8-6.3 6.8-10.7A6.8 6.8 0 0 0 5.2 10.3C5.2 14.7 12 21 12 21Z"/><circle cx="12" cy="10.3" r="2.4"/>)ICON");
     if (name == "target")
         return svgWrap(R"ICON(<circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3.4"/><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3"/>)ICON");
+    if (name == "menu")
+        return svgWrap(R"ICON(<path d="M4 7h16"/><path d="M4 12h16"/><path d="M4 17h16"/>)ICON");
+    if (name == "close")
+        return svgWrap(R"ICON(<path d="M6 6l12 12"/><path d="M18 6 6 18"/>)ICON");
     return "";
 }
 
@@ -355,6 +359,8 @@ a{color:inherit;text-decoration:none}
 }
 .icon-btn:hover{background:rgba(109,77,250,.10);transform:translateY(-2px)}
 .icon-btn.off{color:var(--ink-faint)}
+/* 汉堡按钮：桌面隐藏，≤620px 才出现 */
+.nav-toggle{display:none}
 
 /* ---------- 首屏封面 ---------- */
 .landing{
@@ -402,7 +408,7 @@ a{color:inherit;text-decoration:none}
 /* ---------- 签名加载 ---------- */
 .loader{
   position:fixed;inset:0;z-index:300;display:none;place-items:center;
-  background:#fbfcff;opacity:0;transition:opacity .55s ease;
+  background:#fbfcff;opacity:0;transition:opacity .45s ease;cursor:pointer;
 }
 .loader.show{display:grid;opacity:1}
 .sig{width:88%;max-width:600px;height:auto;overflow:visible}
@@ -412,10 +418,16 @@ a{color:inherit;text-decoration:none}
   fill:none;stroke:var(--violet);stroke-width:2.2;
   stroke-linecap:round;stroke-linejoin:round;
   stroke-dasharray:2600;stroke-dashoffset:2600;
-  animation:draw 3s cubic-bezier(.45,0,.3,1) forwards;
+  animation:draw .62s cubic-bezier(.45,0,.3,1) forwards;
 }
 .sig line{stroke:var(--sky);stroke-width:2;stroke-linecap:round;opacity:.7;
-  stroke-dasharray:420;stroke-dashoffset:420;animation:draw 1.5s cubic-bezier(.45,0,.3,1) .35s forwards}
+  stroke-dasharray:420;stroke-dashoffset:420;animation:draw .3s cubic-bezier(.45,0,.3,1) .18s forwards}
+.loader-hint{
+  position:absolute;left:0;right:0;bottom:34px;text-align:center;
+  font-family:var(--mono);font-size:11.5px;letter-spacing:2.4px;color:var(--ink-faint);
+  opacity:0;animation:fadeIn .3s ease .25s forwards;
+}
+@keyframes fadeIn{to{opacity:1}}
 @keyframes draw{to{stroke-dashoffset:0}}
 
 /* ---------- 页面容器 ---------- */
@@ -678,7 +690,18 @@ a{color:inherit;text-decoration:none}
 @media (max-width:620px){
   .nav{padding:12px 14px;gap:10px}
   .brand-sub{display:none}
-  .nav-links a{padding:6px 10px;font-size:13px}
+  .nav-toggle{display:grid}
+  /* 小屏导航收成下拉面板：不再横向溢出，也不需要盲滑 */
+  .nav-links{
+    position:absolute;top:100%;left:0;right:0;display:none;
+    flex-direction:column;align-items:stretch;gap:2px;
+    margin:0;padding:10px 14px 16px;overflow:visible;
+    background:rgba(252,253,255,.98);border-bottom:1px solid var(--line);
+    box-shadow:0 26px 40px -30px rgba(60,70,140,.5);
+  }
+  .nav-links.open{display:flex}
+  .nav-links a{padding:12px 14px;font-size:15px;border-radius:12px;text-align:left}
+  .nav-links a.active{background:rgba(109,77,250,.12)}
   .hero{padding-top:100px}
   .hero-card{padding:34px 20px 26px;border-radius:22px}
   .hero-clock{font-size:21px;letter-spacing:5px}
@@ -878,6 +901,36 @@ const char* kJS = R"JS(
   var heroCard = $('.hero-card');
   var queued = false;
 
+  /* ============ 小屏导航面板 ============ */
+  var navToggle = $('#navToggle');
+  var navPanel = $('.nav-links');
+  function setNavOpen(open) {
+    if (!navToggle || !navPanel) return;
+    navPanel.classList.toggle('open', open);
+    navToggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+    navToggle.setAttribute('aria-label', open ? '关闭导航菜单' : '打开导航菜单');
+    navToggle.innerHTML = open ? window.__ICON_CLOSE : window.__ICON_MENU;
+  }
+  if (navToggle) {
+    navToggle.addEventListener('click', function (e) {
+      e.stopPropagation();
+      setNavOpen(!navPanel.classList.contains('open'));
+    });
+    /* 点了面板里的链接就收起，别挡着内容 */
+    links.forEach(function (a) {
+      a.addEventListener('click', function () { setNavOpen(false); });
+    });
+    /* 点面板外 / Esc 收起 */
+    document.addEventListener('click', function (e) {
+      if (!navPanel.classList.contains('open')) return;
+      if (navPanel.contains(e.target) || navToggle.contains(e.target)) return;
+      setNavOpen(false);
+    });
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape') setNavOpen(false);
+    });
+  }
+
   function onScroll() {
     queued = false;
     var y = window.pageYOffset;
@@ -1034,13 +1087,16 @@ const char* kJS = R"JS(
 
     loader.classList.add('show');
 
-    setTimeout(function () {
+    /* loader 只是装饰，不阻塞进入：默认 0.62s，点击或 Esc 可立即跳过 */
+    var done = false;
+    function finish() {
+      if (done) return;
+      done = true;
       document.body.classList.remove('locked');
       landing.classList.add('hidden');
       page.classList.add('visible');
       nav.classList.add('visible');
       loader.classList.remove('show');
-
       setTimeout(function () {
         loader.style.display = 'none';
         setupReveal();
@@ -1048,8 +1104,13 @@ const char* kJS = R"JS(
         setupCounters();
         window.scrollTo(0, 0);
         onScroll();
-      }, 600);
-    }, reduce ? 400 : 3000);
+      }, 260);
+    }
+    setTimeout(finish, reduce ? 150 : 620);
+    loader.addEventListener('click', finish);
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape') finish();
+    });
   }
 
   $('#enterBtn').addEventListener('click', enterSite);
@@ -1326,8 +1387,8 @@ int main() {
          "页面里跑在 canvas 上的节奏小游戏，168 BPM 自动演奏。做一个能看的东西，顺便练 rAF 时间轴与性能取舍。",
          "Canvas 2D / requestAnimationFrame / 性能优化", "#rhythm", "页面内查看", "02"},
         {"Project Alpha",
-         "还在构思中的 C++ 小工具，目标是先把基础打牢，再动手写点真正有用的东西。",
-         "C++ / 计划中", "#", "敬请期待", "03"}
+         "还在构思中的 C++ 小工具，目标是先把基础打牢，再动手写点真正有用的东西。仓库里以后会放它。",
+         "C++ / 计划中", me.github, "去我 GitHub 看看", "03"}
     };
 
     std::vector<TimelineItem> timeline = {
@@ -1415,6 +1476,7 @@ int main() {
     <text x="310" y="98" text-anchor="middle">It's MyGO!!!!!</text>
     <line x1="150" y1="126" x2="470" y2="126"/>
   </svg>
+  <p class="loader-hint">点击任意处跳过</p>
 </div>
 
 <div class="progress" id="progress" aria-hidden="true"></div>
@@ -1438,6 +1500,7 @@ int main() {
       <span class="brand-sub mono">/ DEV</span>
     </span>
   </a>
+  <button class="icon-btn nav-toggle" id="navToggle" type="button" aria-label="打开导航菜单" aria-expanded="false">__ICON_menu__</button>
   <div class="nav-links">
     <a href="#about">关于</a>
     <a href="#projects">项目</a>
@@ -1457,6 +1520,8 @@ int main() {
 )HTML";
 
     html = replaceAll(html, "__NAME__", me.name);
+    html = replaceAll(html, "__ICON_menu__", icon("menu"));
+    html = replaceAll(html, "__ICON_close__", icon("close"));
 
     /* --- 主视觉 --- */
     html += "<header class=\"section hero\" id=\"top\">";
@@ -1699,6 +1764,8 @@ int main() {
 <script>
 window.__ICON_ON = ')HTML" + icon("music") + R"HTML(';
 window.__ICON_OFF = ')HTML" + icon("music-off") + R"HTML(';
+window.__ICON_MENU = ')HTML" + icon("menu") + R"HTML(';
+window.__ICON_CLOSE = ')HTML" + icon("close") + R"HTML(';
 </script>
 <script>
 __JS__
