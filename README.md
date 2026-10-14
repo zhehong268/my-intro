@@ -62,7 +62,7 @@ generator.exe
 | `music.mp3` | 背景音乐，128 kbps（4.1 MB，原 10.2 MB），`preload="none"`，点音乐按钮才加载 |
 | `og-image.jpg` | 分享卡片 1200×630（70 KB），由 `tools/make-og.mjs` 渲染后**提交进仓库**，CI 只负责复制 |
 | `LICENSE` | 代码 MIT；素材版权说明写在同一个文件的下半部分 |
-| `selftest.mjs` | 本机自检：起本地静态服务器 + 无头 Edge，跑 59 条断言 |
+| `selftest.mjs` | 本机自检：起本地静态服务器 + 无头 Edge，本地 59 条 / 线上 58 条断言（差的那条查生成物里有没有占位符残留，需要磁盘上的文件） |
 | `tools/wasm-check.mjs` | 内核契约门：导出、版本号、谱面、判定窗口边界、准确率权重 |
 | `tools/asset-gate.mjs` | 资产门：页面引用到的本地文件必须都在发布目录里 |
 | `tools/budget.mjs` | 首屏体积门禁：文件表 + 预算判定 |
@@ -95,6 +95,8 @@ node tools/budget.mjs                           # 首屏体积门禁
 ```
 
 本地服务器（`selftest.mjs` 与音频探针里的那个）**必须支持 Range 请求**：GitHub Pages 支持，本地不支持的话 `<audio>` 会被判为不可 seek，降级后回填进度会被静默丢弃——那不是代码 bug，是测量环境的差异。
+
+断言里**不写死 wasm 的字节数**：本地 emsdk 与 CI 的 emcc 版本不同，同一个 `rhythm_core.cpp` 编出来会差几个字节（实测本地 732 B / CI 724 B）。所以那条断言是拿页面里真正内联的那段 base64 现算长度与 SHA-256，再和页面自己算的 `sha256` 对齐——换 emcc 版本不会假失败。
 
 59 条断言覆盖：无 JS 下的可见性 / 滚动 / 数字 / 技能条 / `.reveal`，入口门，wasm 谱面一致性（`parity`、`laneSource`、`kernel_version=2`），内联谱面 256 个合法轨道，canvas 背板 = CSS 尺寸 × dpr，滚到底部导航高亮，COMBO 递增，rAF 帧率，skip-link / aria-pressed / canonical / 1200×630 og 卡片 / twitter card / 英文摘要 / 预加载，小字对比度 ≥ 4.5:1，控制台无异常；可玩模式 9 条（判定内核自检、边界串 `001112222211100`、JS 回退镜像与内核同答案、控制条就位、真按键拿到非 MISS 且 `judgeSource=wasm`、漏判记 MISS、`#rAcc` 等于内核千分比、结算面板 + 最好成绩落盘、刷新后仍在）；音频 6 条（图采样率 = 文件 44100 且 `running`、几十秒无 waiting/stalled/frozen、抖动时降级到原生通路、降级后进度接得上、降级后只剩一个 audio、`?audio=plain` 不建图也照样放）；seed 与工具页 8 条（默认 seed 的 16 音符与 Node 独立实现一致、任意文字 seed 折成 32 位后内核与镜像逐位一致、换 seed 确实换谱面、`?seed=` 进入就生效、内核控制台三张表全对、控制台换 seed 后仍一致且地址同步、无 JS 对照页的 sandbox 确实禁脚本且右框已进主页）。
 

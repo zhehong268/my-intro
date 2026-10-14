@@ -8,6 +8,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import http from "node:http";
+import crypto from "node:crypto";
 import { spawn } from "node:child_process";
 
 const args = process.argv.slice(2);
@@ -395,9 +396,16 @@ check("kernel 页: 内核加载、三张表跑完（19 判定 + 12 算分 + 探�
   kc.loaded === true && kc.judgeBad === 0 && kc.accBad === 0 && kc.probe === "ok" &&
   kc.rows === 19 && kc.arows === 12 && kc.badRows === 0 && kc.okCells === 31,
   JSON.stringify(kc));
+/* wasm 字节数与 SHA-256 不能写死：本地 emsdk 与 CI 的 emcc 版本不同，产物会差几个字节
+   （实测本地 732 B / CI 724 B）。改成拿页面里真正内联的那段 base64 现算：
+   页面自己的 sha256 必须等于这段字节的 sha256，任何 emcc 版本都成立。 */
+const kcWasm = await evaluate(`(() => ({ b64: window.__RHYTHM_WASM || "", sha: (window.__kernelConsole || {}).sha256 || "" }))()`);
+const kcBytes = Buffer.from(kcWasm.b64, "base64");
+const kcSha = crypto.createHash("sha256").update(kcBytes).digest("hex");
 check("kernel 页: 默认 seed 谱面与 Node 一致 + kernel_version/SHA-256",
-  kc.parity === "ok" && kc.head === nodeChart(KSEED, 7, 16).join("") && kc.ver === 2 && kc.sha === 64 && kc.bytes === 732,
-  `head=${kc.head} ver=${kc.ver} sha=${kc.sha} wasm=${kc.bytes}B`);
+  kc.parity === "ok" && kc.head === nodeChart(KSEED, 7, 16).join("") && kc.ver === 2 && kc.sha === 64 &&
+  kc.bytes === kcBytes.length && kcWasm.sha === kcSha,
+  `head=${kc.head} ver=${kc.ver} wasm=${kc.bytes}B(内联 ${kcBytes.length}B) sha与内联一致=${kcWasm.sha === kcSha}`);
 
 const kc2 = await evaluate(`(() => { document.getElementById('seedInput').value = 'myintro';
   document.getElementById('seedApply').click(); const c = window.__kernelConsole;
