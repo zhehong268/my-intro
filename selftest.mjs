@@ -140,7 +140,10 @@ const st = await evaluate(`(() => {
     canonical: !!document.querySelector('link[rel=canonical]'),
     canonicalHref: (document.querySelector('link[rel=canonical]') || {}).href || '',
     ogImage: (document.querySelector('meta[property="og:image"]') || {}).content || '',
+    ogImageW: (document.querySelector('meta[property="og:image:width"]') || {}).content || '',
+    ogImageH: (document.querySelector('meta[property="og:image:height"]') || {}).content || '',
     twitter: (document.querySelector('meta[name="twitter:card"]') || {}).content || '',
+    enBlock: (() => { const el = document.querySelector('.en-abstract'); return el ? { lang: el.getAttribute('lang'), len: el.textContent.trim().length } : null; })(),
     preload: !!document.querySelector('link[rel=preload][as=image]'),
     leftovers: (document.documentElement.outerHTML.match(/__[A-Z_]+__/g) || []).slice(0, 5),
     title: document.title, lang: document.documentElement.lang
@@ -157,7 +160,9 @@ check("js: canvas 背板=Css×dpr", st.canvasBacking[0] === Math.round(st.canvas
 check("js: 音乐按钮有 aria-pressed", st.musicPressed === "false" || st.musicPressed === "true", String(st.musicPressed));
 check("js: skip-link 指向存在的锚点", st.skipHref === "#about" && st.skipTarget, String(st.skipHref));
 check("js: canonical", st.canonical && st.canonicalHref.startsWith("https://"), st.canonicalHref);
-check("js: og:image + twitter:card", /cover\.jpg$/.test(st.ogImage) && st.twitter === "summary_large_image", st.ogImage + " / " + st.twitter);
+check("js: og:image 指向 1200×630 分享卡片", /og-image\.jpg$/.test(st.ogImage) && st.ogImageW === "1200" && st.ogImageH === "630", st.ogImage + ` ${st.ogImageW}×${st.ogImageH}`);
+check("js: twitter:card", st.twitter === "summary_large_image", st.twitter);
+check("js: 英文摘要 lang=en 且有内容", st.enBlock && st.enBlock.lang === "en" && st.enBlock.len > 200, JSON.stringify(st.enBlock));
 check("js: 预加载封面", st.preload);
 check("js: 无占位符残留", st.leftovers.length === 0, st.leftovers.join(","));
 const worst = Object.entries(st.ratios).sort((a, b) => a[1] - b[1]);

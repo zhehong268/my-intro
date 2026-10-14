@@ -690,6 +690,15 @@ html.js .bar-fill.grow{transform:scaleX(var(--w,1))}
   background:rgba(109,77,250,.09);border:1px solid rgba(109,77,250,.2);
   padding:2px 7px;border-radius:6px}
 .site-tech{margin-top:22px;padding-top:18px;border-top:1px solid var(--line)}
+/* 英文摘要：给不看中文的访客一段能读懂的话；lang="en" 让朗读器换发音 */
+.en-abstract{margin-top:20px;padding:16px 18px;border-radius:12px;
+  background:rgba(109,77,250,.05);border-left:3px solid var(--violet)}
+.en-abstract .en-tag{display:block;font-family:var(--mono);font-size:11px;letter-spacing:.16em;
+  text-transform:uppercase;color:var(--violet);margin-bottom:8px}
+.en-abstract p{margin-bottom:10px;font-size:13.5px;line-height:1.85;color:var(--ink-dim);
+  font-family:ui-sans-serif,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
+.en-abstract p:last-child{margin-bottom:0}
+.en-abstract a{color:var(--violet)}
 
 /* ---------- 联系 ---------- */
 .contact-wrap{text-align:center}
@@ -1455,14 +1464,17 @@ const char* kHead = R"HEAD(<!DOCTYPE html>
 <meta property="og:url" content="__SITE__">
 <meta property="og:title" content="__NAME__ · 个人主页">
 <meta property="og:description" content="写代码，也看番。整站由 C++ 生成，部署在 GitHub Pages。">
-<meta property="og:image" content="__SITE__cover.jpg">
-<meta property="og:image:width" content="735">
-<meta property="og:image:height" content="386">
-<meta property="og:image:alt" content="__NAME__ 的主页封面：舞台上的一支乐队">
+<!-- 分享卡片用专门生成的 1200×630 图（tools/make-og.mjs 渲染，作为构建输入提交在仓库里） -->
+<meta property="og:image" content="__SITE__og-image.jpg">
+<meta property="og:image:type" content="image/jpeg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="__NAME__ 的主页分享卡片：C++17 生成器与 WASM 音游内核的构建命令">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="__NAME__ · 个人主页">
 <meta name="twitter:description" content="写代码，也看番。整站由 C++ 生成，部署在 GitHub Pages。">
-<meta name="twitter:image" content="__SITE__cover.jpg">
+<meta name="twitter:image" content="__SITE__og-image.jpg">
+<meta name="twitter:image:alt" content="__NAME__ 的主页分享卡片">
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
 <link rel="preload" as="image" href="cover.jpg" fetchpriority="high">
 <title>__NAME__ · 个人主页</title>
@@ -1949,10 +1961,17 @@ int main() {
     <p>写这个站点的过程本身就是练习：结构怎么拆、动画为什么卡、部署怎么跑通，都是一处处自己试出来的。</p>
     <p>性能上的取舍写在这里，方便以后自己回看：动画只用 <code>transform</code> 与 <code>opacity</code>；不使用 <code>backdrop-filter</code> 与 <code>background-attachment: fixed</code>；倾斜、聚光、视差全部 rAF 节流且只在桌面端启用；音游跑在单个 <code>canvas</code> 上；背景音乐在首次交互后才加载。</p>
     <p>整站默认按「没有 JavaScript」渲染：脚本挂了，内容、技能条长度、数字条也都还是对的；入口门与入场动画是脚本跑起来之后才加上去的装饰。音游的谱面由 <code>rhythm_core.cpp</code> 编译成的 WebAssembly 在浏览器里算，生成器另用同一份算法算一份用来做加载时的自检。</p>
+    <div class="en-abstract" lang="en">
+      <span class="en-tag mono">In short / English</span>
+      <p>This page is a static site written by a single-file <strong>C++17 generator</strong>: no template engine, no framework, no hand-written HTML. Feature code, styles and scripts all live in <code>main.cpp</code>.</p>
+      <p>The rhythm-game chart is computed in the browser by a <strong>WebAssembly kernel</strong> compiled from the same C++ source, and the page compares the kernel's output with the generator's own chart on load — if they disagree, the badge says so instead of hiding it.</p>
+      <p>JavaScript here is decoration: with scripting disabled the whole page is still readable, because the default CSS is already the final state.</p>
+      <p>Source and build steps: <a href="__GITHUB__" target="_blank" rel="noopener">github.com/zhehong268/my-intro</a></p>
+    </div>
     <div class="site-tech">
       <ul class="tools">
 )HTML";
-    html += buildTools({"C++17", "静态生成器", "GitHub Actions", "GitHub Pages", "Canvas 2D", "原生 JS"});
+    html += buildTools({"C++17", "静态生成器", "WebAssembly 内核", "Canvas 2D", "GitHub Actions", "无 JS 可读"});
     html += R"HTML(
       </ul>
     </div>

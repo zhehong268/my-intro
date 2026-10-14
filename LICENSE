@@ -1,0 +1,42 @@
+MIT License
+
+Copyright (c) 2026 遮鸿 (zhehong268)
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+---
+
+素材说明 / Media notice
+
+上面这份 MIT 许可证只覆盖**代码**：main.cpp、rhythm_core.hpp、rhythm_core.cpp、
+selftest.mjs、tools/ 下的脚本。
+
+仓库里的素材不是我的作品，也不在 MIT 授权范围内：
+
+- cover.jpg、avatar.jpg —— BanG Dream! It's MyGO!!!!! 相关同人/官方插画，来自网络；
+- bg.webp —— 页面背景图；
+- music.mp3 —— 第三方音乐，已转码为 128 kbps 仅供页面播放。
+
+它们在这里只作个人、非商业的展示用途，版权归原作者与发行方所有。
+如果权利人要求，我会立刻移除。
+
+The MIT license above covers the source code only. The media files in this
+repository (cover.jpg, avatar.jpg, bg.webp, music.mp3) are third-party works
+used for personal, non-commercial display; all rights remain with their
+respective owners and they will be removed on request.
