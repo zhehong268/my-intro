@@ -50,11 +50,11 @@ generator.exe
 
 | 文件 | 说明 |
 | --- | --- |
-| `main.cpp` | 生成器：内容 + 模板 + 全部 CSS / JS（113 KB） |
+| `main.cpp` | 生成器：内容 + 模板 + 全部 CSS / JS（161 KB） |
 | `rhythm_core.hpp` | 谱面 + 判定窗口 + 准确率算法，native 与 wasm 共用的唯一实现 |
 | `rhythm_core.cpp` | `extern "C"` 导出层（`kernel_version` / `chart_reset` / `chart_next` / `chart_at` / `judge_ms` / `accuracy_permille`） |
 | `rhythm_core.wasm` | emcc 产物（732 B），仓库里留一份兜底 |
-| `index.html` | 生成产物（112.9 KB，含内联 CSS / JS / wasm） |
+| `index.html` | 生成产物（115.9 KB，含内联 CSS / JS / wasm） |
 | `kernel.html` | 生成产物：内核控制台（任意 seed 的谱面网格 + 判定窗口表 + 算分表，逐行比对内核与期望值，54.4 KB） |
 | `nojs.html` | 生成产物：无 JS 对照（同一份 index.html 用禁脚本 / 正常两个 iframe 并排跑，38.7 KB） |
 | `404.html` `robots.txt` `sitemap.xml` | 生成产物（sitemap 里含两个工具页） |
@@ -62,7 +62,8 @@ generator.exe
 | `music.mp3` | 背景音乐，128 kbps（4.1 MB，原 10.2 MB），`preload="none"`，点音乐按钮才加载 |
 | `og-image.jpg` | 分享卡片 1200×630（70 KB），由 `tools/make-og.mjs` 渲染后**提交进仓库**，CI 只负责复制 |
 | `LICENSE` | 代码 MIT；素材版权说明写在同一个文件的下半部分 |
-| `selftest.mjs` | 本机自检：起本地静态服务器 + 无头 Edge，本地 59 条 / 线上 58 条断言（差的那条查生成物里有没有占位符残留，需要磁盘上的文件） |
+| `selftest.mjs` | 本机自检：起本地静态服务器 + 无头 Edge，本地 61 条 / 线上 60 条断言（差的那条查生成物里有没有占位符残留，需要磁盘上的文件） |
+| `audio-start.mjs` | 量「点进入主页 → 真的出声」：走真实入口门、真点按钮，打印 `play` / `loadedmetadata` / `playing` / 遮罩撤掉的时刻，以及预热 fetch 发没发、元素那次请求是不是命中缓存。用法 `node audio-start.mjs <url> 0 <cdp端口> - <点门前等多少毫秒>` |
 | `tools/wasm-check.mjs` | 内核契约门：导出、版本号、谱面、判定窗口边界、准确率权重 |
 | `tools/asset-gate.mjs` | 资产门：页面引用到的本地文件必须都在发布目录里 |
 | `tools/budget.mjs` | 首屏体积门禁：文件表 + 预算判定 |
@@ -82,6 +83,7 @@ generator.exe
 - **两个工具页**：`kernel.html` 把内核摊开（换 seed 看谱面网格、19 个判定边界点、12 个算分用例，每张表都是「生成器编译期算的期望值 vs 浏览器里内核实算」逐行比对，不一致标红；附内核导出列表与 SHA-256）；`nojs.html` 把同一份 `index.html` 用「带 `sandbox`（禁脚本）」和「正常」两个 iframe 并排跑，加一张两边差在哪的表。
 - **音频抖动会自动降级**：Web Audio 那条通路（`createMediaElementSource` → `AnalyserNode`，用来画导航栏那根频谱）只负责可视化，一旦发现 `waiting` / `stalled` 累计到阈值（且缓冲还够），就新建一个干净的 `<audio>` 元素接上进度、关掉 `AudioContext`、停掉频谱——音乐转成原生通路继续放，绝不为了那根频谱牺牲播放。开播头 3 秒内的缓冲不算抖动（那是正常的起播等待）。`?audio=plain` 直接跳过建图，`?audio=debug` 在左下角打印实时状态（通路 / 采样率 / readyState / 缓冲 / waiting / stalled / 进度）。
 - **频谱画布不在就 30fps**：手机上 `#viz` 是 `display:none`，此时根本不建 `AudioContext`；桌面端频谱降到约 30fps（`transform`/`opacity` 之外唯一每帧画的东西），音游滚出可视区域仍然暂停。
+- **起播优先，频谱让路**：`enterSite()` 里先 `music.play()`，图等 `playing` 之后再建——`new AudioContext({sampleRate:44100})` 实测要 250ms 上下，排在 `play()` 前面就是实打实的「点进去先静一下」（线上实测 `play` 从点击后 288ms 变成 22ms）。入口门摆着的时候还会用 `fetch` + `Range: bytes=0-163839` 预热音频首包（160 KB ≈ 10 秒的量，`priority:"low"`，省流量模式 / 2G 跳过），这样点下去时容器头已经在缓存里：线上实测 `loadedmetadata` 从 1635ms 变成 29ms、点击到出声从约 1.9s 变成约 0.8s。预热这 160 KB **算进首屏预算**（`tools/budget.mjs` 里那笔 `WARMUP`），不装作不存在。
 
 ## 自检
 
@@ -98,14 +100,15 @@ node tools/budget.mjs                           # 首屏体积门禁
 
 断言里**不写死 wasm 的字节数**：本地 emsdk 与 CI 的 emcc 版本不同，同一个 `rhythm_core.cpp` 编出来会差几个字节（实测本地 732 B / CI 724 B）。所以那条断言是拿页面里真正内联的那段 base64 现算长度与 SHA-256，再和页面自己算的 `sha256` 对齐——换 emcc 版本不会假失败。
 
-59 条断言覆盖：无 JS 下的可见性 / 滚动 / 数字 / 技能条 / `.reveal`，入口门，wasm 谱面一致性（`parity`、`laneSource`、`kernel_version=2`），内联谱面 256 个合法轨道，canvas 背板 = CSS 尺寸 × dpr，滚到底部导航高亮，COMBO 递增，rAF 帧率，skip-link / aria-pressed / canonical / 1200×630 og 卡片 / twitter card / 英文摘要 / 预加载，小字对比度 ≥ 4.5:1，控制台无异常；可玩模式 9 条（判定内核自检、边界串 `001112222211100`、JS 回退镜像与内核同答案、控制条就位、真按键拿到非 MISS 且 `judgeSource=wasm`、漏判记 MISS、`#rAcc` 等于内核千分比、结算面板 + 最好成绩落盘、刷新后仍在）；音频 6 条（图采样率 = 文件 44100 且 `running`、几十秒无 waiting/stalled/frozen、抖动时降级到原生通路、降级后进度接得上、降级后只剩一个 audio、`?audio=plain` 不建图也照样放）；seed 与工具页 8 条（默认 seed 的 16 音符与 Node 独立实现一致、任意文字 seed 折成 32 位后内核与镜像逐位一致、换 seed 确实换谱面、`?seed=` 进入就生效、内核控制台三张表全对、控制台换 seed 后仍一致且地址同步、无 JS 对照页的 sandbox 确实禁脚本且右框已进主页）。
+61 条断言覆盖：无 JS 下的可见性 / 滚动 / 数字 / 技能条 / `.reveal`，入口门，wasm 谱面一致性（`parity`、`laneSource`、`kernel_version=2`），内联谱面 256 个合法轨道，canvas 背板 = CSS 尺寸 × dpr，滚到底部导航高亮，COMBO 递增，rAF 帧率，skip-link / aria-pressed / canonical / 1200×630 og 卡片 / twitter card / 英文摘要 / 预加载，小字对比度 ≥ 4.5:1，控制台无异常；可玩模式 9 条（判定内核自检、边界串 `001112222211100`、JS 回退镜像与内核同答案、控制条就位、真按键拿到非 MISS 且 `judgeSource=wasm`、漏判记 MISS、`#rAcc` 等于内核千分比、结算面板 + 最好成绩落盘、刷新后仍在）；音频 8 条（图采样率 = 文件 44100 且 `running`、几十秒无 waiting/stalled/frozen、抖动时降级到原生通路、降级后进度接得上、降级后只剩一个 audio、`?audio=plain` 不建图也照样放、入口门期间预热首包已发出 `window.__musicWarm === 206`、点进入主页到出声 ≤ 1.2s）；seed 与工具页 8 条（默认 seed 的 16 音符与 Node 独立实现一致、任意文字 seed 折成 32 位后内核与镜像逐位一致、换 seed 确实换谱面、`?seed=` 进入就生效、内核控制台三张表全对、控制台换 seed 后仍一致且地址同步、无 JS 对照页的 sandbox 确实禁脚本且右框已进主页）。
 
 首屏体积（`node tools/budget.mjs` 实测，预算 450 KB）：
 
 ```
 avatar.jpg    17.8 KB   bg.webp  43.9 KB   cover.jpg  70.4 KB
-favicon.svg    0.8 KB   index.html 112.9 KB
-首屏合计     245.7 KB   其中 HTML gzip 后 34.5 KB
+favicon.svg    0.8 KB   index.html 115.9 KB
+首屏合计     248.7 KB   其中 HTML gzip 后 35.8 KB
+含音频预热   408.7 KB   预热 = 入口门期间那 160 KB 的 Range 预取（省流量模式会跳过）
 music.mp3   4010.7 KB   按需（预算 4.5 MB）
 kernel.html   54.4 KB   nojs.html 38.7 KB   工具页（点进去才加载，gzip 16.5 / 11.3 KB）
 ```
@@ -117,6 +120,8 @@ kernel.html   54.4 KB   nojs.html 38.7 KB   工具页（点进去才加载，gzi
 - 音游现在是**可玩的一轮挑战**（64 音符、两档判定），但没有长按 / 滑条 / 多押，也没有难度分级；默认仍然是自动演奏展示。
 - Pages 部署走 artifact，`_site` 里只有该发布的文件；源码不再随站点一起公开。
 - 音频降级只在**真的观测到** `waiting` / `stalled` 时才发生，无头浏览器用的是空音频设备，声卡那端的实际听感没法自动断言——这一条只能靠 `?audio=debug` 读数和人耳确认。
+- 起播那约 0.8s 里，剩下的时间主要花在浏览器的音频管线启动（拿到数据 → 真的出声）上，这一层页面管不到；`preload="auto"` 能让它更早开始解码，但代价是可能把整个 4 MB 拉下来，所以没那么做。
+- 本地 MSVC 生成的是 CRLF、CI 的 g++ 是 LF，所以「本地 vs 线上逐字节比对」要先归一化行尾，否则每个换行都是一处分歧（`selftest.mjs` 与 `audio-start.mjs` 都不受影响，它们比的是行为）。
 - 素材（封面、头像、音乐）不是我的作品，版权说明见 `LICENSE` 下半部分。
 
 ## 最后
