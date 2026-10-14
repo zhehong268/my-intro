@@ -1124,7 +1124,7 @@ const char* kJS = R"JS(
   }
 
   function setupAudioGraph() {
-    if (audioCtx || AUDIO_PLAIN || !vizUsable()) return;
+    if (audioCtx || AUDIO_PLAIN || audioFallback || !vizUsable()) return;
     var AC = window.AudioContext || window.webkitAudioContext;
     if (!AC) return;
     try {
@@ -1304,6 +1304,35 @@ const char* kJS = R"JS(
     }, 400);
   }
 
+  /* 建图要单独走一步，而且排在起播之后：new AudioContext({sampleRate:44100}) 实测要
+     250ms 上下，排在 play() 前面就是实打实的「点进去 250ms 没声音」。 */
+  function attachGraph() {
+    setupAudioGraph();
+    if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+  }
+
+  /* 预热首包：preload="none" 意味着点「进入主页」之后浏览器才开始拉文件，
+     实测首包要 0.5–1.9s，那几秒就是「进去之后要等一会儿才有声音」。
+     入口门摆着的时候先把头 160KB（约 10 秒的量）拉进缓存，点下去就能直接出声。
+     省流量模式 / 2G 跳过。 */
+  var warmed = false;
+  function warmMusic() {
+    if (warmed) return;
+    warmed = true;
+    try {
+      var c = navigator.connection || {};
+      if (c.saveData || /(^|-)(slow-)?2g$/.test(c.effectiveType || '')) { window.__musicWarm = 'skipped'; return; }
+      if (!window.fetch) return;
+      fetch('music.mp3', { headers: { Range: 'bytes=0-163839' }, cache: 'force-cache' })
+        .then(function (r) { window.__musicWarm = r.status; })
+        .catch(function () { window.__musicWarm = 'error'; });
+    } catch (e) {}
+  }
+  setTimeout(warmMusic, 300);
+  ['pointermove', 'touchstart', 'keydown'].forEach(function (evName) {
+    window.addEventListener(evName, warmMusic, { once: true, passive: true });
+  });
+
   function setMuted(m) {
     musicBtn.classList.toggle('off', !!m);
     musicBtn.innerHTML = m ? window.__ICON_OFF : window.__ICON_ON;
@@ -1315,11 +1344,10 @@ const char* kJS = R"JS(
 
   musicBtn.addEventListener('click', function (e) {
     e.stopPropagation();
-    setupAudioGraph();
-    if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
     if (music.paused) {
       var p = music.play();
       if (p && p.catch) p.catch(function () { setMuted(true); });
+      setTimeout(attachGraph, 0);      /* 先出声，图随后 */
     } else {
       music.pause();
     }
@@ -1334,10 +1362,11 @@ const char* kJS = R"JS(
     entered = true;
 
     music.volume = 0.34;
-    setupAudioGraph();
-    if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+    /* 起播优先：先 play()，出声之后再建图（建图 ~250ms 不该算进「等多久才有声音」） */
     var play = music.play();
     if (play && play.catch) play.catch(function () { setMuted(true); });
+    if (music.currentTime > 0.05 && !music.paused) attachGraph();
+    else music.addEventListener('playing', attachGraph, { once: true });
 
     loader.classList.add('show');
 

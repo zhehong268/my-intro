@@ -337,6 +337,24 @@ const plain = await evaluate(`(() => { const m = document.querySelector('#bgMusi
 check("audio: ?audio=plain 不建图也照样放", plain.mode === "plain-forced" && plain.ctx === "none" && plain.paused === false && plain.t > 0.3,
   `mode=${plain.mode} ctx=${plain.ctx} t=${plain.t.toFixed(2)}`);
 
+/* ---------- 点「进入主页」→ 真的出声，花了多久 ----------
+   用户报过「进去之后要等几秒才播放」：原因是 preload="none" + 图建在 play() 前面。
+   现在入口门摆着的时候就预热首包，并且先 play() 再建图。 */
+await load();
+await sleep(900);
+const warm = await evaluate(`({ warm: window.__musicWarm || null, preload: document.querySelector('#bgMusic').getAttribute('preload') })`);
+check("audio: 入口门期间预热音频首包（省流量模式除外）", warm.warm === 206 || warm.warm === "skipped",
+  `warm=${warm.warm} preload=${warm.preload}`);
+const soundMs = await evaluate(`new Promise((res) => {
+  const m = document.querySelector('#bgMusic'); const t0 = performance.now();
+  const iv = setInterval(function () {
+    if (m.currentTime > 0.15) { clearInterval(iv); res(Math.round(performance.now() - t0)); }
+  }, 40);
+  setTimeout(function () { clearInterval(iv); res(-1); }, 6000);
+  document.getElementById('enterBtn').click();
+})`);
+check("audio: 点进入主页到出声 <= 1.2s", soundMs >= 0 && soundMs <= 1200, `${soundMs} ms`);
+
 /* 刷新后最好成绩仍在（localStorage 持久化） */
 await load();
 await evaluate(`document.getElementById('enterBtn').click(); true`);

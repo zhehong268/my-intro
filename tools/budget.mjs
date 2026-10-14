@@ -15,6 +15,10 @@ const ROOT = path.resolve(arg("root", path.join(path.dirname(fileURLToPath(impor
 
 /* 预算：首屏 450 KB 原始字节 / HTML 压缩后 60 KB / 交互后按需加载的音频 4.5 MB */
 const BUDGET = { firstLoad: 450 * 1024, htmlGzip: 60 * 1024, music: 4.5 * 1024 * 1024 };
+/* 入口门一出现，页面会自己 fetch 音频的头 160 KB 预热（main.cpp 的 warmMusic()，
+   Range: bytes=0-163839）。它不在 HTML 的引用列表里，抓不到，但不能当它不存在 ——
+   这笔账记在这里，算进首屏口径。省流量模式下会被跳过，所以这是上限不是必花。 */
+const WARMUP = 160 * 1024;
 /* 首次加载不会下载的文件，以及原因 */
 const NOT_FIRST_LOAD = {
   "music.mp3": "preload=none，首次交互后才加载",
@@ -54,6 +58,7 @@ console.log("文件".padEnd(18) + "原始".padStart(12) + "  计入");
 for (const [n, s, tag] of rows) console.log(n.padEnd(18) + kb(s).padStart(12) + "  " + tag);
 console.log("-".repeat(40));
 console.log("首屏合计        " + kb(firstLoad).padStart(12) + "  预算 " + kb(BUDGET.firstLoad));
+console.log("含音频预热      " + kb(firstLoad + WARMUP).padStart(12) + "  预热 " + kb(WARMUP));
 console.log("index.html gzip " + kb(htmlGz).padStart(12) + "  预算 " + kb(BUDGET.htmlGzip));
 console.log("music.mp3       " + kb(music).padStart(12) + "  预算 " + kb(BUDGET.music));
 
@@ -68,7 +73,7 @@ for (const name of ["kernel.html", "nojs.html"]) {
   if (raw > TOOL_BUDGET.raw || gz > TOOL_BUDGET.gzip) { console.log("::error::" + name + " 超预算"); bad = 1; }
 }
 
-if (firstLoad > BUDGET.firstLoad) { console.log("::error::首屏超预算"); bad = 1; }
+if (firstLoad + WARMUP > BUDGET.firstLoad) { console.log("::error::首屏（含音频预热）超预算"); bad = 1; }
 if (htmlGz > BUDGET.htmlGzip) { console.log("::error::HTML 压缩后超预算"); bad = 1; }
 if (music > BUDGET.music) { console.log("::error::音频超预算"); bad = 1; }
 console.log(bad ? "budget gate FAILED" : "budget gate OK");
