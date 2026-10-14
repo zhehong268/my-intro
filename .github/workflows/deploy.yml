@@ -21,8 +21,8 @@ jobs:
       - uses: actions/checkout@v4
 
       # 音游谱面内核：同一份 C++ 源码编译成 WebAssembly。
-      # 两步都 continue-on-error：万一 emsdk 装不上，仓库里那份 616 B 的
-      # rhythm_core.wasm 会被生成器内联，站点照常发布（音游退回 JS 谱面）。
+      # 两步都 continue-on-error：万一 emsdk 装不上，仓库里那份 732 B 的
+      # rhythm_core.wasm 会被生成器内联，站点照常发布（音游退回 JS 谱面 + JS 判定）。
       - name: Set up Emscripten
         uses: mymindstorm/setup-emsdk@v16
         continue-on-error: true
@@ -54,6 +54,11 @@ jobs:
       # <meta content> 里的 og:image —— 靠媒体后缀兜住），本地也能跑同一条命令。
       - name: Gate - every referenced asset must exist
         run: node tools/asset-gate.mjs --dir=_site
+
+      # 内核契约门：导出齐不齐、版本号、谱面前 12 个轨道、判定窗口边界、
+      # 准确率权重——页面里那份「自检 ok」的徽章就是拿这些当依据的。
+      - name: Gate - wasm kernel contract
+        run: node tools/wasm-check.mjs
 
       # 首屏体积门禁：超预算就让 CI 红，别等用户发现页面变重。
       - name: Gate - first load size budget

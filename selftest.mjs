@@ -153,7 +153,7 @@ check("js: 进站后 #page 可见", st.pageOpacity === "1" && st.pageVisibleClas
 check("js: 解除滚动锁", st.stillEntry === false);
 check("js: wasm 谱面一致(parity=ok)", st.parity === "ok", String(st.parity));
 check("js: 轨道来自 wasm", st.laneSource === "wasm", String(st.laneSource));
-check("js: 内核版本号=1", st.kernelVersion === 1, String(st.kernelVersion));
+check("js: 内核版本号=2（含判定导出）", st.kernelVersion === 2, String(st.kernelVersion));
 check("js: 内联谱面 256 个合法轨道", st.chartLen === 256 && st.chartChars, "len=" + st.chartLen);
 check("js: 内核徽章文案", /WASM/.test(st.badge), st.badge);
 check("js: canvas 背板=Css×dpr", st.canvasBacking[0] === Math.round(st.canvasCss[0] * st.dpr) && st.canvasBacking[1] === Math.round(st.canvasCss[1] * st.dpr), `css=${st.canvasCss} backing=${st.canvasBacking} dpr=${st.dpr}`);
@@ -187,9 +187,104 @@ let combo = 0;
 for (let i = 0; i < 12; i++) { await shot(); await sleep(700); combo = await evaluate(`parseInt((document.getElementById('comboNum')||{textContent:'0'}).textContent,10)||0`); if (combo > 3) break; }
 check("js: 音游 COMBO 递增", combo > 3, "combo=" + combo);
 
+/* ---------- 3. 可玩模式：判定与算分由 wasm 内核给 ---------- */
+const jp = await evaluate(`window.__rhythmJudgeParity`);
+check("play: 判定/算分内核自检(judgeParity=ok)", jp === "ok", String(jp));
+
+const probe = await evaluate(`(() => {
+  const d = window.__rhythmJudgeDelta, f = window.__rhythmJudgeFallback, fa = window.__rhythmAccuracyFallback;
+  const ks = [-200, -91, -90, -89, -46, -45, -44, 0, 44, 45, 46, 89, 90, 91, 200];
+  const acc = [[0,0,0],[64,0,64],[0,64,64],[32,32,64],[1,0,3],[8,0,9]];
+  return {
+    kernel: ks.map(d).join(""),
+    fallback: ks.map(f).join(""),
+    accFallback: acc.map((a) => fa(a[0], a[1], a[2])).join(","),
+    accExpect: (window.__RHYTHM_ACC_EXPECT || []).join(",")
+  };
+})()`);
+check("play: 判定窗口边界 ±45/±90", probe.kernel === "001112222211100", probe.kernel);
+check("play: JS 回退镜像与内核/生成器同答案",
+  probe.fallback === probe.kernel && probe.accFallback === probe.accExpect,
+  `${probe.kernel} | acc ${probe.accFallback} vs ${probe.accExpect}`);
+
+/* 点开始挑战 → 进 play，统计行与「回到自动演奏」出现 */
+await evaluate(`document.getElementById('rhythmPlay').click(); true`);
+await sleep(350);
+const playUI = await evaluate(`(() => ({
+  mode: (window.__rhythmStats || {}).mode,
+  statsHidden: document.getElementById('rhythmStats').hidden,
+  stopHidden: document.getElementById('rhythmStop').hidden,
+  tag: document.getElementById('rhythmTag').textContent,
+  pressed: document.getElementById('rhythmPlay').getAttribute('aria-pressed')
+}))()`);
+check("play: 进挑战模式且控制条就位", playUI.mode === "play" && playUI.statsHidden === false && playUI.stopHidden === false && playUI.pressed === "true", JSON.stringify(playUI));
+
+/* 等到最近音符差 <= 45ms，按对应键位，断言拿到非 MISS 判定 */
+let hitRes = null;
+for (let i = 0; i < 60; i++) {
+  const lane = await evaluate(`window.__rhythmLaneOfNext()`);
+  const d = lane === null ? null : await evaluate(`window.__rhythmNextDelta(${lane})`);
+  if (lane !== null && d !== null && Math.abs(d) <= 45) {
+    await evaluate(`document.dispatchEvent(new KeyboardEvent('keydown', { key: 'dfghjkl'[${lane}], bubbles: true })); true`);
+    hitRes = await evaluate(`JSON.parse(JSON.stringify(window.__rhythmStats))`);
+    break;
+  }
+  await shot(); await sleep(25);
+}
+check("play: 按键命中计分且来源=wasm",
+  hitRes && (hitRes.perfect + hitRes.good) >= 1 && hitRes.judgeSource === "wasm",
+  hitRes ? `P=${hitRes.perfect} G=${hitRes.good} M=${hitRes.miss} src=${hitRes.judgeSource}` : "没抓到判定窗口");
+
+/* 放任音符漏过 → MISS 递增 */
+const missBefore = hitRes ? hitRes.miss : 0;
+let missAfter = missBefore;
+for (let i = 0; i < 60; i++) {
+  await shot(); await sleep(60);
+  missAfter = await evaluate(`(window.__rhythmStats || {}).miss || 0`);
+  if (missAfter > missBefore) break;
+}
+check("play: 漏掉音符判 MISS", missAfter > missBefore, `miss ${missBefore} → ${missAfter}`);
+
+/* 统计行里的准确率必须就是内核那个千分比 */
+const accDom = await evaluate(`(() => {
+  const s = window.__rhythmStats || {};
+  return { dom: (document.getElementById('rAcc') || {}).textContent, kern: window.__rhythmAccuracyPermille(), stats: s.accPermille };
+})()`);
+check("play: DOM 准确率=内核千分比", accDom.dom === (accDom.kern / 10).toFixed(1) + "%" && accDom.kern === accDom.stats,
+  `dom=${accDom.dom} kern=${accDom.kern} stats=${accDom.stats}`);
+
+/* 结算 + 最好成绩落盘 */
+await evaluate(`window.__rhythmEndRound(); true`);
+await sleep(250);
+const done = await evaluate(`(() => ({
+  hidden: document.getElementById('rhythmResult').hidden,
+  text: document.getElementById('rhythmResult').textContent.trim().slice(0, 120),
+  best: localStorage.getItem('myintro.rhythm.best.v1'),
+  bestText: document.getElementById('rBest').textContent
+}))()`);
+check("play: 结算面板 + 最好成绩写入", done.hidden === false && !!done.best && /WASM/.test(done.text),
+  done.text.slice(0, 70));
+
+/* 回到自动演奏 */
+const back = await evaluate(`(() => { document.getElementById('rhythmStop').click(); return { stats: JSON.parse(JSON.stringify(window.__rhythmStats)), tag: document.getElementById('rhythmTag').textContent }; })()`);
+check("play: 回到自动演奏", back.stats.mode === "auto" && back.tag === "AUTO PLAY", JSON.stringify(back.tag + " mode=" + back.stats.mode));
+
 /* 帧率（强制出帧） */
 const fps = await evaluate(`new Promise((res) => { let n = 0; const t0 = performance.now(); const tick = () => { n++; if (performance.now() - t0 < 1200) requestAnimationFrame(tick); else res(Math.round(n / ((performance.now() - t0) / 1000))); }; requestAnimationFrame(tick); })`);
 check("js: rAF 帧率 >= 40", fps >= 40, fps + " fps");
+
+/* 刷新后最好成绩仍在（localStorage 持久化） */
+await load();
+await evaluate(`document.getElementById('enterBtn').click(); true`);
+await sleep(2200);
+const persisted = await evaluate(`(() => ({
+  best: document.getElementById('rBest').textContent,
+  stored: !!localStorage.getItem('myintro.rhythm.best.v1'),
+  mode: (window.__rhythmStats || {}).mode
+}))()`);
+check("play: 刷新后最好成绩仍在且默认自动演奏",
+  persisted.stored && /%/.test(persisted.best) && persisted.mode === "auto",
+  `best=${persisted.best} mode=${persisted.mode}`);
 
 check("js: 控制台无异常", consoleMsgs.length === 0, consoleMsgs.slice(0, 3).join(" | "));
 

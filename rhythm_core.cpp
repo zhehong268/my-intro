@@ -19,9 +19,9 @@ int         g_lanes = rhythm::kLanes;
 
 extern "C" {
 
-/* 内核版本：页面拿它做兼容性检查 */
+/* 内核版本：页面拿它做兼容性检查（2 = 加入判定与算分导出） */
 __attribute__((export_name("kernel_version"))) int kernel_version(void) {
-    return 1;
+    return 2;
 }
 
 /* 重置谱面状态：种子与轨道数由 JS 传入（与生成器使用的值相同） */
@@ -41,6 +41,16 @@ __attribute__((export_name("chart_next"))) int chart_next(void) {
 /* 取第 index 个音符的轨道（重放式，供 JS 侧自检比对） */
 __attribute__((export_name("chart_at"))) int chart_at(int index, unsigned seed, int lanes) {
     return rhythm::noteAt(index, lanes, seed);
+}
+
+/* 打击判定：入参是与音符时刻的毫秒差，出参 0=MISS / 1=GOOD / 2=PERFECT */
+__attribute__((export_name("judge_ms"))) int judge_ms(int deltaMs) {
+    return rhythm::judge(deltaMs);
+}
+
+/* 准确率千分比：PERFECT 记 1.0、GOOD 记 0.6 */
+__attribute__((export_name("accuracy_permille"))) int accuracy_permille(int perfect, int good, int total) {
+    return rhythm::accuracyPermille(perfect, good, total);
 }
 
 }  // extern "C"

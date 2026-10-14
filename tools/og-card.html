@@ -43,15 +43,15 @@
       <div>
         <div class="name">遮鸿</div>
         <div class="role">C++ 开发者 / 在读学生</div>
-        <div class="lead">整页由一份 <code>C++17</code> 生成器直接写出，没有模板引擎、没有框架；<br>音游谱面由 <code>WebAssembly</code> 内核计算，并在加载时与生成器自证一致。</div>
+        <div class="lead">整页由一份 <code>C++17</code> 生成器直接写出，没有模板引擎、没有框架；<br>音游的谱面与判定都由 <code>WebAssembly</code> 内核给出，加载时与生成器自证一致。</div>
       </div>
     </div>
     <div class="term">
       <div class="bar"><i></i><i></i><i></i></div>
       <p><span class="c">$</span> emcc rhythm_core.cpp -O3 -o rhythm_core.wasm</p>
       <p><span class="c">$</span> g++ -std=c++17 -O2 -o generator main.cpp</p>
-      <p><span class="v">音游内核：已内联 rhythm_core.wasm (616 字节 → base64 824 字节)</span></p>
-      <p><span class="g">C++ / WASM 内核 · 谱面自检 ok</span></p>
+      <p><span class="v">音游内核：已内联 rhythm_core.wasm (732 字节 → base64 976 字节)</span></p>
+      <p><span class="g">C++ / WASM 内核 · 谱面与判定自检 ok</span></p>
     </div>
     <div class="foot">没有 JavaScript 也能读完这一页 · zhehong268.github.io/my-intro</div>
   </div>

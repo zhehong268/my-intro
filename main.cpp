@@ -679,6 +679,39 @@ html.js .bar-fill.grow{transform:scaleX(var(--w,1))}
 .rhythm-tag{position:absolute;left:16px;bottom:14px;font-size:11px;letter-spacing:2px;
   color:rgba(233,237,247,.42);font-family:var(--mono)}
 .rhythm-tag.right{left:auto;right:16px}
+.rhythm-judge{position:absolute;left:50%;top:40%;transform:translate3d(-50%,0,0);
+  font-size:19px;font-weight:800;letter-spacing:3px;opacity:0;color:#7dd3fc;
+  text-shadow:0 0 18px rgba(125,211,252,.5)}
+.rhythm-judge.perfect{animation:judgePop .52s ease}
+.rhythm-judge.good{color:#a5b4fc;animation:judgePop .52s ease}
+.rhythm-judge.miss{color:#fb7185;text-shadow:0 0 18px rgba(251,113,133,.45);animation:judgePop .52s ease}
+@keyframes judgePop{
+  0%{opacity:0;transform:translate3d(-50%,10px,0) scale(.92)}
+  30%{opacity:1;transform:translate3d(-50%,0,0) scale(1.05)}
+  100%{opacity:0;transform:translate3d(-50%,-12px,0) scale(1)}
+}
+
+/* ---------- 音游：可玩模式的控制条 / 统计 / 结算 ---------- */
+[hidden]{display:none!important}
+.rhythm-ctl{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:12px;
+  max-width:700px;margin:22px auto 0}
+.rbtn{
+  font:inherit;font-size:14px;font-weight:600;cursor:pointer;padding:11px 20px;border-radius:12px;
+  border:1px solid rgba(109,77,250,.26);background:#fff;color:var(--ink);
+  transition:transform .18s var(--ease),box-shadow .18s var(--ease),background .18s var(--ease);
+}
+.rbtn:hover{transform:translate3d(0,-1px,0);box-shadow:0 14px 26px -18px rgba(60,70,140,.65)}
+.rbtn:focus-visible{outline:2px solid var(--violet);outline-offset:2px}
+.rbtn.primary{background:linear-gradient(135deg,var(--violet),var(--blue));color:#fff;border-color:transparent}
+.rbtn.ghost{background:transparent;color:var(--ink-dim)}
+.rhythm-hint{font-size:12px;color:var(--ink-faint);letter-spacing:.2px}
+.rhythm-stats{display:flex;flex-wrap:wrap;justify-content:center;gap:8px 24px;max-width:700px;
+  margin:16px auto 0;font-size:12.5px;color:var(--ink-dim)}
+.rhythm-stats b{color:var(--ink);font-weight:700}
+.rhythm-result{max-width:700px;margin:16px auto 0;padding:16px 20px;border-radius:12px;
+  background:#fff;border:1px solid var(--line);border-left:3px solid var(--sky);
+  font-family:var(--mono);font-size:13px;color:var(--ink-dim);line-height:1.7;
+  box-shadow:0 20px 46px -38px rgba(60,70,140,.5)}
 
 /* ---------- 关于本站 ---------- */
 .site-box{background:#fff;border:1px solid var(--line);border-left:3px solid var(--violet);
@@ -1236,7 +1269,12 @@ const char* kJS = R"JS(
     var el = $('#kernelBadge');
     if (!el) return;
     var p = window.__rhythmParity;
-    if (p === 'ok') { el.textContent = 'C++ / WASM 内核 · 谱面自检 ok'; el.classList.add('ok'); }
+    if (p === 'ok') {
+      el.textContent = window.__rhythmJudgeParity === 'ok'
+        ? 'C++ / WASM 内核 · 谱面与判定自检 ok'
+        : 'C++ / WASM 内核 · 谱面自检 ok（判定退回 JS）';
+      el.classList.add('ok');
+    }
     else if (p === 'mismatch') el.textContent = 'C++ / WASM 内核 · 自检不一致，已退回生成器谱面';
     else if (p === 'no-wasm') el.textContent = '生成器 C++ 谱面（此浏览器不支持 WebAssembly）';
     else el.textContent = '生成器 C++ 谱面（WASM 内核不可用）';
@@ -1245,7 +1283,7 @@ const char* kJS = R"JS(
   function loadKernel() {
     var b64 = window.__RHYTHM_WASM;
     if (!b64 || typeof WebAssembly === 'undefined' || !WebAssembly.instantiate) {
-      window.__rhythmParity = 'no-wasm'; window.__rhythmLaneSource = 'generator';
+      window.__rhythmParity = 'no-wasm'; window.__rhythmLaneSource = 'generator'; window.__rhythmJudgeParity = 'no-wasm';
       updateKernelBadge(); return;
     }
     WebAssembly.instantiate(base64ToBytes(b64), { env: kernelImports, wasi_snapshot_preview1: kernelImports })
@@ -1260,11 +1298,30 @@ const char* kJS = R"JS(
         }
         ex.chart_reset(seed, lanes);
         window.__rhythmKernelVersion = ex.kernel_version ? ex.kernel_version() : 0;
+
+        /* 判定与算分的探针：期望值是生成器用同一份 rhythm_core.hpp 算的，
+           探针压在窗口边界（±45 / ±90 与各差 1ms），窗口写错这里就会 mismatch */
+        var jp = window.__RHYTHM_JUDGE_PROBE || [], je = window.__RHYTHM_JUDGE_EXPECT || [];
+        var ap = window.__RHYTHM_ACC_PROBE || [], ae = window.__RHYTHM_ACC_EXPECT || [];
+        var jok = typeof ex.judge_ms === 'function' && jp.length > 0 && jp.length === je.length;
+        for (var j = 0; jok && j < jp.length; j++) { if (ex.judge_ms(jp[j]) !== je[j]) jok = false; }
+        var aok = typeof ex.accuracy_permille === 'function' && ap.length > 0 && ap.length === ae.length;
+        for (var k2 = 0; aok && k2 < ap.length; k2++) {
+          if (ex.accuracy_permille(ap[k2][0], ap[k2][1], ap[k2][2]) !== ae[k2]) aok = false;
+        }
+        window.__rhythmJudgeParity = (jok && aok) ? 'ok' : 'mismatch';
+        if (jok && aok) {
+          KERNEL_JUDGE = function (d) { return ex.judge_ms(d); };
+          KERNEL_ACC = function (p, g, n) { return ex.accuracy_permille(p, g, n); };
+        } else { KERNEL_JUDGE = null; KERNEL_ACC = null; }
+        kernelReset = function () { ex.chart_reset(window.__RHYTHM_SEED, window.__RHYTHM_LANES); };
+
         if (ok) { kernelNext = function () { return ex.chart_next(); }; window.__rhythmParity = 'ok'; window.__rhythmLaneSource = 'wasm'; }
         else { window.__rhythmParity = 'mismatch'; window.__rhythmLaneSource = 'generator'; }
         updateKernelBadge();
+        refreshStats();
       })
-      .catch(function () { window.__rhythmParity = 'error'; window.__rhythmLaneSource = 'generator'; updateKernelBadge(); });
+      .catch(function () { window.__rhythmParity = 'error'; window.__rhythmLaneSource = 'generator'; window.__rhythmJudgeParity = 'error'; updateKernelBadge(); });
   }
 
   function chartLane() {
@@ -1273,11 +1330,188 @@ const char* kJS = R"JS(
     return CHART.charCodeAt(chartPos++ % CHART.length) - 48;
   }
 
-  function spawn() {
+  /* ============ 可玩模式：判定与算分也交给 C++ / WASM 内核 ============
+     内核导出（rhythm_core.hpp 里唯一的实现）：
+       judge_ms(deltaMs)                     → 0 MISS / 1 GOOD / 2 PERFECT（±45 / ±90ms）
+       accuracy_permille(perfect, good, total) → 准确率千分比（PERFECT 记 1.0、GOOD 记 0.6）
+     加载内核时，生成器按同一份头文件算好的探针会逐条比对（含 ±45/±90 边界与差 1ms 的点），
+     结果写进 window.__rhythmJudgeParity；内核不可用时退回本地 JS 镜像，页面照实标出来源。 */
+  var GOODms = 90, PERFECTms = 45, ROUND_NOTES = 64;
+  var KERNEL_JUDGE = null, KERNEL_ACC = null, kernelReset = null;
+  var mode = 'auto', roundActive = false, roundIndex = 0, pausedAt = 0, lastJudge = '';
+  var round = { perfect: 0, good: 0, miss: 0, accPermille: 0 };
+  var maxCombo = 0, best = null;
+  var KEYS = ['d', 'f', 'g', 'h', 'j', 'k', 'l'], NUMS = '1234567';
+  var BEST_KEY = 'myintro.rhythm.best.v1';
+
+  function jsJudge(d) { var a = d < 0 ? -d : d; return a <= PERFECTms ? 2 : a <= GOODms ? 1 : 0; }
+  function jsAcc(p, g, n) { return n <= 0 ? 0 : Math.floor((p * 1000 + g * 600) / n); }
+  function doJudge(d) { return KERNEL_JUDGE ? KERNEL_JUDGE(d) : jsJudge(d); }
+  function doAcc(p, g, n) { return KERNEL_ACC ? KERNEL_ACC(p, g, n) : jsAcc(p, g, n); }
+
+  function setText(sel, v) { var el = $(sel); if (el) el.textContent = v; }
+  function fmtPct(pm) { return (pm / 10).toFixed(1) + '%'; }
+
+  function loadBest() {
+    try { best = JSON.parse(localStorage.getItem(BEST_KEY) || 'null'); } catch (e) { best = null; }
+  }
+  function saveBest(b) { try { localStorage.setItem(BEST_KEY, JSON.stringify(b)); } catch (e) {} }
+
+  function refreshStats() {
+    var judged = round.perfect + round.good + round.miss;
+    round.accPermille = judged ? doAcc(round.perfect, round.good, judged) : 0;
+    setText('#rPerfect', round.perfect);
+    setText('#rGood', round.good);
+    setText('#rMiss', round.miss);
+    setText('#rAcc', judged ? fmtPct(round.accPermille) : '--');
+    setText('#rMax', maxCombo);
+    setText('#rBest', best ? fmtPct(best.accPermille) + ' · ' + best.maxCombo + ' 连' : '--');
+    window.__rhythmStats = {
+      mode: mode, roundActive: roundActive, roundIndex: roundIndex,
+      perfect: round.perfect, good: round.good, miss: round.miss, judged: judged,
+      combo: combo, maxCombo: maxCombo, accPermille: round.accPermille,
+      judgeSource: KERNEL_JUDGE ? 'wasm' : 'js', best: best ? best.accPermille : null
+    };
+  }
+
+  function setModeUI() {
+    var pb = $('#rhythmPlay'), sb = $('#rhythmStop'), tag = $('#rhythmTag'), hint = $('#rhythmHint');
+    /* 两个按钮都常显：play 时左边那颗变成「重新开始 / 再来一轮」，比藏起来更好找 */
+    if (pb) {
+      pb.setAttribute('aria-pressed', mode === 'play' ? 'true' : 'false');
+      pb.textContent = mode === 'play'
+        ? (roundActive ? '重新开始这一轮' : '再来一轮')
+        : '开始挑战（64 音符）';
+    }
+    if (sb) sb.hidden = mode !== 'play';
+    var st = $('#rhythmStats'); if (st) st.hidden = mode !== 'play';
+    if (tag) tag.textContent = mode === 'play'
+      ? 'PLAY · ' + Math.min(roundIndex, ROUND_NOTES) + ' / ' + ROUND_NOTES
+      : 'AUTO PLAY';
+    if (hint) hint.textContent = mode === 'play'
+      ? '键位 D F G H J K L 或数字 1–7 · 也可以直接点按轨道'
+      : '判定窗口 ±45 / ±90ms，判定与算分都由 WASM 内核给出';
+    if (cvs) cvs.style.touchAction = mode === 'play' ? 'none' : '';
+    window.__rhythmMode = mode;
+  }
+
+  /* 找同一轨道里离现在最近的、还没判定的音符 */
+  function nearestNote(lane, now) {
+    var pick = null, bestD = 1e9;
+    for (var i = 0; i < notes.length; i++) {
+      var n = notes[i];
+      if (n.lane !== lane || n.judged || !n.hitAt) continue;
+      var d = n.hitAt - now;
+      if (Math.abs(d) < Math.abs(bestD)) { bestD = d; pick = n; }
+    }
+    return pick ? { note: pick, delta: bestD } : null;
+  }
+
+  function registerJudge(r, n) {
+    if (r === 2) { round.perfect++; combo++; lastJudge = 'PERFECT'; }
+    else if (r === 1) { round.good++; combo++; lastJudge = 'GOOD'; }
+    else { round.miss++; combo = 0; lastJudge = 'MISS'; }
+    if (combo > maxCombo) maxCombo = combo;
+    if (n) { n.judged = 1; if (r > 0) n.dead = 1; else n.missed = 1; }
+    if (r > 0 && n) { explode(n.lane * laneW + laneW / 2, hitY, n.lane); glow = 1; }
+    var ne = $('#comboNum');
+    if (ne) { ne.textContent = combo; ne.classList.remove('pop'); void ne.offsetWidth; ne.classList.add('pop'); }
+    var je = $('#rhythmJudge');
+    if (je) { je.textContent = lastJudge; je.className = 'rhythm-judge ' + lastJudge.toLowerCase(); }
+    refreshStats();
+  }
+
+  function hitLane(lane, now) {
+    if (mode !== 'play' || !roundActive) return;
+    var hit = nearestNote(lane, now);
+    /* 空击不扣分：只让该轨道亮一下，别把休闲玩家劝退 */
+    if (!hit || Math.abs(hit.delta) > GOODms) { laneGlow[lane] = Math.max(laneGlow[lane], 0.35); return; }
+    var r = doJudge(hit.delta);
+    if (r <= 0) { laneGlow[lane] = Math.max(laneGlow[lane], 0.35); return; }
+    registerJudge(r, hit.note);
+  }
+
+  function startRound() {
+    mode = 'play'; roundActive = true; roundIndex = 0;
+    round.perfect = 0; round.good = 0; round.miss = 0; round.accPermille = 0;
+    combo = 0; maxCombo = 0; lastJudge = '';
+    notes.length = 0; sparks.length = 0; acc = 0; chartPos = 0; lastLane = -1;
+    if (kernelReset) kernelReset();
+    setText('#comboNum', '0');
+    var res = $('#rhythmResult'); if (res) { res.hidden = true; res.textContent = ''; }
+    var je = $('#rhythmJudge'); if (je) je.textContent = '';
+    setModeUI(); refreshStats();
+    startRhythm();   /* 用户自己点的，即使系统开了「减少动态效果」也照跑 */
+  }
+
+  function backToAuto() {
+    mode = 'auto'; roundActive = false; pausedAt = 0;
+    notes.length = 0; sparks.length = 0; acc = 0; combo = 0;
+    round.perfect = 0; round.good = 0; round.miss = 0; round.accPermille = 0; maxCombo = 0;
+    setText('#comboNum', '0');
+    var res = $('#rhythmResult'); if (res) { res.hidden = true; res.textContent = ''; }
+    var je = $('#rhythmJudge'); if (je) je.textContent = '';
+    setModeUI(); refreshStats(); startRhythm();
+  }
+
+  function endRound() {
+    if (!roundActive) return;
+    roundActive = false;
+    var judged = round.perfect + round.good + round.miss;
+    var isRecord = false;
+    if (judged > 0 && (!best || round.accPermille > best.accPermille ||
+        (round.accPermille === best.accPermille && maxCombo > best.maxCombo))) {
+      best = { accPermille: round.accPermille, maxCombo: maxCombo, at: Date.now() };
+      saveBest(best); isRecord = true;
+    }
+    var el = $('#rhythmResult');
+    if (el && judged > 0) {
+      el.hidden = false;
+      el.textContent = '本轮 ' + judged + ' 个音符 · PERFECT ' + round.perfect + ' / GOOD ' + round.good +
+        ' / MISS ' + round.miss + ' · 准确率 ' + fmtPct(round.accPermille) + ' · 最大连击 ' + maxCombo +
+        ' · 判定来源 ' + (KERNEL_JUDGE && KERNEL_ACC ? 'WASM 内核（C++）' : 'JS 回退') +
+        (isRecord ? ' · 新纪录！' : '');
+    }
+    setModeUI();
+    refreshStats();
+  }
+
+  /* 预览与自检用的钩子：都是页面自己会用到的函数，不是测试专用开关 */
+  window.__rhythmNextDelta = function (lane) {
+    var h = nearestNote(lane, (window.performance && performance.now) ? performance.now() : Date.now());
+    return h ? Math.round(h.delta) : null;
+  };
+  window.__rhythmLaneOfNext = function () {
+    var pick = null, bestD = 1e9;
+    var now = (window.performance && performance.now) ? performance.now() : Date.now();
+    for (var i = 0; i < notes.length; i++) {
+      var n = notes[i];
+      if (n.judged || !n.hitAt) continue;
+      var d = n.hitAt - now;
+      if (d < bestD) { bestD = d; pick = n; }
+    }
+    return pick ? pick.lane : null;
+  };
+  window.__rhythmStartRound = startRound;
+  window.__rhythmEndRound = endRound;
+  window.__rhythmBackToAuto = backToAuto;
+  window.__rhythmAccuracyPermille = function () { return round.accPermille; };
+  window.__rhythmJudgeDelta = doJudge;
+  /* 内核不可用时的 JS 镜像也暴露出来：自检会断言它与内核在同一组探针上给同样的答案 */
+  window.__rhythmJudgeFallback = jsJudge;
+  window.__rhythmAccuracyFallback = jsAcc;
+
+  function spawn(now) {
+    /* 可玩模式打一轮固定长度：到数就不再生成，等场上音符都判完就结算 */
+    if (mode === 'play') {
+      if (roundIndex >= ROUND_NOTES) return;
+      roundIndex++;
+      setModeUI();
+    }
     var lane = chartLane();
     if (!(lane >= 0 && lane < LANES)) lane = 0;
     lastLane = lane;
-    notes.push({ lane: lane, y: -14, dead: 0 });
+    notes.push({ lane: lane, y: -14, dead: 0, hitAt: now + TRAVEL, judged: 0, missed: 0 });
   }
 
   function explode(x, y, lane) {
@@ -1292,10 +1526,10 @@ const char* kJS = R"JS(
     laneGlow[lane] = 1;
   }
 
-  function update(dt) {
+  function update(dt, now) {
     acc += dt;
     var guard = 0;
-    while (acc >= BEAT && guard++ < 4) { acc -= BEAT; spawn(); }
+    while (acc >= BEAT && guard++ < 4) { acc -= BEAT; spawn(now); }
 
     var speed = (hitY + 20) / TRAVEL;
     for (var i = notes.length - 1; i >= 0; i--) {
@@ -1306,7 +1540,12 @@ const char* kJS = R"JS(
         continue;
       }
       n.y += speed * dt;
-      if (n.y >= hitY) {
+      if (mode === 'play') {
+        /* 打中的音符已经在上面的 dead 分支里淡出；漏掉的让它继续落，落出画面才删 */
+        if (n.judged) { if (n.y > H + 24) notes.splice(i, 1); continue; }
+        if (now > n.hitAt + GOODms) registerJudge(0, n);
+        if (n.y > H + 24) notes.splice(i, 1);
+      } else if (n.y >= hitY) {
         n.y = hitY;
         n.dead = 1;
         combo++;
@@ -1331,6 +1570,13 @@ const char* kJS = R"JS(
     for (var g = 0; g < LANES; g++) {
       if (laneGlow[g] > 0) laneGlow[g] = Math.max(0, laneGlow[g] - dt / 500);
     }
+
+    /* 一轮打完（最后一个音符也判完了）就结算 */
+    if (mode === 'play' && roundActive && roundIndex >= ROUND_NOTES) {
+      var pending = false;
+      for (var q = 0; q < notes.length; q++) { if (!notes[q].judged) { pending = true; break; } }
+      if (!pending) endRound();
+    }
   }
 
   function render() {
@@ -1344,6 +1590,20 @@ const char* kJS = R"JS(
 
     ctx.fillStyle = 'rgba(125,211,252,.07)';
     for (var i = 1; i < LANES; i++) ctx.fillRect(i * laneW - 0.5, 0, 1, H);
+
+    /* 可玩模式才画判定区：七块踏板，按下去会亮 */
+    if (mode === 'play') {
+      var padY = hitY + 22, padH = Math.max(12, H - padY - 12);
+      ctx.fillStyle = 'rgba(125,211,252,.05)';
+      ctx.fillRect(0, hitY + 16, W, H - hitY - 16);
+      for (var pd = 0; pd < LANES; pd++) {
+        ctx.fillStyle = laneGlow[pd] > 0.05
+          ? 'rgba(125,211,252,' + (0.16 + laneGlow[pd] * 0.5).toFixed(3) + ')'
+          : 'rgba(255,255,255,.05)';
+        roundRect(pd * laneW + 6, padY, laneW - 12, padH, 8);
+        ctx.fill();
+      }
+    }
 
     for (var g = 0; g < LANES; g++) {
       if (laneGlow[g] > 0.01) {
@@ -1386,19 +1646,30 @@ const char* kJS = R"JS(
     if (!running) return;
     var dt = prev ? Math.min(t - prev, 64) : 16;
     prev = t;
-    if (!document.hidden) { update(dt); render(); }
+    if (!document.hidden) { update(dt, t); render(); }
     rafId = requestAnimationFrame(loop);
   }
 
   function startRhythm() {
-    if (!ctx || running || reduce) { if (ctx) render(); return; }
+    /* 「减少动态效果」下自动演奏不跑（那是装饰），但用户自己点开始挑战时照跑 */
+    if (!ctx || running || (reduce && mode === 'auto')) { if (ctx) render(); return; }
     running = true;
     prev = 0; acc = 0;
+    /* 从暂停里回来：把没有判定的音符整体后移暂停的那段，别让它们瞬间全变成 MISS */
+    if (pausedAt) {
+      var gap = performance.now() - pausedAt;
+      pausedAt = 0;
+      for (var i = 0; i < notes.length; i++) {
+        if (!notes[i].judged && notes[i].hitAt) notes[i].hitAt += gap;
+      }
+    }
+    setModeUI();
     rafId = requestAnimationFrame(loop);
   }
 
   function stopRhythm() {
     running = false;
+    pausedAt = performance.now();
     if (rafId) { cancelAnimationFrame(rafId); rafId = 0; }
   }
 
@@ -1406,6 +1677,41 @@ const char* kJS = R"JS(
     fitCanvas();
     seen = true;
     loadKernel();
+    loadBest();
+    setModeUI();
+    refreshStats();
+
+    var playBtn = $('#rhythmPlay'), stopBtn = $('#rhythmStop');
+    if (playBtn) playBtn.addEventListener('click', function () { startRound(); });
+    if (stopBtn) stopBtn.addEventListener('click', function () { backToAuto(); });
+
+    /* 键盘：D F G H J K L 对应七条轨道，数字 1–7 也行（只在挑战进行中生效） */
+    document.addEventListener('keydown', function (e) {
+      if (e.repeat || e.metaKey || e.ctrlKey || e.altKey) return;
+      if (mode !== 'play' || !roundActive) return;
+      var k = e.key, lane = -1;
+      if (typeof k === 'string' && k.length === 1) {
+        var lo = k.toLowerCase(), ki = KEYS.indexOf(lo);
+        if (ki >= 0) lane = ki;
+        else { var ni = NUMS.indexOf(k); if (ni >= 0) lane = ni; }
+      }
+      if (lane < 0 || lane >= LANES) return;
+      e.preventDefault();
+      hitLane(lane, performance.now());
+    });
+
+    /* 触屏/鼠标：按 x 折算轨道，直接用手指打 */
+    cvs.addEventListener('pointerdown', function (e) {
+      if (mode !== 'play' || !roundActive) return;
+      var rect = cvs.getBoundingClientRect();
+      if (!rect.width) return;
+      var lane = Math.floor((e.clientX - rect.left) / (rect.width / LANES));
+      if (lane < 0) lane = 0;
+      if (lane > LANES - 1) lane = LANES - 1;
+      e.preventDefault();
+      hitLane(lane, performance.now());
+    });
+
     window.addEventListener('resize', function () {
       clearTimeout(cvs.__t);
       cvs.__t = setTimeout(fitCanvas, 180);
@@ -1692,6 +1998,25 @@ int main() {
         }
     }
 
+    /* 判定与算分的自检探针：native 先按同一份头文件算好期望值，
+       页面加载后拿 wasm 的 judge_ms / accuracy_permille 逐条比对。
+       探针特意压在窗口边界上（±45 / ±90 与各差 1ms），窗口写错就会露馅。 */
+    std::string judgeProbe, judgeExpect, accProbe, accExpect;
+    {
+        const int deltas[] = {-200, -91, -90, -89, -46, -45, -44, 0, 44, 45, 46, 89, 90, 91, 200};
+        for (int d : deltas) {
+            if (!judgeProbe.empty()) { judgeProbe += ','; judgeExpect += ','; }
+            judgeProbe += std::to_string(d);
+            judgeExpect += std::to_string(rhythm::judge(d));
+        }
+        const int accs[][3] = {{0, 0, 0}, {64, 0, 64}, {0, 64, 64}, {32, 32, 64}, {1, 0, 3}, {8, 0, 9}};
+        for (const auto& a : accs) {
+            if (!accProbe.empty()) { accProbe += ','; accExpect += ','; }
+            accProbe += "[" + std::to_string(a[0]) + "," + std::to_string(a[1]) + "," + std::to_string(a[2]) + "]";
+            accExpect += std::to_string(rhythm::accuracyPermille(a[0], a[1], a[2]));
+        }
+    }
+
     /* rhythm_core.wasm 是可选的：有就内联进页面（运行时由 wasm 决定轨道），
        没有也不影响构建，只是音游退回上面那份谱面。 */
     std::string wasmRaw = readFile("rhythm_core.wasm");
@@ -1926,22 +2251,37 @@ int main() {
   <div class="section-head reveal">
     <span class="eyebrow mono">07 / RHYTHM</span>
     <h2 class="section-title">音游</h2>
-    <p class="section-desc">一个跑在单个 canvas 上的自动演奏小游戏：168 BPM，七轨，命中特效由 requestAnimationFrame 时间轴驱动。滚出可视区域会自动暂停。</p>
-    <p class="section-desc">轨道不是随机数表：<code>rhythm_core.cpp</code> 编译成 WebAssembly 在浏览器里跑，每个音符落在哪条轨由 C++ 决定；生成器同时用同一份算法算了一份谱面做比对。</p>
+    <p class="section-desc">一个跑在单个 canvas 上的节奏小游戏：168 BPM，七轨，命中特效由 requestAnimationFrame 时间轴驱动。滚出可视区域会自动暂停。默认自动演奏，想自己打就按下面那颗按钮。</p>
+    <p class="section-desc">轨道不是随机数表：<code>rhythm_core.cpp</code> 编译成 WebAssembly 在浏览器里跑，每个音符落在哪条轨由 C++ 决定；点开始挑战后，<b>判定窗口与准确率也由同一个 wasm 内核算</b>，生成器再用同一份头文件算一份探针逐条比对。</p>
     <p class="kernel-badge mono" id="kernelBadge">C++ / WASM 内核 · 检测中…</p>
   </div>
   <div class="rhythm-wrap reveal">
     <div class="rhythm-bg" aria-hidden="true"></div>
-    <canvas id="rhythmCanvas" role="img" aria-label="自动演奏的节奏小游戏：七条轨道上不断落下的音符"></canvas>
+    <canvas id="rhythmCanvas" role="img" aria-label="节奏小游戏：七条轨道上落下的音符，默认自动演奏，也可以自己按键挑战打分"></canvas>
     <div class="rhythm-overlay" aria-hidden="true">
       <div class="combo">
         <span class="combo-num mono" id="comboNum">0</span>
         <span class="combo-label">COMBO</span>
       </div>
-      <span class="rhythm-tag">AUTO PLAY</span>
+      <span class="rhythm-tag" id="rhythmTag">AUTO PLAY</span>
       <span class="rhythm-tag right">168 BPM</span>
+      <span class="rhythm-judge mono" id="rhythmJudge"></span>
     </div>
   </div>
+  <div class="rhythm-ctl reveal">
+    <button class="rbtn primary" id="rhythmPlay" type="button" aria-pressed="false">开始挑战（64 音符）</button>
+    <button class="rbtn ghost" id="rhythmStop" type="button" hidden>回到自动演奏</button>
+    <span class="rhythm-hint mono" id="rhythmHint">判定窗口 ±45 / ±90ms，判定与算分都由 WASM 内核给出</span>
+  </div>
+  <div class="rhythm-stats mono reveal" id="rhythmStats" hidden>
+    <span>PERFECT <b id="rPerfect">0</b></span>
+    <span>GOOD <b id="rGood">0</b></span>
+    <span>MISS <b id="rMiss">0</b></span>
+    <span>准确率 <b id="rAcc">--</b></span>
+    <span>MAX COMBO <b id="rMax">0</b></span>
+    <span>最好成绩 <b id="rBest">--</b></span>
+  </div>
+  <p class="rhythm-result reveal" id="rhythmResult" hidden></p>
 </section>
 )HTML";
     html = replaceAll(html, "__BG__", me.bgImage);
@@ -2042,6 +2382,10 @@ window.__RHYTHM_CHART = ')HTML" + chart + R"HTML(';
 window.__RHYTHM_SEED = ')HTML" + std::to_string(rhythm::kSeed) + R"HTML(';
 window.__RHYTHM_LANES = ')HTML" + std::to_string(rhythm::kLanes) + R"HTML(';
 window.__RHYTHM_WASM = ')HTML" + wasmB64 + R"HTML(';
+window.__RHYTHM_JUDGE_PROBE = [)HTML" + judgeProbe + R"HTML(];
+window.__RHYTHM_JUDGE_EXPECT = [)HTML" + judgeExpect + R"HTML(];
+window.__RHYTHM_ACC_PROBE = [)HTML" + accProbe + R"HTML(];
+window.__RHYTHM_ACC_EXPECT = [)HTML" + accExpect + R"HTML(];
 </script>
 <script>
 __JS__

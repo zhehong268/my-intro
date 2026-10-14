@@ -53,4 +53,29 @@ inline int noteAt(int index, int lanes, unsigned seed) {
     return l;
 }
 
+/* ---------- 判定与算分 ----------
+ * 谱面之外，打击判定与准确率也走这里：页面把按键时刻与音符时刻的差值
+ * （毫秒）交给 judge()，把 PERFECT / GOOD / 总数交给 accuracyPermille()。
+ * 全部是整数运算，native 与 wasm32 结果必然相同，页面加载时会拿一组
+ * 探针逐条比对（见 main.cpp 里的 __RHYTHM_JUDGE_PROBE / _EXPECT）。
+ */
+inline const int kPerfectMs = 45;  /* |Δt| ≤ 45ms → PERFECT */
+inline const int kGoodMs    = 90;  /* |Δt| ≤ 90ms → GOOD，再外面就是 MISS */
+
+/* 判定结果编码：0 = MISS，1 = GOOD，2 = PERFECT */
+inline int judge(int deltaMs) {
+    const int d = deltaMs < 0 ? -deltaMs : deltaMs;
+    if (d <= kPerfectMs) return 2;
+    if (d <= kGoodMs)    return 1;
+    return 0;
+}
+
+/* 准确率千分比：PERFECT 记 1.0、GOOD 记 0.6；先乘后除，避免整数截断偏小 */
+inline int accuracyPermille(int perfect, int good, int total) {
+    if (total <= 0) return 0;
+    const int p = perfect < 0 ? 0 : perfect;
+    const int g = good    < 0 ? 0 : good;
+    return (p * 1000 + g * 600) / total;
+}
+
 }  // namespace rhythm
