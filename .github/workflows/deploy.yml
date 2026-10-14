@@ -3,6 +3,7 @@ name: Build and Deploy C++ Generated Site
 on:
   push:
     branches: [main]
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -19,15 +20,58 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # 音游谱面内核：同一份 C++ 源码编译成 WebAssembly。
+      # 两步都 continue-on-error：万一 emsdk 装不上，仓库里那份 616 B 的
+      # rhythm_core.wasm 会被生成器内联，站点照常发布（音游退回 JS 谱面）。
+      - name: Set up Emscripten
+        uses: mymindstorm/setup-emsdk@v16
+        continue-on-error: true
+        with:
+          version: 3.1.61
+
+      - name: Compile rhythm kernel to WebAssembly
+        continue-on-error: true
+        run: |
+          emcc rhythm_core.cpp -O3 -o rhythm_core.wasm --no-entry \
+            -sSTANDALONE_WASM=1 -sERROR_ON_UNDEFINED_SYMBOLS=1
+          ls -l rhythm_core.wasm
+
       - name: Compile and run C++ generator
         run: |
-          g++ main.cpp -o generator
+          g++ -std=c++17 -O2 -o generator main.cpp
           ./generator
+
+      - name: Assemble publish directory
+        run: |
+          mkdir -p _site
+          cp index.html 404.html robots.txt sitemap.xml favicon.svg _site/
+          cp cover.jpg avatar.jpg bg.webp music.mp3 _site/
+          ls -l _site
+
+      # 资产门：index.html 里引用到的每个本地文件都必须真的在 _site 里，
+      # 否则宁可让部署失败，也不要发一个图裂的页面出去。
+      - name: Gate - every referenced asset must exist
+        run: |
+          node -e '
+            const fs = require("fs");
+            const html = fs.readFileSync("index.html", "utf8");
+            const refs = new Set();
+            for (const m of html.matchAll(/(?:src|href)="([^"]+)"/g)) refs.add(m[1]);
+            for (const m of html.matchAll(/url\(([^)"\x27]+)/g)) refs.add(m[1]);
+            const external = (u) => /^(https?:|mailto:|tel:|data:|#|\/\/)/.test(u);
+            let bad = 0;
+            for (const r of refs) {
+              if (external(r)) continue;
+              if (!fs.existsSync("_site/" + r)) { console.log("::error::referenced but not published: " + r); bad = 1; }
+            }
+            console.log(bad ? "asset gate FAILED" : "asset gate OK - " + refs.size + " refs checked");
+            process.exit(bad);
+          '
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: .
+          path: _site
 
   deploy:
     needs: build

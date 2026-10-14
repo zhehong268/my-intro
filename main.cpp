@@ -10,7 +10,16 @@
  *
  *  风格：亮色清爽 + 蓝紫星空 + 卡片网格 + 强动效。
  *
+ *  构建管线（两步，第二步是可选增强）：
+ *    1) 本文件编译成生成器并运行 → 写出 index.html / favicon.svg /
+ *       404.html / robots.txt / sitemap.xml；
+ *    2) 如果当前目录有 rhythm_core.wasm（由 emcc 编译 rhythm_core.cpp 得到），
+ *       生成器会把它 base64 内联进 HTML，音游的谱面就由 WebAssembly 在
+ *       运行时决定；没有这个文件时退回到生成器算好的同算法谱面。
+ *
  *  性能约定（请勿破坏）：
+ *    - 没有 JavaScript 时整站内容必须完整可读（.js 类没有加上就不锁滚动、
+ *      不藏内容、不做入场动画；计数器与技能条的初值必须是最终值）
  *    - 所有动画只用 transform / opacity，保证走 GPU 合成
  *    - 不使用 backdrop-filter / background-attachment: fixed
  *    - 倾斜、聚光、视差、磁吸全部 rAF 节流，且只在精确指针设备上启用
@@ -21,8 +30,11 @@
 
 #include <fstream>
 #include <iostream>
+#include <iterator>
 #include <string>
 #include <vector>
+
+#include "rhythm_core.hpp"
 
 /* ==================================================================
  *  内容数据区
@@ -43,6 +55,7 @@ struct Profile {
     std::string email       = "3255484226@qq.com";
     std::string qq          = "3255484226";
     std::string github      = "https://github.com/zhehong268";
+    std::string site        = "https://zhehong268.github.io/my-intro/";
     std::string location    = "沈阳";
     std::string hometown    = "成都";
     std::vector<std::string> skills = {"C++", "Python", "Git", "Linux"};
@@ -242,7 +255,9 @@ std::string buildStats(const std::vector<Stat>& list) {
     for (size_t i = 0; i < list.size(); ++i) {
         const auto& s = list[i];
         out += "<div class=\"stat reveal\" style=\"--d:" + std::to_string(i * 80) + "ms\">"
-               "<span class=\"stat-num mono\" data-count=\"" + std::to_string(s.value) + "\">0</span>"
+               /* 初值就是最终值：没有 JS 时也显示 5/3/9/8，而不是 0 */
+               "<span class=\"stat-num mono\" data-count=\"" + std::to_string(s.value) + "\">" +
+               std::to_string(s.value) + "</span>"
                "<span class=\"stat-k mono\">" + s.label + "</span>"
                "</div>";
     }
@@ -264,8 +279,8 @@ const char* kCSS = R"CSS(
 :root{
   --bg:#f6f7fc;
   --ink:#151a2e;
-  --ink-dim:rgba(21,26,46,.66);
-  --ink-faint:rgba(21,26,46,.44);
+  --ink-dim:rgba(21,26,46,.74);
+  --ink-faint:rgba(21,26,46,.62);
   --violet:#6d4dfa;
   --violet-soft:#8b74ff;
   --blue:#3b82f6;
@@ -290,6 +305,15 @@ a{color:inherit;text-decoration:none}
 :focus-visible{outline:2px solid var(--violet);outline-offset:3px;border-radius:6px}
 .mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
 .ic{width:18px;height:18px;flex:none}
+/* 只有 JS 才填得出来的位置：没有 JS 时不要留下 --:--:-- 这类占位 */
+html:not(.js) .js-only{display:none}
+/* 键盘用户的跳转链接：只在获得焦点时露出来 */
+.skip{
+  position:fixed;left:12px;top:-64px;z-index:400;padding:10px 18px;border-radius:10px;
+  background:var(--panel);border:1px solid var(--line-strong);font-size:13px;font-weight:600;
+  box-shadow:0 16px 34px -20px rgba(60,70,140,.7);transition:top .25s var(--ease);
+}
+.skip:focus{top:12px}
 
 /* ---------- 背景层（固定，仅 transform 动） ---------- */
 .bg-fx{position:fixed;inset:0;overflow:hidden;pointer-events:none;z-index:0;
@@ -370,6 +394,9 @@ a{color:inherit;text-decoration:none}
   transition:opacity .85s ease,visibility .85s ease;
 }
 .landing.hidden{opacity:0;visibility:hidden;pointer-events:none}
+/* 没有 JS 就没有入口门：直接看内容，也不要锁住滚动 */
+html:not(.js) .landing{display:none}
+html.entry body{overflow:hidden}
 .landing::before{
   content:'';position:absolute;width:120vw;height:80vw;left:-10vw;top:-30vw;
   background:radial-gradient(circle at 50% 50%,rgba(109,77,250,.16),rgba(109,77,250,0) 60%);
@@ -431,9 +458,11 @@ a{color:inherit;text-decoration:none}
 @keyframes draw{to{stroke-dashoffset:0}}
 
 /* ---------- 页面容器 ---------- */
-.page{position:relative;z-index:2;opacity:0;transition:opacity .9s ease;
+/* 默认可见：入场淡入只在 JS 档里做，脚本挂了内容也照样读得到 */
+.page{position:relative;z-index:2;opacity:1;transition:opacity .9s ease;
   padding:0 clamp(16px,4vw,40px)}
-.page.visible{opacity:1}
+html.js .page{opacity:0}
+html.js .page.visible{opacity:1}
 .section{max-width:1080px;margin:0 auto;padding:76px 0;scroll-margin-top:90px}
 .section-head{margin-bottom:36px}
 .eyebrow{display:inline-flex;align-items:center;gap:9px;
@@ -447,12 +476,13 @@ a{color:inherit;text-decoration:none}
 .section-desc{margin-top:12px;color:var(--ink-dim);font-size:14.5px;max-width:64ch}
 
 /* ---------- 入场动画 ---------- */
-.reveal{
+.reveal{opacity:1;transform:none}
+html.js .reveal{
   opacity:0;transform:translate3d(0,38px,0) scale(.985);
   transition:opacity .8s var(--ease),transform .9s var(--ease);
   transition-delay:var(--d,0ms);
 }
-.reveal.in{opacity:1;transform:none}
+html.js .reveal.in{opacity:1;transform:none}
 
 /* ---------- 通用卡片 ---------- */
 .card{
@@ -518,7 +548,7 @@ a{color:inherit;text-decoration:none}
 .hero-title{margin-top:6px;color:var(--violet);font-weight:600;letter-spacing:2px;font-size:15px}
 .hero-clock{margin-top:20px;font-size:26px;font-weight:700;letter-spacing:7px;color:var(--violet)}
 .hero-status{margin-top:6px;font-size:13px;letter-spacing:1.5px;color:var(--ink-faint)}
-.hero-bio{margin:24px auto 0;max-width:46ch;font-size:15px;line-height:1.9;color:var(--ink-dim)}
+.hero-bio{margin:24px auto 0;max-width:44ch;font-size:15px;line-height:1.9;color:var(--ink-dim);text-align:left}
 .hero-meta{display:flex;flex-wrap:wrap;justify-content:center;gap:10px 26px;
   margin:24px 0 0;padding:18px 0;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
 .hero-meta div{display:flex;align-items:baseline;gap:8px;font-size:13px}
@@ -593,9 +623,11 @@ a{color:inherit;text-decoration:none}
 .bar{height:6px;border-radius:99px;background:rgba(21,26,46,.07);overflow:hidden}
 .bar-fill{display:block;height:100%;border-radius:99px;
   background:linear-gradient(90deg,var(--violet),var(--blue) 60%,var(--sky));
-  transform:scaleX(0);transform-origin:0 50%;
+  transform:scaleX(var(--w,1));transform-origin:0 50%;
   transition:transform 1.15s var(--ease)}
-.bar-fill.grow{transform:scaleX(var(--w,1))}
+/* 只有跑得动 JS 的浏览器才从 0 长出来；没 JS 时直接是最终长度 */
+html.js .bar-fill{transform:scaleX(0)}
+html.js .bar-fill.grow{transform:scaleX(var(--w,1))}
 .tools-title{font-size:12px;letter-spacing:2.5px;color:var(--ink-faint);margin-bottom:14px}
 .tools{list-style:none;display:flex;flex-wrap:wrap;gap:10px}
 .tool{display:inline-flex;align-items:center;gap:8px;padding:8px 14px;border-radius:10px;
@@ -630,6 +662,13 @@ a{color:inherit;text-decoration:none}
 .rhythm-bg::after{content:'';position:absolute;inset:0;
   background:linear-gradient(180deg,rgba(11,16,32,.72),rgba(11,16,32,.93))}
 .rhythm-wrap canvas{position:relative;display:block;width:100%;height:100%}
+/* 内核状态徽标：告诉看的人这一屏的谱面到底是谁算的 */
+.kernel-badge{
+  display:inline-flex;align-items:center;gap:8px;margin-top:16px;padding:7px 14px;
+  border-radius:10px;background:rgba(109,77,250,.08);border:1px solid rgba(109,77,250,.20);
+  font-size:11.5px;letter-spacing:1.2px;color:var(--violet);
+}
+.kernel-badge.ok{background:rgba(14,165,233,.10);border-color:rgba(14,165,233,.26);color:#0369a1}
 .rhythm-overlay{position:absolute;inset:0;pointer-events:none}
 .combo{position:absolute;top:22px;left:50%;transform:translate3d(-50%,0,0);text-align:center}
 .combo-num{display:block;font-family:var(--mono);font-size:52px;font-weight:800;line-height:1;
@@ -717,7 +756,7 @@ a{color:inherit;text-decoration:none}
 @media (prefers-reduced-motion:reduce){
   html{scroll-behavior:auto}
   .aurora i,.landing-photo{animation:none}
-  .reveal{opacity:1;transform:none;transition:none}
+  html.js .reveal{opacity:1;transform:none;transition:none}
   .ripple,.spotlight{display:none}
   .sig text,.sig line{animation-duration:.01ms}
   .bar-fill{transition:none}
@@ -835,6 +874,8 @@ const char* kJS = R"JS(
   /* ============ 数字滚动 ============ */
   function setupCounters() {
     var nums = $$('.stat-num');
+    /* 标记里写的是最终值（给没有 JS 的浏览器看），有 JS 才从 0 滚起来 */
+    nums.forEach(function (el) { el.textContent = '0'; });
     function run(el) {
       var target = parseInt(el.getAttribute('data-count'), 10) || 0;
       if (reduce) { el.textContent = target; return; }
@@ -947,8 +988,13 @@ const char* kJS = R"JS(
     }
 
     var current = '';
-    for (var i = 0; i < sections.length; i++) {
-      if (sections[i].getBoundingClientRect().top <= 150) current = sections[i].id;
+    /* 滚到底时强制点亮最后一节：否则「联系」的 top 永远大于阈值，永远不亮 */
+    if (y + window.innerHeight >= document.documentElement.scrollHeight - 2) {
+      if (sections.length) current = sections[sections.length - 1].id;
+    } else {
+      for (var i = 0; i < sections.length; i++) {
+        if (sections[i].getBoundingClientRect().top <= 150) current = sections[i].id;
+      }
     }
     links.forEach(function (a) {
       a.classList.toggle('active', a.getAttribute('href') === '#' + current);
@@ -1053,6 +1099,7 @@ const char* kJS = R"JS(
     musicBtn.classList.toggle('off', !!m);
     musicBtn.innerHTML = m ? window.__ICON_OFF : window.__ICON_ON;
     musicBtn.setAttribute('aria-label', m ? '播放背景音乐' : '暂停背景音乐');
+    musicBtn.setAttribute('aria-pressed', m ? 'false' : 'true');
   }
 
   music.addEventListener('play', function () { setMuted(false); startViz(); });
@@ -1093,6 +1140,7 @@ const char* kJS = R"JS(
       if (done) return;
       done = true;
       document.body.classList.remove('locked');
+      document.documentElement.classList.remove('entry');
       landing.classList.add('hidden');
       page.classList.add('visible');
       nav.classList.add('visible');
@@ -1131,9 +1179,13 @@ const char* kJS = R"JS(
     var rect = cvs.getBoundingClientRect();
     if (!rect.width || !rect.height) return;
     var dpr = Math.min(window.devicePixelRatio || 1, 2);
-    W = rect.width; H = rect.height;
-    cvs.width = Math.round(W * dpr);
-    cvs.height = Math.round(H * dpr);
+    /* 背板尺寸取整、绘图坐标系由背板反推：避免 CSS 尺寸与背板差一两个像素被拉伸 */
+    var bw = Math.max(1, Math.round(rect.width * dpr));
+    var bh = Math.max(1, Math.round(rect.height * dpr));
+    if (cvs.width === bw && cvs.height === bh) return;
+    W = bw / dpr; H = bh / dpr;
+    cvs.width = bw;
+    cvs.height = bh;
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     laneW = W / LANES;
     hitY = H - 66;
@@ -1154,11 +1206,67 @@ const char* kJS = R"JS(
     ctx.closePath();
   }
 
-  function spawn() {
-    var lane = Math.floor(Math.random() * LANES);
-    if (notes.length > 0 && lane === lastLane && Math.random() < 0.55) {
-      lane = (lane + 1 + Math.floor(Math.random() * (LANES - 1))) % LANES;
+  /* ============ 谱面来源：C++ / WebAssembly 内核 ============
+     两个来源都是同一份 C++ 算法（rhythm_core.hpp）：
+       首选 rhythm_core.wasm —— 由 emcc 编译、生成器 base64 内联，浏览器里运行时算轨道；
+       兜底 生成器谱面     —— 构建时用同一份算法算好的 256 音符，没有 WebAssembly 也能跑。
+     加载后会比对前 64 个音符，结果写进 window.__rhythmParity（ok / mismatch / no-wasm / error）。 */
+  var CHART = window.__RHYTHM_CHART || '';
+  var chartPos = 0;
+  var kernelNext = null;
+  /* 内核没有 import（emcc 产物为 0 import）；真出现了就让实例化失败走兜底，别装作没事 */
+  var kernelImports = {};
+
+  function base64ToBytes(b64) {
+    var bin = atob(b64), n = bin.length, out = new Uint8Array(n);
+    for (var i = 0; i < n; i++) out[i] = bin.charCodeAt(i);
+    return out;
+  }
+
+  function updateKernelBadge() {
+    var el = $('#kernelBadge');
+    if (!el) return;
+    var p = window.__rhythmParity;
+    if (p === 'ok') { el.textContent = 'C++ / WASM 内核 · 谱面自检 ok'; el.classList.add('ok'); }
+    else if (p === 'mismatch') el.textContent = 'C++ / WASM 内核 · 自检不一致，已退回生成器谱面';
+    else if (p === 'no-wasm') el.textContent = '生成器 C++ 谱面（此浏览器不支持 WebAssembly）';
+    else el.textContent = '生成器 C++ 谱面（WASM 内核不可用）';
+  }
+
+  function loadKernel() {
+    var b64 = window.__RHYTHM_WASM;
+    if (!b64 || typeof WebAssembly === 'undefined' || !WebAssembly.instantiate) {
+      window.__rhythmParity = 'no-wasm'; window.__rhythmLaneSource = 'generator';
+      updateKernelBadge(); return;
     }
+    WebAssembly.instantiate(base64ToBytes(b64), { env: kernelImports, wasi_snapshot_preview1: kernelImports })
+      .then(function (res) {
+        var ex = res.instance ? res.instance.exports : res.exports;
+        if (!ex || typeof ex.chart_next !== 'function') throw new Error('chart_next missing');
+        var seed = window.__RHYTHM_SEED, lanes = window.__RHYTHM_LANES;
+        ex.chart_reset(seed, lanes);
+        var ok = true;
+        for (var i = 0; i < 64 && i < CHART.length; i++) {
+          if (ex.chart_next() !== (CHART.charCodeAt(i) - 48)) { ok = false; break; }
+        }
+        ex.chart_reset(seed, lanes);
+        window.__rhythmKernelVersion = ex.kernel_version ? ex.kernel_version() : 0;
+        if (ok) { kernelNext = function () { return ex.chart_next(); }; window.__rhythmParity = 'ok'; window.__rhythmLaneSource = 'wasm'; }
+        else { window.__rhythmParity = 'mismatch'; window.__rhythmLaneSource = 'generator'; }
+        updateKernelBadge();
+      })
+      .catch(function () { window.__rhythmParity = 'error'; window.__rhythmLaneSource = 'generator'; updateKernelBadge(); });
+  }
+
+  function chartLane() {
+    if (kernelNext) return kernelNext();
+    if (!CHART.length) return 0;
+    return CHART.charCodeAt(chartPos++ % CHART.length) - 48;
+  }
+
+  function spawn() {
+    var lane = chartLane();
+    if (!(lane >= 0 && lane < LANES)) lane = 0;
     lastLane = lane;
     notes.push({ lane: lane, y: -14, dead: 0 });
   }
@@ -1288,10 +1396,16 @@ const char* kJS = R"JS(
   if (cvs) {
     fitCanvas();
     seen = true;
+    loadKernel();
     window.addEventListener('resize', function () {
       clearTimeout(cvs.__t);
       cvs.__t = setTimeout(fitCanvas, 180);
     }, { passive: true });
+    /* 字号/布局变化会让 canvas 的 CSS 尺寸变、而 resize 事件不一定来：
+       用 ResizeObserver 盯住它，背板尺寸就不会和显示尺寸对不上 */
+    if (window.ResizeObserver) {
+      new ResizeObserver(function () { fitCanvas(); }).observe(cvs);
+    }
     if ('IntersectionObserver' in window) {
       new IntersectionObserver(function (entries) {
         for (var i = 0; i < entries.length; i++) {
@@ -1329,18 +1443,35 @@ const char* kHead = R"HEAD(<!DOCTYPE html>
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<!-- 第一件事：打上 js / entry 标记。整站默认按「没有 JavaScript」渲染 ——
+     内容直接可读、不锁滚动、不做入场动画；只有这两个标记在，才会有入口门。 -->
+<script>document.documentElement.classList.add('js','entry')</script>
 <meta name="description" content="__NAME__的个人主页：C++ 开发者，在学编程，也看动漫。整站由 C++ 生成。">
 <meta name="theme-color" content="#f6f7fc">
+<link rel="canonical" href="__SITE__">
 <meta property="og:type" content="website">
+<meta property="og:site_name" content="__NAME__ · 个人主页">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:url" content="__SITE__">
 <meta property="og:title" content="__NAME__ · 个人主页">
 <meta property="og:description" content="写代码，也看番。整站由 C++ 生成，部署在 GitHub Pages。">
+<meta property="og:image" content="__SITE__cover.jpg">
+<meta property="og:image:width" content="735">
+<meta property="og:image:height" content="386">
+<meta property="og:image:alt" content="__NAME__ 的主页封面：舞台上的一支乐队">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="__NAME__ · 个人主页">
+<meta name="twitter:description" content="写代码，也看番。整站由 C++ 生成，部署在 GitHub Pages。">
+<meta name="twitter:image" content="__SITE__cover.jpg">
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
+<link rel="preload" as="image" href="cover.jpg" fetchpriority="high">
 <title>__NAME__ · 个人主页</title>
 <style>
 __CSS__
 </style>
 </head>
-<body class="locked">
+<body>
+<a class="skip" href="#about">跳到正文</a>
 )HEAD";
 
 /* ==================================================================
@@ -1373,6 +1504,105 @@ std::string replaceAll(std::string src, const std::string& from, const std::stri
         pos += to.size();
     }
     return src;
+}
+
+/* base64：把 rhythm_core.wasm 内联进 HTML（避免额外请求、也避免 MIME/路径问题） */
+std::string base64(const std::string& raw) {
+    static const char* kTable =
+        "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+    std::string out;
+    out.reserve(((raw.size() + 2) / 3) * 4);
+    size_t i = 0;
+    while (i + 2 < raw.size()) {
+        unsigned n = (static_cast<unsigned char>(raw[i]) << 16) |
+                     (static_cast<unsigned char>(raw[i + 1]) << 8) |
+                      static_cast<unsigned char>(raw[i + 2]);
+        out.push_back(kTable[(n >> 18) & 63]);
+        out.push_back(kTable[(n >> 12) & 63]);
+        out.push_back(kTable[(n >> 6) & 63]);
+        out.push_back(kTable[n & 63]);
+        i += 3;
+    }
+    size_t rest = raw.size() - i;
+    if (rest == 1) {
+        unsigned n = static_cast<unsigned char>(raw[i]) << 16;
+        out.push_back(kTable[(n >> 18) & 63]);
+        out.push_back(kTable[(n >> 12) & 63]);
+        out += "==";
+    } else if (rest == 2) {
+        unsigned n = (static_cast<unsigned char>(raw[i]) << 16) |
+                     (static_cast<unsigned char>(raw[i + 1]) << 8);
+        out.push_back(kTable[(n >> 18) & 63]);
+        out.push_back(kTable[(n >> 12) & 63]);
+        out.push_back(kTable[(n >> 6) & 63]);
+        out.push_back('=');
+    }
+    return out;
+}
+
+/* 读文件，失败返回空串 */
+std::string readFile(const std::string& path) {
+    std::ifstream in(path, std::ios::binary);
+    if (!in.is_open()) return std::string();
+    return std::string((std::istreambuf_iterator<char>(in)), std::istreambuf_iterator<char>());
+}
+
+/* 写文件，返回是否成功 */
+bool writeFile(const std::string& path, const std::string& data) {
+    std::ofstream out(path, std::ios::binary);
+    if (!out.is_open()) return false;
+    out << data;
+    return true;
+}
+
+/* 404 页：GitHub Pages 会用它接管所有不存在的路径，所以自带样式、不依赖别的资源 */
+std::string build404(const Profile& me) {
+    std::string s = "<!DOCTYPE html>\n<html lang=\"zh-CN\">\n<head>\n";
+    s += "<meta charset=\"UTF-8\">\n";
+    s += "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n";
+    s += "<meta name=\"robots\" content=\"noindex\">\n";
+    s += "<title>404 · " + me.name + " 的个人主页</title>\n";
+    s += "<link rel=\"icon\" type=\"image/svg+xml\" href=\"favicon.svg\">\n";
+    s += R"HTML(<style>
+:root{--ink:#151a2e;--dim:rgba(21,26,46,.74);--violet:#6d4dfa;--sky:#0ea5e9}
+*{margin:0;padding:0;box-sizing:border-box}
+body{min-height:100vh;display:grid;place-items:center;padding:28px;text-align:center;
+  font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Microsoft YaHei',sans-serif;
+  color:var(--ink);background:linear-gradient(180deg,#fbfcff,#eef1fa)}
+.code{font-family:Consolas,'Cascadia Mono',monospace;font-size:clamp(64px,18vw,132px);font-weight:700;
+  letter-spacing:6px;background:linear-gradient(110deg,#151a2e,var(--violet) 60%,var(--sky));
+  -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+h1{margin-top:10px;font-size:clamp(18px,3.4vw,24px)}
+p{margin-top:14px;color:var(--dim);font-size:14.5px;line-height:1.9}
+a{display:inline-block;margin-top:26px;padding:13px 30px;border-radius:999px;color:#fff;text-decoration:none;
+  font-size:15px;font-weight:600;background:linear-gradient(110deg,var(--violet),#3b82f6);
+  box-shadow:0 18px 34px -18px rgba(109,77,250,.8)}
+</style>
+</head>
+<body>
+<main>
+  <p class="code">404</p>
+  <h1>这个地址没有内容</h1>
+  <p>可能链接写错了，或者那一页还没做出来。<br>回主页看看别的吧。</p>
+  <a href="/my-intro/">回到主页</a>
+</main>
+</body>
+</html>
+)HTML";
+    return s;
+}
+
+/* robots.txt 与 sitemap.xml：整站只有一个页面，写死即可 */
+std::string buildRobots(const Profile& me) {
+    return "User-agent: *\nAllow: /\n\nSitemap: " + me.site + "sitemap.xml\n";
+}
+
+std::string buildSitemap(const Profile& me) {
+    return "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
+           "<urlset xmlns=\"http://www.sitemaps.org/schemas/sitemap/0.9\">\n"
+           "  <url><loc>" + me.site + "</loc><changefreq>monthly</changefreq>"
+           "<priority>1.0</priority></url>\n"
+           "</urlset>\n";
 }
 
 int main() {
@@ -1436,9 +1666,29 @@ int main() {
         {static_cast<int>(tools.size()),     "开发工具"}
     };
 
+    /* ---------- 音游谱面 ---------- */
+    /* 用 rhythm_core.hpp 里那份算法先算一份谱面（没有 WebAssembly 时的兜底）；
+       同一份算法由 rhythm_core.cpp 编译成 wasm，浏览器里再算一次。 */
+    std::string chart;
+    {
+        rhythm::Rng rng(rhythm::kSeed);
+        int last = -1;
+        for (int i = 0; i < rhythm::kChartLen; ++i) {
+            int lane = rhythm::nextLane(rng, rhythm::kLanes, last);
+            last = lane;
+            chart.push_back(static_cast<char>('0' + lane));
+        }
+    }
+
+    /* rhythm_core.wasm 是可选的：有就内联进页面（运行时由 wasm 决定轨道），
+       没有也不影响构建，只是音游退回上面那份谱面。 */
+    std::string wasmRaw = readFile("rhythm_core.wasm");
+    std::string wasmB64 = wasmRaw.empty() ? std::string() : base64(wasmRaw);
+
     /* ---------- 组装 HTML ---------- */
     std::string html = kHead;
     html = replaceAll(html, "__NAME__", me.name);
+    html = replaceAll(html, "__SITE__", me.site);
     html = replaceAll(html, "__CSS__", kCSS);
 
     html += R"HTML(
@@ -1452,7 +1702,7 @@ int main() {
 <div class="landing" id="landing">
   <div class="landing-inner">
     <div class="landing-photo landing-fade tilt" style="animation-delay:.1s">
-      <img src="__COVER__" alt="封面插画" width="1280" height="720">
+      <img src="__COVER__" alt="封面插画：舞台上的一支乐队" width="735" height="386" decoding="async" fetchpriority="high">
     </div>
     <p class="landing-latin landing-fade" style="animation-delay:.35s">__LATIN__</p>
     <h1 class="landing-title landing-fade" style="animation-delay:.45s">__WELCOME__</h1>
@@ -1530,8 +1780,8 @@ int main() {
             "\" alt=\"" + me.name + "的头像\" width=\"132\" height=\"132\" decoding=\"async\"></div>";
     html += "<h1 class=\"hero-name\">" + me.name + "</h1>";
     html += "<p class=\"hero-title\">" + me.title + "</p>";
-    html += "<div class=\"hero-clock mono\" id=\"clock\">--:--:--</div>";
-    html += "<p class=\"hero-status\" id=\"status\">正在加载…</p>";
+    html += "<div class=\"hero-clock mono js-only\" id=\"clock\">--:--:--</div>";
+    html += "<p class=\"hero-status js-only\" id=\"status\">正在加载…</p>";
     html += "<p class=\"hero-bio\">" + me.bio + "</p>";
     html += "<dl class=\"hero-meta\">"
             "<div><dt>方向</dt><dd>C++ / 后端</dd></div>"
@@ -1665,11 +1915,13 @@ int main() {
     <span class="eyebrow mono">07 / RHYTHM</span>
     <h2 class="section-title">音游</h2>
     <p class="section-desc">一个跑在单个 canvas 上的自动演奏小游戏：168 BPM，七轨，命中特效由 requestAnimationFrame 时间轴驱动。滚出可视区域会自动暂停。</p>
+    <p class="section-desc">轨道不是随机数表：<code>rhythm_core.cpp</code> 编译成 WebAssembly 在浏览器里跑，每个音符落在哪条轨由 C++ 决定；生成器同时用同一份算法算了一份谱面做比对。</p>
+    <p class="kernel-badge mono" id="kernelBadge">C++ / WASM 内核 · 检测中…</p>
   </div>
   <div class="rhythm-wrap reveal">
     <div class="rhythm-bg" aria-hidden="true"></div>
-    <canvas id="rhythmCanvas" role="img" aria-label="自动演奏的节奏小游戏"></canvas>
-    <div class="rhythm-overlay">
+    <canvas id="rhythmCanvas" role="img" aria-label="自动演奏的节奏小游戏：七条轨道上不断落下的音符"></canvas>
+    <div class="rhythm-overlay" aria-hidden="true">
       <div class="combo">
         <span class="combo-num mono" id="comboNum">0</span>
         <span class="combo-label">COMBO</span>
@@ -1696,6 +1948,7 @@ int main() {
     <p>没有一行行纯手打那么硬核，也没法一键生成这么省事：主体自己手搓，卡住的地方让 AI 搭把手，写完再自己读一遍改到能看懂为止。</p>
     <p>写这个站点的过程本身就是练习：结构怎么拆、动画为什么卡、部署怎么跑通，都是一处处自己试出来的。</p>
     <p>性能上的取舍写在这里，方便以后自己回看：动画只用 <code>transform</code> 与 <code>opacity</code>；不使用 <code>backdrop-filter</code> 与 <code>background-attachment: fixed</code>；倾斜、聚光、视差全部 rAF 节流且只在桌面端启用；音游跑在单个 <code>canvas</code> 上；背景音乐在首次交互后才加载。</p>
+    <p>整站默认按「没有 JavaScript」渲染：脚本挂了，内容、技能条长度、数字条也都还是对的；入口门与入场动画是脚本跑起来之后才加上去的装饰。音游的谱面由 <code>rhythm_core.cpp</code> 编译成的 WebAssembly 在浏览器里算，生成器另用同一份算法算一份用来做加载时的自检。</p>
     <div class="site-tech">
       <ul class="tools">
 )HTML";
@@ -1756,8 +2009,8 @@ int main() {
 <audio id="bgMusic" loop preload="none" src=")HTML" + me.bgMusic + R"HTML("></audio>
 
 <noscript>
-  <p style="position:fixed;left:0;right:0;bottom:0;padding:12px;text-align:center;background:#fff;font-size:13px">
-    本站的交互需要启用 JavaScript。
+  <p style="position:fixed;left:0;right:0;top:0;padding:10px 14px;text-align:center;background:rgba(255,255,255,.96);border-bottom:1px solid rgba(21,26,46,.12);font-size:13px;z-index:500">
+    没有 JavaScript 也能读完这一页 —— 只是入口动画、实时时钟和音游不会动。开启 JavaScript 可以看到完整效果。
   </p>
 </noscript>
 
@@ -1766,6 +2019,10 @@ window.__ICON_ON = ')HTML" + icon("music") + R"HTML(';
 window.__ICON_OFF = ')HTML" + icon("music-off") + R"HTML(';
 window.__ICON_MENU = ')HTML" + icon("menu") + R"HTML(';
 window.__ICON_CLOSE = ')HTML" + icon("close") + R"HTML(';
+window.__RHYTHM_CHART = ')HTML" + chart + R"HTML(';
+window.__RHYTHM_SEED = ')HTML" + std::to_string(rhythm::kSeed) + R"HTML(';
+window.__RHYTHM_LANES = ')HTML" + std::to_string(rhythm::kLanes) + R"HTML(';
+window.__RHYTHM_WASM = ')HTML" + wasmB64 + R"HTML(';
 </script>
 <script>
 __JS__
@@ -1791,6 +2048,23 @@ __JS__
         ico.close();
     }
 
-    std::cout << "生成成功：index.html (" << html.size() << " 字节) + favicon.svg" << std::endl;
+    /* ---------- 其余产物 ---------- */
+    bool ok404  = writeFile("404.html", build404(me));
+    bool okRob  = writeFile("robots.txt", buildRobots(me));
+    bool okMap  = writeFile("sitemap.xml", buildSitemap(me));
+
+    std::cout << "生成成功：index.html (" << html.size() << " 字节) + favicon.svg"
+              << (ok404 ? " + 404.html" : " (404.html 写入失败)")
+              << (okRob ? " + robots.txt" : " (robots.txt 写入失败)")
+              << (okMap ? " + sitemap.xml" : " (sitemap.xml 写入失败)")
+              << std::endl;
+    if (wasmB64.empty()) {
+        std::cout << "提示：当前目录没有 rhythm_core.wasm，音游使用生成器算好的谱面。"
+                  << "要启用 wasm 内核：emcc rhythm_core.cpp -O3 -o rhythm_core.wasm --no-entry -sSTANDALONE_WASM=1"
+                  << std::endl;
+    } else {
+        std::cout << "音游内核：已内联 rhythm_core.wasm (" << wasmRaw.size() << " 字节 → base64 "
+                  << wasmB64.size() << " 字节)" << std::endl;
+    }
     return 0;
 }

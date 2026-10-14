@@ -3,20 +3,36 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<!-- 第一件事：打上 js / entry 标记。整站默认按「没有 JavaScript」渲染 ——
+     内容直接可读、不锁滚动、不做入场动画；只有这两个标记在，才会有入口门。 -->
+<script>document.documentElement.classList.add('js','entry')</script>
 <meta name="description" content="遮鸿的个人主页：C++ 开发者，在学编程，也看动漫。整站由 C++ 生成。">
 <meta name="theme-color" content="#f6f7fc">
+<link rel="canonical" href="https://zhehong268.github.io/my-intro/">
 <meta property="og:type" content="website">
+<meta property="og:site_name" content="遮鸿 · 个人主页">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:url" content="https://zhehong268.github.io/my-intro/">
 <meta property="og:title" content="遮鸿 · 个人主页">
 <meta property="og:description" content="写代码，也看番。整站由 C++ 生成，部署在 GitHub Pages。">
+<meta property="og:image" content="https://zhehong268.github.io/my-intro/cover.jpg">
+<meta property="og:image:width" content="735">
+<meta property="og:image:height" content="386">
+<meta property="og:image:alt" content="遮鸿 的主页封面：舞台上的一支乐队">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="遮鸿 · 个人主页">
+<meta name="twitter:description" content="写代码，也看番。整站由 C++ 生成，部署在 GitHub Pages。">
+<meta name="twitter:image" content="https://zhehong268.github.io/my-intro/cover.jpg">
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
+<link rel="preload" as="image" href="cover.jpg" fetchpriority="high">
 <title>遮鸿 · 个人主页</title>
 <style>
 
 :root{
   --bg:#f6f7fc;
   --ink:#151a2e;
-  --ink-dim:rgba(21,26,46,.66);
-  --ink-faint:rgba(21,26,46,.44);
+  --ink-dim:rgba(21,26,46,.74);
+  --ink-faint:rgba(21,26,46,.62);
   --violet:#6d4dfa;
   --violet-soft:#8b74ff;
   --blue:#3b82f6;
@@ -41,6 +57,15 @@ a{color:inherit;text-decoration:none}
 :focus-visible{outline:2px solid var(--violet);outline-offset:3px;border-radius:6px}
 .mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
 .ic{width:18px;height:18px;flex:none}
+/* 只有 JS 才填得出来的位置：没有 JS 时不要留下 --:--:-- 这类占位 */
+html:not(.js) .js-only{display:none}
+/* 键盘用户的跳转链接：只在获得焦点时露出来 */
+.skip{
+  position:fixed;left:12px;top:-64px;z-index:400;padding:10px 18px;border-radius:10px;
+  background:var(--panel);border:1px solid var(--line-strong);font-size:13px;font-weight:600;
+  box-shadow:0 16px 34px -20px rgba(60,70,140,.7);transition:top .25s var(--ease);
+}
+.skip:focus{top:12px}
 
 /* ---------- 背景层（固定，仅 transform 动） ---------- */
 .bg-fx{position:fixed;inset:0;overflow:hidden;pointer-events:none;z-index:0;
@@ -121,6 +146,9 @@ a{color:inherit;text-decoration:none}
   transition:opacity .85s ease,visibility .85s ease;
 }
 .landing.hidden{opacity:0;visibility:hidden;pointer-events:none}
+/* 没有 JS 就没有入口门：直接看内容，也不要锁住滚动 */
+html:not(.js) .landing{display:none}
+html.entry body{overflow:hidden}
 .landing::before{
   content:'';position:absolute;width:120vw;height:80vw;left:-10vw;top:-30vw;
   background:radial-gradient(circle at 50% 50%,rgba(109,77,250,.16),rgba(109,77,250,0) 60%);
@@ -182,9 +210,11 @@ a{color:inherit;text-decoration:none}
 @keyframes draw{to{stroke-dashoffset:0}}
 
 /* ---------- 页面容器 ---------- */
-.page{position:relative;z-index:2;opacity:0;transition:opacity .9s ease;
+/* 默认可见：入场淡入只在 JS 档里做，脚本挂了内容也照样读得到 */
+.page{position:relative;z-index:2;opacity:1;transition:opacity .9s ease;
   padding:0 clamp(16px,4vw,40px)}
-.page.visible{opacity:1}
+html.js .page{opacity:0}
+html.js .page.visible{opacity:1}
 .section{max-width:1080px;margin:0 auto;padding:76px 0;scroll-margin-top:90px}
 .section-head{margin-bottom:36px}
 .eyebrow{display:inline-flex;align-items:center;gap:9px;
@@ -198,12 +228,13 @@ a{color:inherit;text-decoration:none}
 .section-desc{margin-top:12px;color:var(--ink-dim);font-size:14.5px;max-width:64ch}
 
 /* ---------- 入场动画 ---------- */
-.reveal{
+.reveal{opacity:1;transform:none}
+html.js .reveal{
   opacity:0;transform:translate3d(0,38px,0) scale(.985);
   transition:opacity .8s var(--ease),transform .9s var(--ease);
   transition-delay:var(--d,0ms);
 }
-.reveal.in{opacity:1;transform:none}
+html.js .reveal.in{opacity:1;transform:none}
 
 /* ---------- 通用卡片 ---------- */
 .card{
@@ -269,7 +300,7 @@ a{color:inherit;text-decoration:none}
 .hero-title{margin-top:6px;color:var(--violet);font-weight:600;letter-spacing:2px;font-size:15px}
 .hero-clock{margin-top:20px;font-size:26px;font-weight:700;letter-spacing:7px;color:var(--violet)}
 .hero-status{margin-top:6px;font-size:13px;letter-spacing:1.5px;color:var(--ink-faint)}
-.hero-bio{margin:24px auto 0;max-width:46ch;font-size:15px;line-height:1.9;color:var(--ink-dim)}
+.hero-bio{margin:24px auto 0;max-width:44ch;font-size:15px;line-height:1.9;color:var(--ink-dim);text-align:left}
 .hero-meta{display:flex;flex-wrap:wrap;justify-content:center;gap:10px 26px;
   margin:24px 0 0;padding:18px 0;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
 .hero-meta div{display:flex;align-items:baseline;gap:8px;font-size:13px}
@@ -344,9 +375,11 @@ a{color:inherit;text-decoration:none}
 .bar{height:6px;border-radius:99px;background:rgba(21,26,46,.07);overflow:hidden}
 .bar-fill{display:block;height:100%;border-radius:99px;
   background:linear-gradient(90deg,var(--violet),var(--blue) 60%,var(--sky));
-  transform:scaleX(0);transform-origin:0 50%;
+  transform:scaleX(var(--w,1));transform-origin:0 50%;
   transition:transform 1.15s var(--ease)}
-.bar-fill.grow{transform:scaleX(var(--w,1))}
+/* 只有跑得动 JS 的浏览器才从 0 长出来；没 JS 时直接是最终长度 */
+html.js .bar-fill{transform:scaleX(0)}
+html.js .bar-fill.grow{transform:scaleX(var(--w,1))}
 .tools-title{font-size:12px;letter-spacing:2.5px;color:var(--ink-faint);margin-bottom:14px}
 .tools{list-style:none;display:flex;flex-wrap:wrap;gap:10px}
 .tool{display:inline-flex;align-items:center;gap:8px;padding:8px 14px;border-radius:10px;
@@ -381,6 +414,13 @@ a{color:inherit;text-decoration:none}
 .rhythm-bg::after{content:'';position:absolute;inset:0;
   background:linear-gradient(180deg,rgba(11,16,32,.72),rgba(11,16,32,.93))}
 .rhythm-wrap canvas{position:relative;display:block;width:100%;height:100%}
+/* 内核状态徽标：告诉看的人这一屏的谱面到底是谁算的 */
+.kernel-badge{
+  display:inline-flex;align-items:center;gap:8px;margin-top:16px;padding:7px 14px;
+  border-radius:10px;background:rgba(109,77,250,.08);border:1px solid rgba(109,77,250,.20);
+  font-size:11.5px;letter-spacing:1.2px;color:var(--violet);
+}
+.kernel-badge.ok{background:rgba(14,165,233,.10);border-color:rgba(14,165,233,.26);color:#0369a1}
 .rhythm-overlay{position:absolute;inset:0;pointer-events:none}
 .combo{position:absolute;top:22px;left:50%;transform:translate3d(-50%,0,0);text-align:center}
 .combo-num{display:block;font-family:var(--mono);font-size:52px;font-weight:800;line-height:1;
@@ -468,7 +508,7 @@ a{color:inherit;text-decoration:none}
 @media (prefers-reduced-motion:reduce){
   html{scroll-behavior:auto}
   .aurora i,.landing-photo{animation:none}
-  .reveal{opacity:1;transform:none;transition:none}
+  html.js .reveal{opacity:1;transform:none;transition:none}
   .ripple,.spotlight{display:none}
   .sig text,.sig line{animation-duration:.01ms}
   .bar-fill{transition:none}
@@ -476,7 +516,8 @@ a{color:inherit;text-decoration:none}
 
 </style>
 </head>
-<body class="locked">
+<body>
+<a class="skip" href="#about">跳到正文</a>
 
 <div class="bg-fx" aria-hidden="true">
   <div class="bg-grid"></div>
@@ -488,7 +529,7 @@ a{color:inherit;text-decoration:none}
 <div class="landing" id="landing">
   <div class="landing-inner">
     <div class="landing-photo landing-fade tilt" style="animation-delay:.1s">
-      <img src="cover.jpg" alt="封面插画" width="1280" height="720">
+      <img src="cover.jpg" alt="封面插画：舞台上的一支乐队" width="735" height="386" decoding="async" fetchpriority="high">
     </div>
     <p class="landing-latin landing-fade" style="animation-delay:.35s">ZHE HONG</p>
     <h1 class="landing-title landing-fade" style="animation-delay:.45s">欢迎来到遮鸿的个人主页</h1>
@@ -546,7 +587,7 @@ a{color:inherit;text-decoration:none}
 </nav>
 
 <main class="page" id="page">
-<header class="section hero" id="top"><div class="hero-card reveal"><div class="avatar-ring"><img id="avatarImg" src="avatar.jpg" alt="遮鸿的头像" width="132" height="132" decoding="async"></div><h1 class="hero-name">遮鸿</h1><p class="hero-title">C++ 开发者</p><div class="hero-clock mono" id="clock">--:--:--</div><p class="hero-status" id="status">正在加载…</p><p class="hero-bio">在读学生，在学 C++，目前还在打基础，写点小项目练手。平时喜欢看动漫：邦多利、JOJO、鬼灭、轻音、咒术、孤独摇滚、闺泣、Fate 等。这个主页也是练习的一部分。</p><dl class="hero-meta"><div><dt>方向</dt><dd>C++ / 后端</dd></div><div><dt>现居</dt><dd>沈阳</dd></div><div><dt>家乡</dt><dd>成都</dd></div><div><dt>状态</dt><dd>在学</dd></div></dl><div class="chips"><span class="chip">C++</span><span class="chip">Python</span><span class="chip">Git</span><span class="chip">Linux</span></div><div class="hero-actions"><a class="btn btn-primary" href="mailto:3255484226@qq.com"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2.5"/><path d="M3.6 7.6 12 13.2l8.4-5.6"/></svg>发邮件</a><a class="btn" href="https://github.com/zhehong268" target="_blank" rel="noopener"><svg class="ic" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 .5C5.37.5 0 5.87 0 12.5c0 5.3 3.44 9.8 8.21 11.39.6.11.82-.26.82-.57 0-.28-.01-1.04-.02-2.04-3.34.73-4.04-1.61-4.04-1.61-.55-1.39-1.34-1.76-1.34-1.76-1.09-.75.08-.73.08-.73 1.2.08 1.84 1.24 1.84 1.24 1.07 1.84 2.81 1.31 3.5 1 .11-.78.42-1.31.76-1.61-2.67-.3-5.47-1.34-5.47-5.95 0-1.31.47-2.38 1.24-3.22-.13-.3-.54-1.52.11-3.18 0 0 1.01-.32 3.3 1.23a11.5 11.5 0 0 1 6 0c2.29-1.55 3.3-1.23 3.3-1.23.65 1.66.24 2.88.12 3.18.77.84 1.24 1.91 1.24 3.22 0 4.62-2.81 5.64-5.49 5.94.43.37.81 1.1.81 2.22 0 1.6-.01 2.9-.01 3.29 0 .31.21.69.83.57A12.01 12.01 0 0 0 24 12.5C24 5.87 18.63.5 12 .5Z"/></svg>GitHub</a></div><p class="hero-note mono">Generated by C++ · Deployed on GitHub Pages</p></div><div class="stats"><div class="stat reveal" style="--d:0ms"><span class="stat-num mono" data-count="5">0</span><span class="stat-k mono">技能项</span></div><div class="stat reveal" style="--d:80ms"><span class="stat-num mono" data-count="3">0</span><span class="stat-k mono">项目</span></div><div class="stat reveal" style="--d:160ms"><span class="stat-num mono" data-count="9">0</span><span class="stat-k mono">收录作品</span></div><div class="stat reveal" style="--d:240ms"><span class="stat-num mono" data-count="8">0</span><span class="stat-k mono">开发工具</span></div></div></header>
+<header class="section hero" id="top"><div class="hero-card reveal"><div class="avatar-ring"><img id="avatarImg" src="avatar.jpg" alt="遮鸿的头像" width="132" height="132" decoding="async"></div><h1 class="hero-name">遮鸿</h1><p class="hero-title">C++ 开发者</p><div class="hero-clock mono js-only" id="clock">--:--:--</div><p class="hero-status js-only" id="status">正在加载…</p><p class="hero-bio">在读学生，在学 C++，目前还在打基础，写点小项目练手。平时喜欢看动漫：邦多利、JOJO、鬼灭、轻音、咒术、孤独摇滚、闺泣、Fate 等。这个主页也是练习的一部分。</p><dl class="hero-meta"><div><dt>方向</dt><dd>C++ / 后端</dd></div><div><dt>现居</dt><dd>沈阳</dd></div><div><dt>家乡</dt><dd>成都</dd></div><div><dt>状态</dt><dd>在学</dd></div></dl><div class="chips"><span class="chip">C++</span><span class="chip">Python</span><span class="chip">Git</span><span class="chip">Linux</span></div><div class="hero-actions"><a class="btn btn-primary" href="mailto:3255484226@qq.com"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2.5"/><path d="M3.6 7.6 12 13.2l8.4-5.6"/></svg>发邮件</a><a class="btn" href="https://github.com/zhehong268" target="_blank" rel="noopener"><svg class="ic" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 .5C5.37.5 0 5.87 0 12.5c0 5.3 3.44 9.8 8.21 11.39.6.11.82-.26.82-.57 0-.28-.01-1.04-.02-2.04-3.34.73-4.04-1.61-4.04-1.61-.55-1.39-1.34-1.76-1.34-1.76-1.09-.75.08-.73.08-.73 1.2.08 1.84 1.24 1.84 1.24 1.07 1.84 2.81 1.31 3.5 1 .11-.78.42-1.31.76-1.61-2.67-.3-5.47-1.34-5.47-5.95 0-1.31.47-2.38 1.24-3.22-.13-.3-.54-1.52.11-3.18 0 0 1.01-.32 3.3 1.23a11.5 11.5 0 0 1 6 0c2.29-1.55 3.3-1.23 3.3-1.23.65 1.66.24 2.88.12 3.18.77.84 1.24 1.91 1.24 3.22 0 4.62-2.81 5.64-5.49 5.94.43.37.81 1.1.81 2.22 0 1.6-.01 2.9-.01 3.29 0 .31.21.69.83.57A12.01 12.01 0 0 0 24 12.5C24 5.87 18.63.5 12 .5Z"/></svg>GitHub</a></div><p class="hero-note mono">Generated by C++ · Deployed on GitHub Pages</p></div><div class="stats"><div class="stat reveal" style="--d:0ms"><span class="stat-num mono" data-count="5">5</span><span class="stat-k mono">技能项</span></div><div class="stat reveal" style="--d:80ms"><span class="stat-num mono" data-count="3">3</span><span class="stat-k mono">项目</span></div><div class="stat reveal" style="--d:160ms"><span class="stat-num mono" data-count="9">9</span><span class="stat-k mono">收录作品</span></div><div class="stat reveal" style="--d:240ms"><span class="stat-num mono" data-count="8">8</span><span class="stat-k mono">开发工具</span></div></div></header>
 <section class="section" id="about">
   <div class="section-head reveal">
     <span class="eyebrow mono">01 / ABOUT</span>
@@ -631,11 +672,13 @@ a{color:inherit;text-decoration:none}
     <span class="eyebrow mono">07 / RHYTHM</span>
     <h2 class="section-title">音游</h2>
     <p class="section-desc">一个跑在单个 canvas 上的自动演奏小游戏：168 BPM，七轨，命中特效由 requestAnimationFrame 时间轴驱动。滚出可视区域会自动暂停。</p>
+    <p class="section-desc">轨道不是随机数表：<code>rhythm_core.cpp</code> 编译成 WebAssembly 在浏览器里跑，每个音符落在哪条轨由 C++ 决定；生成器同时用同一份算法算了一份谱面做比对。</p>
+    <p class="kernel-badge mono" id="kernelBadge">C++ / WASM 内核 · 检测中…</p>
   </div>
   <div class="rhythm-wrap reveal">
     <div class="rhythm-bg" aria-hidden="true"></div>
-    <canvas id="rhythmCanvas" role="img" aria-label="自动演奏的节奏小游戏"></canvas>
-    <div class="rhythm-overlay">
+    <canvas id="rhythmCanvas" role="img" aria-label="自动演奏的节奏小游戏：七条轨道上不断落下的音符"></canvas>
+    <div class="rhythm-overlay" aria-hidden="true">
       <div class="combo">
         <span class="combo-num mono" id="comboNum">0</span>
         <span class="combo-label">COMBO</span>
@@ -658,6 +701,7 @@ a{color:inherit;text-decoration:none}
     <p>没有一行行纯手打那么硬核，也没法一键生成这么省事：主体自己手搓，卡住的地方让 AI 搭把手，写完再自己读一遍改到能看懂为止。</p>
     <p>写这个站点的过程本身就是练习：结构怎么拆、动画为什么卡、部署怎么跑通，都是一处处自己试出来的。</p>
     <p>性能上的取舍写在这里，方便以后自己回看：动画只用 <code>transform</code> 与 <code>opacity</code>；不使用 <code>backdrop-filter</code> 与 <code>background-attachment: fixed</code>；倾斜、聚光、视差全部 rAF 节流且只在桌面端启用；音游跑在单个 <code>canvas</code> 上；背景音乐在首次交互后才加载。</p>
+    <p>整站默认按「没有 JavaScript」渲染：脚本挂了，内容、技能条长度、数字条也都还是对的；入口门与入场动画是脚本跑起来之后才加上去的装饰。音游的谱面由 <code>rhythm_core.cpp</code> 编译成的 WebAssembly 在浏览器里算，生成器另用同一份算法算一份用来做加载时的自检。</p>
     <div class="site-tech">
       <ul class="tools">
 <li class="tool mono"><span class="tool-dot"></span>C++17</li><li class="tool mono"><span class="tool-dot"></span>静态生成器</li><li class="tool mono"><span class="tool-dot"></span>GitHub Actions</li><li class="tool mono"><span class="tool-dot"></span>GitHub Pages</li><li class="tool mono"><span class="tool-dot"></span>Canvas 2D</li><li class="tool mono"><span class="tool-dot"></span>原生 JS</li>
@@ -701,8 +745,8 @@ a{color:inherit;text-decoration:none}
 <audio id="bgMusic" loop preload="none" src="music.mp3"></audio>
 
 <noscript>
-  <p style="position:fixed;left:0;right:0;bottom:0;padding:12px;text-align:center;background:#fff;font-size:13px">
-    本站的交互需要启用 JavaScript。
+  <p style="position:fixed;left:0;right:0;top:0;padding:10px 14px;text-align:center;background:rgba(255,255,255,.96);border-bottom:1px solid rgba(21,26,46,.12);font-size:13px;z-index:500">
+    没有 JavaScript 也能读完这一页 —— 只是入口动画、实时时钟和音游不会动。开启 JavaScript 可以看到完整效果。
   </p>
 </noscript>
 
@@ -711,6 +755,10 @@ window.__ICON_ON = '<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="curr
 window.__ICON_OFF = '<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 17.5V6.2l10-1.7v11"/><circle cx="6.5" cy="17.5" r="2.6"/><path d="M4 4l16 16"/></svg>';
 window.__ICON_MENU = '<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16"/><path d="M4 12h16"/><path d="M4 17h16"/></svg>';
 window.__ICON_CLOSE = '<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12"/><path d="M18 6 6 18"/></svg>';
+window.__RHYTHM_CHART = '1051265142524253526134526204036065030460256546563234542610262041045240426421521603121542021526164214614643053512613602021601312656052343413230602523406131235356246035151643262531052643012421262142526345162624105120426301425451210210254125405410305235121045';
+window.__RHYTHM_SEED = '1592598566';
+window.__RHYTHM_LANES = '7';
+window.__RHYTHM_WASM = 'AGFzbQEAAAABGAVgAAF/YAAAYAJ/fwBgA39/fwF/YAF/AAMIBwEAAgADBAAEBQFwAQICBQYBAYICggIGCAF/AUGQiAQLB6YBCQZtZW1vcnkCAA5rZXJuZWxfdmVyc2lvbgABC2NoYXJ0X3Jlc2V0AAIKY2hhcnRfbmV4dAADCGNoYXJ0X2F0AAQZX19pbmRpcmVjdF9mdW5jdGlvbl90YWJsZQEAC19pbml0aWFsaXplAAAZX2Vtc2NyaXB0ZW5fc3RhY2tfcmVzdG9yZQAFHGVtc2NyaXB0ZW5fc3RhY2tfZ2V0X2N1cnJlbnQABgkHAQBBAQsBAAwBAQrZAgcDAAELBABBAQsvAEGECEF/NgIAQYAIIABBufPd8XkgABs2AgBBiAhBByABIAFBAWtBwABPGzYCAAuAAQEEf0GACEGACCgCACIAQQ10IABzIgBBEXYgAHMiAEEFdCAAcyIANgIAIABBiAgoAgAiAnAiAUGECCgCACIDRgRAQYAIIABBDXQgAHMiAEERdiAAcyIAQQV0IABzIgA2AgAgAyAAIAJBAWtwakEBaiACbyEBC0GECCABNgIAIAELjwEBBH8gAEEATgRAQX8hAyACQQFrIQYgAUG5893xeSABGyEBA0ACfyADIAFBDXQgAXMiAUERdiABcyIBQQV0IAFzIgEgAnAiBUcEQCAFDAELIAMgAUENdCABcyIBQRF2IAFzIgFBBXQgAXMiASAGcGpBAWogAm8LIQMgACAERyEFIARBAWohBCAFDQALCyADCwYAIAAkAAsEACMACwsQAQBBgAgLCSYg7V7/////Bw==';
 </script>
 <script>
 
@@ -820,6 +868,8 @@ window.__ICON_CLOSE = '<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="c
   /* ============ 数字滚动 ============ */
   function setupCounters() {
     var nums = $$('.stat-num');
+    /* 标记里写的是最终值（给没有 JS 的浏览器看），有 JS 才从 0 滚起来 */
+    nums.forEach(function (el) { el.textContent = '0'; });
     function run(el) {
       var target = parseInt(el.getAttribute('data-count'), 10) || 0;
       if (reduce) { el.textContent = target; return; }
@@ -932,8 +982,13 @@ window.__ICON_CLOSE = '<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="c
     }
 
     var current = '';
-    for (var i = 0; i < sections.length; i++) {
-      if (sections[i].getBoundingClientRect().top <= 150) current = sections[i].id;
+    /* 滚到底时强制点亮最后一节：否则「联系」的 top 永远大于阈值，永远不亮 */
+    if (y + window.innerHeight >= document.documentElement.scrollHeight - 2) {
+      if (sections.length) current = sections[sections.length - 1].id;
+    } else {
+      for (var i = 0; i < sections.length; i++) {
+        if (sections[i].getBoundingClientRect().top <= 150) current = sections[i].id;
+      }
     }
     links.forEach(function (a) {
       a.classList.toggle('active', a.getAttribute('href') === '#' + current);
@@ -1038,6 +1093,7 @@ window.__ICON_CLOSE = '<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="c
     musicBtn.classList.toggle('off', !!m);
     musicBtn.innerHTML = m ? window.__ICON_OFF : window.__ICON_ON;
     musicBtn.setAttribute('aria-label', m ? '播放背景音乐' : '暂停背景音乐');
+    musicBtn.setAttribute('aria-pressed', m ? 'false' : 'true');
   }
 
   music.addEventListener('play', function () { setMuted(false); startViz(); });
@@ -1078,6 +1134,7 @@ window.__ICON_CLOSE = '<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="c
       if (done) return;
       done = true;
       document.body.classList.remove('locked');
+      document.documentElement.classList.remove('entry');
       landing.classList.add('hidden');
       page.classList.add('visible');
       nav.classList.add('visible');
@@ -1116,9 +1173,13 @@ window.__ICON_CLOSE = '<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="c
     var rect = cvs.getBoundingClientRect();
     if (!rect.width || !rect.height) return;
     var dpr = Math.min(window.devicePixelRatio || 1, 2);
-    W = rect.width; H = rect.height;
-    cvs.width = Math.round(W * dpr);
-    cvs.height = Math.round(H * dpr);
+    /* 背板尺寸取整、绘图坐标系由背板反推：避免 CSS 尺寸与背板差一两个像素被拉伸 */
+    var bw = Math.max(1, Math.round(rect.width * dpr));
+    var bh = Math.max(1, Math.round(rect.height * dpr));
+    if (cvs.width === bw && cvs.height === bh) return;
+    W = bw / dpr; H = bh / dpr;
+    cvs.width = bw;
+    cvs.height = bh;
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     laneW = W / LANES;
     hitY = H - 66;
@@ -1139,11 +1200,67 @@ window.__ICON_CLOSE = '<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="c
     ctx.closePath();
   }
 
-  function spawn() {
-    var lane = Math.floor(Math.random() * LANES);
-    if (notes.length > 0 && lane === lastLane && Math.random() < 0.55) {
-      lane = (lane + 1 + Math.floor(Math.random() * (LANES - 1))) % LANES;
+  /* ============ 谱面来源：C++ / WebAssembly 内核 ============
+     两个来源都是同一份 C++ 算法（rhythm_core.hpp）：
+       首选 rhythm_core.wasm —— 由 emcc 编译、生成器 base64 内联，浏览器里运行时算轨道；
+       兜底 生成器谱面     —— 构建时用同一份算法算好的 256 音符，没有 WebAssembly 也能跑。
+     加载后会比对前 64 个音符，结果写进 window.__rhythmParity（ok / mismatch / no-wasm / error）。 */
+  var CHART = window.__RHYTHM_CHART || '';
+  var chartPos = 0;
+  var kernelNext = null;
+  /* 内核没有 import（emcc 产物为 0 import）；真出现了就让实例化失败走兜底，别装作没事 */
+  var kernelImports = {};
+
+  function base64ToBytes(b64) {
+    var bin = atob(b64), n = bin.length, out = new Uint8Array(n);
+    for (var i = 0; i < n; i++) out[i] = bin.charCodeAt(i);
+    return out;
+  }
+
+  function updateKernelBadge() {
+    var el = $('#kernelBadge');
+    if (!el) return;
+    var p = window.__rhythmParity;
+    if (p === 'ok') { el.textContent = 'C++ / WASM 内核 · 谱面自检 ok'; el.classList.add('ok'); }
+    else if (p === 'mismatch') el.textContent = 'C++ / WASM 内核 · 自检不一致，已退回生成器谱面';
+    else if (p === 'no-wasm') el.textContent = '生成器 C++ 谱面（此浏览器不支持 WebAssembly）';
+    else el.textContent = '生成器 C++ 谱面（WASM 内核不可用）';
+  }
+
+  function loadKernel() {
+    var b64 = window.__RHYTHM_WASM;
+    if (!b64 || typeof WebAssembly === 'undefined' || !WebAssembly.instantiate) {
+      window.__rhythmParity = 'no-wasm'; window.__rhythmLaneSource = 'generator';
+      updateKernelBadge(); return;
     }
+    WebAssembly.instantiate(base64ToBytes(b64), { env: kernelImports, wasi_snapshot_preview1: kernelImports })
+      .then(function (res) {
+        var ex = res.instance ? res.instance.exports : res.exports;
+        if (!ex || typeof ex.chart_next !== 'function') throw new Error('chart_next missing');
+        var seed = window.__RHYTHM_SEED, lanes = window.__RHYTHM_LANES;
+        ex.chart_reset(seed, lanes);
+        var ok = true;
+        for (var i = 0; i < 64 && i < CHART.length; i++) {
+          if (ex.chart_next() !== (CHART.charCodeAt(i) - 48)) { ok = false; break; }
+        }
+        ex.chart_reset(seed, lanes);
+        window.__rhythmKernelVersion = ex.kernel_version ? ex.kernel_version() : 0;
+        if (ok) { kernelNext = function () { return ex.chart_next(); }; window.__rhythmParity = 'ok'; window.__rhythmLaneSource = 'wasm'; }
+        else { window.__rhythmParity = 'mismatch'; window.__rhythmLaneSource = 'generator'; }
+        updateKernelBadge();
+      })
+      .catch(function () { window.__rhythmParity = 'error'; window.__rhythmLaneSource = 'generator'; updateKernelBadge(); });
+  }
+
+  function chartLane() {
+    if (kernelNext) return kernelNext();
+    if (!CHART.length) return 0;
+    return CHART.charCodeAt(chartPos++ % CHART.length) - 48;
+  }
+
+  function spawn() {
+    var lane = chartLane();
+    if (!(lane >= 0 && lane < LANES)) lane = 0;
     lastLane = lane;
     notes.push({ lane: lane, y: -14, dead: 0 });
   }
@@ -1273,10 +1390,16 @@ window.__ICON_CLOSE = '<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="c
   if (cvs) {
     fitCanvas();
     seen = true;
+    loadKernel();
     window.addEventListener('resize', function () {
       clearTimeout(cvs.__t);
       cvs.__t = setTimeout(fitCanvas, 180);
     }, { passive: true });
+    /* 字号/布局变化会让 canvas 的 CSS 尺寸变、而 resize 事件不一定来：
+       用 ResizeObserver 盯住它，背板尺寸就不会和显示尺寸对不上 */
+    if (window.ResizeObserver) {
+      new ResizeObserver(function () { fitCanvas(); }).observe(cvs);
+    }
     if ('IntersectionObserver' in window) {
       new IntersectionObserver(function (entries) {
         for (var i = 0; i < entries.length; i++) {

@@ -1,0 +1,7 @@
+# 本地构建产物（生成器本体不入库）
+generator
+generator.exe
+*.o
+*.obj
+*.pdb
+_site/

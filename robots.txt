@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://zhehong268.github.io/my-intro/sitemap.xml
