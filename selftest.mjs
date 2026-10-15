@@ -377,6 +377,27 @@ await enter();
 const soundMs = await evaluate(`window.__soundMs`);
 check("audio: 点进入主页到出声 <= 1.2s", soundMs >= 0 && soundMs <= 1200, `${soundMs} ms`);
 
+/* 谱面跟着这首歌走：时间轴 = 生成器内联的实测起音点；判定时钟 = audio.currentTime */
+await evaluate(`document.getElementById('rhythm').scrollIntoView(); true`);
+for (let i = 0; i < 40; i++) {
+  if (await evaluate(`window.__rhythmClockProbe().timeline > 0`)) break;
+  await sleep(150);
+}
+const clk = await evaluate(`(() => { const p = window.__rhythmClockProbe(); return { src: p.src, song: p.song, audio: p.audio, onsets: p.onsets, songMs: p.songMs, timeline: p.timeline, nextIsOnset: p.nextIsOnset }; })()`);
+check("sync: 谱面时间轴来自内联的实测起音点（657 个 / 曲长 256.6s）",
+  clk.onsets === 657 && clk.songMs === 256600 && clk.timeline > 0,
+  `onsets=${clk.onsets} songMs=${clk.songMs} timeline=${clk.timeline}`);
+check("sync: 音轨在播时判定时钟就是 audio.currentTime（同一时刻同一读数）",
+  clk.src === "audio" && Math.abs(clk.song - clk.audio) < 5,
+  `src=${clk.src} song=${clk.song.toFixed(1)} audio=${clk.audio.toFixed(1)}`);
+check("sync: 下一个音符的落点确实等于某个实测起音点", clk.nextIsOnset === true, `nextIsOnset=${clk.nextIsOnset}`);
+await evaluate(`document.querySelector('#bgMusic').pause(); true`);
+await sleep(150);
+const pausedClk = await evaluate(`(() => { const p = window.__rhythmClockProbe(); return { src: p.src, song: p.song, audio: p.audio }; })()`);
+check("sync: 暂停后退回虚拟时钟，且接着暂停那一刻的音频位置",
+  pausedClk.src === "virtual" && Math.abs(pausedClk.song - pausedClk.audio) < 1500,
+  `src=${pausedClk.src} song=${Math.round(pausedClk.song)} audio=${Math.round(pausedClk.audio)}`);
+
 /* 刷新后最好成绩仍在（localStorage 持久化） */
 await load();
 await enter();
@@ -482,6 +503,46 @@ check("nojs 页: 左框跨源隔离（父页读不到）+ 右框已跑脚本进�
   !!np.probe && np.probe.sandboxOpaque === true && np.probe.sandboxHasAllowScripts === false &&
   np.probe.jsFrameEntered === true && np.probe.jsFrameText > 1500,
   JSON.stringify(np.probe));
+
+/* ---------- 主题：★ 开关 / 记忆 / 首帧不闪 ---------- */
+await load("?enter=1");
+const th1 = await evaluate(`new Promise(function (res) {
+  var b = document.getElementById('themeBtn');
+  var before = { cls: document.documentElement.className, stored: localStorage.getItem('myintro.theme') };
+  window.__applyTheme('light', false);   /* 先把状态归零，保证下面点一下必定是"切到暗色" */
+  b.click();
+  setTimeout(function () {
+    res({ before: before, cls: document.documentElement.className, theme: window.__theme,
+      meta: (document.querySelector('meta[name="theme-color"]') || {}).content,
+      bg: getComputedStyle(document.body).backgroundColor,
+      stored: localStorage.getItem('myintro.theme'), pressed: b.getAttribute('aria-pressed') });
+  }, 80);
+})`);
+check("theme: 初始主题与 localStorage 一致（没有记忆时是亮色）",
+  /theme-mygo/.test(th1.before.cls) === (th1.before.stored === "mygo"),
+  `${th1.before.cls} stored=${th1.before.stored}`);
+check("theme: 点★切到 MyGO 舞台（类名 + meta + 底色一起换）",
+  /theme-mygo/.test(th1.cls) && th1.theme === "mygo" && th1.meta === "#07080f" && th1.bg === "rgb(7, 8, 15)" && th1.pressed === "true",
+  `${th1.cls} ${th1.theme} ${th1.meta} ${th1.bg} pressed=${th1.pressed}`);
+check("theme: 选择写进 localStorage", th1.stored === "mygo", String(th1.stored));
+
+/* 刷新后：head 里的引导脚本必须在解析阶段就把类名挂上，否则会先闪一下亮色 */
+await send("Page.addScriptToEvaluateOnNewDocument", { source: `window.__themeTrace = [];
+new MutationObserver(function (ms) {
+  for (var i = 0; i < ms.length; i++) {
+    var t = ms[i].target;
+    window.__themeTrace.push([document.readyState, (t && t.tagName) || '?', (t && t.className) || '']);
+  }
+}).observe(document, { attributes: true, attributeFilter: ['class'], subtree: true });` });
+await load("?enter=1");
+const th2 = await evaluate(`({ cls: document.documentElement.className, theme: window.__theme, trace: window.__themeTrace, bg: getComputedStyle(document.body).backgroundColor })`);
+check("theme: 刷新后记住选择（不带 ?theme= 也是暗色）",
+  /theme-mygo/.test(th2.cls) && th2.theme === "mygo" && th2.bg === "rgb(7, 8, 15)", `${th2.cls} ${th2.theme} ${th2.bg}`);
+const firstMygo = (th2.trace || []).find((r) => r[1] === "HTML" && /theme-mygo/.test(r[2]));
+check("theme: 类名在 head 解析阶段就挂好（首帧不闪）",
+  !!firstMygo && firstMygo[0] === "loading", JSON.stringify(firstMygo || (th2.trace || []).slice(0, 3)));
+/* 收尾：把记忆清掉，免得下次跑这条断言时起点不是亮色 */
+await evaluate(`localStorage.removeItem('myintro.theme'); window.__applyTheme('light', false); true`);
 
 /* ---------- 生成物不该留下任何 __PLACEHOLDER__ ---------- */
 if (DIR) {

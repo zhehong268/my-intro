@@ -75,6 +75,12 @@ jobs:
       - name: Gate - subset font coverage
         run: node tools/font-coverage.mjs --dir=_site
 
+      # 谱面时间轴门：音游的谱面来自 onsets.txt 里实测的起音点，生成器把它内联进
+      # index.html。换了歌却忘了重跑 tools/onsets.mjs、或者改了文件没重新编译生成器，
+      # 谱面就会静悄悄地落到歌外面——这里让这种情况直接红掉。
+      - name: Gate - rhythm timeline matches onsets.txt
+        run: node tools/rhythm-gate.mjs --dir=_site --onsets=onsets.txt
+
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
         with:

@@ -36,7 +36,19 @@ selftest.mjs、tools/ 下的脚本。
 它们在这里只作个人、非商业的展示用途，版权归原作者与发行方所有。
 如果权利人要求，我会立刻移除。
 
+页面上的文字、图标（含 ★/☆ 与全部界面图标）、CSS 与脚本都是自己写的。
+「MyGO 舞台」那套暗色主题用到的五个成员代表色，取自公开的粉丝色票整理
+（Lee-W/maigo 的 character-colors），属于配色数值这类事实性数据；成员名与
+担当（Vo/Gt/Ba/Dr）同样是事实性描述。页面里没有官方图片、没有歌词，
+音频文件除了转码码率之外没有做任何改动。
+
 The MIT license above covers the source code only. The media files in this
 repository (cover.jpg, avatar.jpg, bg.webp, music.mp3) are third-party works
 used for personal, non-commercial display; all rights remain with their
 respective owners and they will be removed on request.
+
+All page copy, icons (including the ★/☆ marks), CSS and JavaScript are my own
+work. The five member colours used by the dark "MyGO stage" theme come from a
+publicly maintained fan palette (Lee-W/maigo, character-colors) and are factual
+colour values; member names and roles are factual descriptions. No official
+artwork, no lyrics, and the audio file is unchanged apart from its bitrate.

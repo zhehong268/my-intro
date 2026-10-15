@@ -110,6 +110,47 @@ std::string svgWrap(const std::string& inner) {
            + inner + "</svg>";
 }
 
+std::string icon(const std::string& name); /* 前置声明：主题脚本要用 star 图标，而它的定义在后面 */
+
+/* ==================================================================
+ *  主题开关（主页与工具页共用）
+ *  首帧之前由 <head> 里的内联脚本决定 html.theme-mygo（见 kHead / toolHead），
+ *  这一段只负责：把图标填进按钮、点一下换主题、记住选择、顺手同步 theme-color。
+ * ================================================================== */
+std::string themeRuntimeScript() {
+    std::string s = "<script>\n";
+    s += "window.__ICON_STAR = '" + icon("star") + "';\n";
+    s += "window.__ICON_STAR_ON = '" + icon("star-on") + "';\n";
+    s += R"JS((function () {
+  var KEY = 'myintro.theme';
+  var btn = document.getElementById('themeBtn');
+  var meta = document.querySelector('meta[name="theme-color"]');
+  function dark() { return document.documentElement.classList.contains('theme-mygo'); }
+  function sync() {
+    var d = dark();
+    if (meta) meta.setAttribute('content', d ? '#07080f' : '#f6f7fc');
+    if (btn) {
+      btn.setAttribute('aria-pressed', d ? 'true' : 'false');
+      btn.setAttribute('aria-label', d ? '切换到亮色主题' : '切换到 MyGO 舞台暗色主题');
+      btn.innerHTML = d ? window.__ICON_STAR_ON : window.__ICON_STAR;
+    }
+    window.__theme = d ? 'mygo' : 'light';
+  }
+  window.__applyTheme = function (t, save) {
+    document.documentElement.classList.toggle('theme-mygo', t === 'mygo');
+    if (save) { try { localStorage.setItem(KEY, t === 'mygo' ? 'mygo' : 'light'); } catch (e) {} }
+    sync();
+    try { window.dispatchEvent(new Event('themechange')); } catch (e) {}
+    return window.__theme;
+  };
+  if (btn) btn.addEventListener('click', function () { window.__applyTheme(dark() ? 'light' : 'mygo', true); });
+  sync();
+})();
+)JS";
+    s += "</script>\n";
+    return s;
+}
+
 std::string icon(const std::string& name) {
     if (name == "mail")
         return svgWrap(R"ICON(<rect x="3" y="5" width="18" height="14" rx="2.5"/><path d="M3.6 7.6 12 13.2l8.4-5.6"/>)ICON");
@@ -149,6 +190,11 @@ std::string icon(const std::string& name) {
         return svgWrap(R"ICON(<rect x="3" y="4" width="18" height="16" rx="2.5"/><path d="M8 4v16M16 4v16M3 9h5M3 15h5M16 9h5M16 15h5"/>)ICON");
     if (name == "sparkle")
         return svgWrap(R"ICON(<path d="M12 3.5l1.9 5.6 5.6 1.9-5.6 1.9L12 18.5l-1.9-5.6L4.5 11l5.6-1.9L12 3.5Z"/>)ICON");
+    /* ★ / ☆：主题开关的标记（自绘五角星，跟官方 logo 无关） */
+    if (name == "star")
+        return svgWrap(R"ICON(<path d="M12 3.9 14.4 9l5.6.82-4.05 3.95 1 5.6L12 16.7l-4.95 2.67 1-5.6L4 9.82 9.6 9 12 3.9Z"/>)ICON");
+    if (name == "star-on")
+        return "<svg class=\"ic\" viewBox=\"0 0 24 24\" fill=\"currentColor\" aria-hidden=\"true\"><path d=\"M12 3.9 14.4 9l5.6.82-4.05 3.95 1 5.6L12 16.7l-4.95 2.67 1-5.6L4 9.82 9.6 9 12 3.9Z\"/></svg>";
     if (name == "user")
         return svgWrap(R"ICON(<circle cx="12" cy="8" r="3.8"/><path d="M4.5 20.5c0-3.9 3.4-5.8 7.5-5.8s7.5 1.9 7.5 5.8"/>)ICON");
     if (name == "pin")
@@ -296,6 +342,25 @@ const char* kCSS = R"CSS(
   --line:rgba(21,26,46,.09);
   --line-strong:rgba(21,26,46,.16);
   --panel:#ffffff;
+  --panel-2:linear-gradient(180deg,#ffffff 0%,#f3f5fd 55%,#eaeefb 100%);
+  --bg-top:#fbfcff;
+  --bg-mid:#f4f6fd;
+  --bg-bot:#eef1fa;
+  --dot:rgba(21,26,46,.055);
+  --bar-track:rgba(21,26,46,.07);\r\n  /* 半透明顶栏（含小屏下拉面板）与按钮 hover 底色：暗色主题各自换掉 */\r\n  --nav-solid:rgba(252,253,255,.94);\r\n  --panel-hover:#fbfbff;
+  --sh-1:rgba(60,70,140,.45);
+  --sh-2:rgba(60,70,140,.5);
+  --sh-3:rgba(60,70,140,.55);
+  --sh-4:rgba(60,70,140,.65);
+  --sh-5:rgba(60,70,140,.7);
+  --sh-deep:rgba(40,50,120,.55);
+  --sh-deep2:rgba(40,50,120,.65);
+  --ring:rgba(21,26,46,.06);
+  --ring-2:rgba(21,26,46,.02);
+  /* 标题渐变色的起点（暗色主题里要换成亮色，否则渐变头一个字在暗底上看不见） */
+  --grad-start:#151a2e;
+  --ok-ink:#0f766e;
+  --bad-ink:#b91c1c;
   --ease:cubic-bezier(.22,.61,.36,1);
   --mono:'JetBrains Mono','Cascadia Mono',Consolas,'SF Mono',Menlo,monospace;
   --sans:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif;
@@ -319,15 +384,15 @@ html:not(.js) .js-only{display:none}
 .skip{
   position:fixed;left:12px;top:-64px;z-index:400;padding:10px 18px;border-radius:10px;
   background:var(--panel);border:1px solid var(--line-strong);font-size:13px;font-weight:600;
-  box-shadow:0 16px 34px -20px rgba(60,70,140,.7);transition:top .25s var(--ease);
+  box-shadow:0 16px 34px -20px var(--sh-5);transition:top .25s var(--ease);
 }
 .skip:focus{top:12px}
 
 /* ---------- 背景层（固定，仅 transform 动） ---------- */
 .bg-fx{position:fixed;inset:0;overflow:hidden;pointer-events:none;z-index:0;
-  background:linear-gradient(180deg,#fbfcff 0%,#f4f6fd 42%,#eef1fa 100%)}
+  background:linear-gradient(180deg,var(--bg-top) 0%,var(--bg-mid) 42%,var(--bg-bot) 100%)}
 .bg-grid{position:absolute;inset:0;opacity:.5;
-  background-image:radial-gradient(rgba(21,26,46,.055) 1px,transparent 1px);
+  background-image:radial-gradient(var(--dot) 1px,transparent 1px);
   background-size:26px 26px;
   -webkit-mask-image:radial-gradient(120% 80% at 50% 0%,#000 25%,transparent 75%);
           mask-image:radial-gradient(120% 80% at 50% 0%,#000 25%,transparent 75%)}
@@ -367,7 +432,7 @@ html:not(.js) .js-only{display:none}
   will-change:transform;
 }
 .nav.visible{transform:translate3d(0,0,0)}
-.nav.solid{background:rgba(252,253,255,.94);border-bottom-color:var(--line);padding-top:10px;padding-bottom:10px}
+.nav.solid{background:var(--nav-solid);border-bottom-color:var(--line);padding-top:10px;padding-bottom:10px}
 .brand{display:flex;align-items:center;gap:10px;font-weight:700;letter-spacing:.5px;white-space:nowrap}
 .brand svg{width:26px;height:26px}
 .brand-sub{font-size:11px;letter-spacing:2px;color:var(--ink-faint);font-weight:500}
@@ -385,8 +450,8 @@ html:not(.js) .js-only{display:none}
 #viz.on{opacity:.95}
 .icon-btn{
   width:38px;height:38px;border-radius:50%;display:grid;place-items:center;cursor:pointer;
-  border:1px solid var(--line-strong);background:#fff;color:var(--violet);
-  box-shadow:0 6px 16px -10px rgba(60,70,140,.5);
+  border:1px solid var(--line-strong);background:var(--panel);color:var(--violet);
+  box-shadow:0 6px 16px -10px var(--sh-2);
   transition:color .25s ease,background .25s ease,transform .25s ease;
 }
 .icon-btn:hover{background:rgba(109,77,250,.10);transform:translateY(-2px)}
@@ -398,7 +463,7 @@ html:not(.js) .js-only{display:none}
 .landing{
   position:fixed;inset:0;z-index:120;display:grid;place-items:center;
   text-align:center;padding:32px 20px;overflow:hidden;
-  background:linear-gradient(180deg,#ffffff 0%,#f3f5fd 55%,#eaeefb 100%);
+  background:var(--panel-2);
   transition:opacity .85s ease,visibility .85s ease;
 }
 .landing.hidden{opacity:0;visibility:hidden;pointer-events:none}
@@ -416,14 +481,14 @@ html.entry body{overflow:hidden}
 .landing-inner{position:relative;z-index:2;max-width:620px;width:100%}
 .landing-photo{
   position:relative;border-radius:22px;overflow:hidden;
-  box-shadow:0 40px 80px -40px rgba(40,50,120,.55),0 0 0 1px rgba(21,26,46,.06);
+  box-shadow:0 40px 80px -40px var(--sh-deep),0 0 0 1px var(--ring);
   transform-style:preserve-3d;
 }
 .landing-photo img{display:block;width:100%;height:auto;aspect-ratio:16/9;object-fit:cover}
 .landing-latin{margin-top:30px;font-family:var(--mono);font-size:11.5px;letter-spacing:7px;color:var(--ink-faint)}
 .landing-title{
   margin-top:12px;font-family:var(--display);font-size:clamp(26px,5vw,44px);font-weight:800;letter-spacing:1.5px;line-height:1.3;
-  background:linear-gradient(110deg,#151a2e 0%,var(--violet) 52%,var(--sky) 100%);
+  background:linear-gradient(110deg,var(--grad-start) 0%,var(--violet) 52%,var(--sky) 100%);
   -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;
 }
 .landing-sub{margin-top:10px;color:var(--ink-dim);font-size:15px;font-family:var(--display);letter-spacing:1px}
@@ -443,7 +508,7 @@ html.entry body{overflow:hidden}
 /* ---------- 签名加载 ---------- */
 .loader{
   position:fixed;inset:0;z-index:300;display:none;place-items:center;
-  background:#fbfcff;opacity:0;transition:opacity .45s ease;cursor:pointer;
+  background:var(--bg-top);opacity:0;transition:opacity .45s ease;cursor:pointer;
 }
 .loader.show{display:grid;opacity:1}
 .sig{width:88%;max-width:600px;height:auto;overflow:visible}
@@ -478,7 +543,7 @@ html.js .page.visible{opacity:1}
 .eyebrow::before{content:'';width:26px;height:1px;background:linear-gradient(90deg,var(--violet),transparent)}
 .section-title{
   font-family:var(--display);font-size:clamp(23px,3.4vw,32px);font-weight:750;letter-spacing:.5px;
-  background:linear-gradient(110deg,#151a2e 0%,var(--violet) 70%,var(--sky) 100%);
+  background:linear-gradient(110deg,var(--grad-start) 0%,var(--violet) 70%,var(--sky) 100%);
   -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;
 }
 .section-desc{margin-top:12px;color:var(--ink-dim);font-size:14.5px;max-width:64ch}
@@ -495,7 +560,7 @@ html.js .reveal.in{opacity:1;transform:none}
 /* ---------- 通用卡片 ---------- */
 .card{
   position:relative;background:var(--panel);border:1px solid var(--line);border-radius:18px;
-  padding:26px 24px;box-shadow:0 14px 34px -24px rgba(60,70,140,.45);
+  padding:26px 24px;box-shadow:0 14px 34px -24px var(--sh-1);
   transition:transform .45s var(--ease),border-color .45s ease;
 }
 .card::after{
@@ -527,7 +592,7 @@ html.js .reveal.in{opacity:1;transform:none}
   position:relative;max-width:640px;margin:0 auto;text-align:center;
   background:var(--panel);border:1px solid var(--line);border-radius:26px;
   padding:44px 34px 34px;
-  box-shadow:0 40px 90px -60px rgba(40,50,120,.65),0 0 0 1px rgba(21,26,46,.02);
+  box-shadow:0 40px 90px -60px var(--sh-deep2),0 0 0 1px var(--ring-2);
 }
 .hero-card::before{
   content:'';position:absolute;inset:0;border-radius:26px;pointer-events:none;
@@ -541,7 +606,7 @@ html.js .reveal.in{opacity:1;transform:none}
 .avatar-ring::after{content:'';position:absolute;inset:-8px;border-radius:50%;
   border:1px solid rgba(109,77,250,.18)}
 .avatar-ring img{width:100%;height:100%;border-radius:50%;object-fit:cover;display:block;
-  background:#eef1fa;cursor:pointer}
+  background:var(--bg-bot);cursor:pointer}
 .avatar-ring img.pop{animation:avatarPop .7s cubic-bezier(.34,1.56,.64,1)}
 @keyframes avatarPop{
   0%{transform:scale(1) rotate(0)}
@@ -551,7 +616,7 @@ html.js .reveal.in{opacity:1;transform:none}
   100%{transform:scale(1) rotate(0)}
 }
 .hero-name{font-size:clamp(26px,4vw,36px);font-weight:800;letter-spacing:2px;font-family:var(--display);
-  background:linear-gradient(110deg,#151a2e,var(--violet) 58%,var(--sky));
+  background:linear-gradient(110deg,var(--grad-start),var(--violet) 58%,var(--sky));
   -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
 .hero-title{margin-top:6px;color:var(--violet);font-weight:600;letter-spacing:2px;font-size:15px}
 .hero-clock{margin-top:20px;font-size:26px;font-weight:700;letter-spacing:7px;color:var(--violet)}
@@ -569,9 +634,9 @@ html.js .reveal.in{opacity:1;transform:none}
 .chip:hover{transform:translateY(-3px);background:rgba(109,77,250,.16);border-color:rgba(109,77,250,.5)}
 .hero-actions{display:flex;justify-content:center;flex-wrap:wrap;gap:12px;margin-top:28px}
 .btn{display:inline-flex;align-items:center;gap:9px;padding:11px 22px;border-radius:12px;
-  font-size:14px;font-weight:600;border:1px solid var(--line-strong);background:#fff;
+  font-size:14px;font-weight:600;border:1px solid var(--line-strong);background:var(--panel);
   transition:transform .3s var(--ease),border-color .3s ease,background .3s ease}
-.btn:hover{transform:translateY(-3px);background:#fbfbff;border-color:rgba(109,77,250,.5)}
+.btn:hover{transform:translateY(-3px);background:var(--panel-hover);border-color:rgba(109,77,250,.5)}
 .btn-primary{color:#fff;border:none;background:linear-gradient(110deg,var(--violet),var(--blue));
   box-shadow:0 14px 28px -14px rgba(109,77,250,.8)}
 .btn-primary:hover{background:linear-gradient(110deg,var(--violet),var(--blue))}
@@ -581,8 +646,8 @@ html.js .reveal.in{opacity:1;transform:none}
 .stats{
   display:flex;justify-content:center;flex-wrap:wrap;gap:18px 54px;
   max-width:780px;margin:36px auto 0;padding:24px 20px;
-  border-radius:18px;background:#fff;border:1px solid var(--line);
-  box-shadow:0 20px 46px -34px rgba(60,70,140,.55);
+  border-radius:18px;background:var(--panel);border:1px solid var(--line);
+  box-shadow:0 20px 46px -34px var(--sh-3);
 }
 .stat{display:flex;flex-direction:column;align-items:center;min-width:84px}
 .stat-num{font-size:34px;font-weight:800;line-height:1.1;
@@ -595,8 +660,8 @@ html.js .reveal.in{opacity:1;transform:none}
 .about-text p{color:var(--ink-dim);font-size:15px;margin-bottom:16px}
 .about-text p:last-child{margin-bottom:0}
 .about-text b{color:var(--ink);font-weight:650}
-.facts{background:#fff;border:1px solid var(--line);border-radius:18px;padding:8px 20px;
-  box-shadow:0 20px 46px -36px rgba(60,70,140,.5)}
+.facts{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:8px 20px;
+  box-shadow:0 20px 46px -36px var(--sh-2)}
 .fact{display:flex;align-items:center;gap:12px;padding:14px 0;border-bottom:1px solid var(--line)}
 .fact:last-child{border-bottom:none}
 .fact .ic{color:var(--violet)}
@@ -628,7 +693,7 @@ html.js .reveal.in{opacity:1;transform:none}
 .skill-head{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:9px}
 .skill-name{font-size:14.5px;font-weight:600}
 .skill-level{font-size:11px;letter-spacing:2px;color:var(--ink-faint)}
-.bar{height:6px;border-radius:99px;background:rgba(21,26,46,.07);overflow:hidden}
+.bar{height:6px;border-radius:99px;background:var(--bar-track);overflow:hidden}
 .bar-fill{display:block;height:100%;border-radius:99px;
   background:linear-gradient(90deg,var(--violet),var(--blue) 60%,var(--sky));
   transform:scaleX(var(--w,1));transform-origin:0 50%;
@@ -639,7 +704,7 @@ html.js .bar-fill.grow{transform:scaleX(var(--w,1))}
 .tools-title{font-size:12px;letter-spacing:2.5px;color:var(--ink-faint);margin-bottom:14px}
 .tools{list-style:none;display:flex;flex-wrap:wrap;gap:10px}
 .tool{display:inline-flex;align-items:center;gap:8px;padding:8px 14px;border-radius:10px;
-  font-size:12.5px;color:var(--ink-dim);background:#fff;border:1px solid var(--line);
+  font-size:12.5px;color:var(--ink-dim);background:var(--panel);border:1px solid var(--line);
   transition:color .3s ease,border-color .3s ease,transform .3s var(--ease)}
 .tool:hover{color:var(--ink);border-color:rgba(109,77,250,.45);transform:translateY(-2px)}
 .tool-dot{width:5px;height:5px;border-radius:50%;background:var(--violet);flex:none}
@@ -647,8 +712,8 @@ html.js .bar-fill.grow{transform:scaleX(var(--w,1))}
 /* ---------- 番剧清单 ---------- */
 .anime-list{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:14px}
 .anime{position:relative;display:flex;align-items:flex-start;gap:16px;padding:20px 22px;
-  border-radius:16px;background:#fff;border:1px solid var(--line);
-  box-shadow:0 14px 34px -28px rgba(60,70,140,.5);
+  border-radius:16px;background:var(--panel);border:1px solid var(--line);
+  box-shadow:0 14px 34px -28px var(--sh-2);
   transition:transform .45s var(--ease),border-color .45s ease}
 .anime:hover{transform:translate3d(0,-5px,0);border-color:rgba(109,77,250,.5)}
 .anime-num{font-size:20px;font-weight:700;line-height:1.3;flex:none;
@@ -705,10 +770,10 @@ html.js .bar-fill.grow{transform:scaleX(var(--w,1))}
   max-width:700px;margin:22px auto 0}
 .rbtn{
   font:inherit;font-size:14px;font-weight:600;cursor:pointer;padding:11px 20px;border-radius:12px;
-  border:1px solid rgba(109,77,250,.26);background:#fff;color:var(--ink);
+  border:1px solid rgba(109,77,250,.26);background:var(--panel);color:var(--ink);
   transition:transform .18s var(--ease),box-shadow .18s var(--ease),background .18s var(--ease);
 }
-.rbtn:hover{transform:translate3d(0,-1px,0);box-shadow:0 14px 26px -18px rgba(60,70,140,.65)}
+.rbtn:hover{transform:translate3d(0,-1px,0);box-shadow:0 14px 26px -18px var(--sh-4)}
 .rbtn:focus-visible{outline:2px solid var(--violet);outline-offset:2px}
 .rbtn.primary{background:linear-gradient(135deg,var(--violet),var(--blue));color:#fff;border-color:transparent}
 .rbtn.ghost{background:transparent;color:var(--ink-dim)}
@@ -717,9 +782,9 @@ html.js .bar-fill.grow{transform:scaleX(var(--w,1))}
   margin:16px auto 0;font-size:12.5px;color:var(--ink-dim)}
 .rhythm-stats b{color:var(--ink);font-weight:700}
 .rhythm-result{max-width:700px;margin:16px auto 0;padding:16px 20px;border-radius:12px;
-  background:#fff;border:1px solid var(--line);border-left:3px solid var(--sky);
+  background:var(--panel);border:1px solid var(--line);border-left:3px solid var(--sky);
   font-family:var(--mono);font-size:13px;color:var(--ink-dim);line-height:1.7;
-  box-shadow:0 20px 46px -38px rgba(60,70,140,.5)}
+  box-shadow:0 20px 46px -38px var(--sh-2)}
 /* ?audio=debug：左下角的播放状态读数（只在带参数时才创建这个元素） */
 .audio-debug{position:fixed;left:12px;bottom:12px;z-index:60;max-width:92vw;padding:8px 12px;
   border-radius:10px;background:rgba(11,16,32,.86);border:1px solid rgba(109,77,250,.35);
@@ -728,7 +793,7 @@ html.js .bar-fill.grow{transform:scaleX(var(--w,1))}
 /* 谱面 seed 输入：改一行数字就换一份谱面 */
 .seed-row{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:6px 0 0}
 .seed-label{font-size:11.5px;letter-spacing:1.6px;color:var(--ink-faint)}
-.seed-input{padding:9px 12px;border-radius:10px;border:1px solid var(--line);background:#fff;color:var(--ink);
+.seed-input{padding:9px 12px;border-radius:10px;border:1px solid var(--line);background:var(--panel);color:var(--ink);
   font-family:var(--mono);font-size:13px;min-width:180px;max-width:100%}
 .seed-input:focus{outline:2px solid rgba(109,77,250,.35);outline-offset:1px}
 .seed-info{margin-top:10px;font-size:12.5px;color:var(--ink-dim);word-break:break-all}
@@ -738,9 +803,9 @@ html.js .bar-fill.grow{transform:scaleX(var(--w,1))}
 .footer a:hover{text-decoration:underline}
 
 /* ---------- 关于本站 ---------- */
-.site-box{background:#fff;border:1px solid var(--line);border-left:3px solid var(--violet);
+.site-box{background:var(--panel);border:1px solid var(--line);border-left:3px solid var(--violet);
   border-radius:0 18px 18px 0;padding:30px 34px;
-  box-shadow:0 20px 46px -38px rgba(60,70,140,.5)}
+  box-shadow:0 20px 46px -38px var(--sh-2)}
 .site-box p{color:var(--ink-dim);font-size:14.5px;margin-bottom:14px}
 .site-box p:last-of-type{margin-bottom:0}
 .site-box code{font-family:var(--mono);font-size:12.5px;color:var(--violet);
@@ -761,7 +826,7 @@ html.js .bar-fill.grow{transform:scaleX(var(--w,1))}
 .contact-wrap{text-align:center}
 .contact-row{display:flex;justify-content:center;flex-wrap:wrap;gap:14px}
 .contact-card{display:flex;align-items:center;gap:12px;padding:16px 24px;border-radius:14px;
-  background:#fff;border:1px solid var(--line);box-shadow:0 14px 34px -28px rgba(60,70,140,.5);
+  background:var(--panel);border:1px solid var(--line);box-shadow:0 14px 34px -28px var(--sh-2);
   transition:transform .45s var(--ease),border-color .45s ease}
 .contact-card:hover{transform:translate3d(0,-5px,0);border-color:rgba(109,77,250,.5)}
 .contact-card .ic{color:var(--violet)}
@@ -778,8 +843,8 @@ html.js .bar-fill.grow{transform:scaleX(var(--w,1))}
 @keyframes rip{from{transform:scale(.4);opacity:.9}to{transform:scale(17);opacity:0}}
 #toTop{position:fixed;right:22px;bottom:22px;z-index:85;width:44px;height:44px;border-radius:50%;
   display:grid;place-items:center;cursor:pointer;color:var(--violet);
-  border:1px solid var(--line-strong);background:#fff;
-  box-shadow:0 16px 30px -18px rgba(60,70,140,.7);
+  border:1px solid var(--line-strong);background:var(--panel);
+  box-shadow:0 16px 30px -18px var(--sh-5);
   opacity:0;transform:translate3d(0,14px,0);pointer-events:none;
   transition:opacity .4s ease,transform .4s var(--ease),background .3s ease}
 #toTop.show{opacity:1;transform:none;pointer-events:auto}
@@ -801,8 +866,8 @@ html.js .bar-fill.grow{transform:scaleX(var(--w,1))}
     position:absolute;top:100%;left:0;right:0;display:none;
     flex-direction:column;align-items:stretch;gap:2px;
     margin:0;padding:10px 14px 16px;overflow:visible;
-    background:rgba(252,253,255,.98);border-bottom:1px solid var(--line);
-    box-shadow:0 26px 40px -30px rgba(60,70,140,.5);
+    background:var(--nav-solid);border-bottom:1px solid var(--line);
+    box-shadow:0 26px 40px -30px var(--sh-2);
   }
   .nav-links.open{display:flex}
   .nav-links a{padding:12px 14px;font-size:15px;border-radius:12px;text-align:left}
@@ -827,6 +892,86 @@ html.js .bar-fill.grow{transform:scaleX(var(--w,1))}
   .sig text,.sig line{animation-duration:.01ms}
   .bar-fill{transition:none}
 }
+/* ==================================================================
+ *  「MyGO 舞台」暗色主题（html.theme-mygo）
+ * ------------------------------------------------------------------
+ *  不是把亮色反相，而是把整页当成一个关了灯的 Live 现场：
+ *    · 底色压到近黑，卡片变成舞台灯下的深色亚克力（面板色都走令牌，所以能整体换肤）；
+ *    · 顶部五束成员色顶灯，纯 CSS 渐变自绘，不含任何官方素材；
+ *    · 标题渐变起点从墨黑换成亮色，暗底上才读得出来。
+ *  五位成员代表色取自粉丝项目 Lee-W/maigo 的 docs/reference/character-colors.md
+ *  （https://github.com/Lee-W/maigo/blob/main/docs/reference/character-colors.md ），
+ *  属于该项目的色票约定、非官方发布，这里只用于自绘的灯光/圆点/轨道配色。
+ * ================================================================== */
+html.theme-mygo{
+  color-scheme:dark;
+  --bg:#07080f;
+  --bg-top:#0c1020;
+  --bg-mid:#080a13;
+  --bg-bot:#05060c;
+  --ink:#e9edfb;
+  --ink-dim:rgba(233,237,251,.78);
+  --ink-faint:rgba(233,237,251,.64);
+  --line:rgba(233,237,251,.12);
+  --line-strong:rgba(233,237,251,.22);
+  --panel:rgba(19,23,40,.88);
+  --panel-2:linear-gradient(180deg,rgba(26,31,54,.94) 0%,rgba(17,21,36,.94) 55%,rgba(12,15,27,.96) 100%);
+  --dot:rgba(233,237,251,.075);
+  --bar-track:rgba(233,237,251,.12);\r\n  --nav-solid:rgba(9,11,20,.92);\r\n  --panel-hover:rgba(30,36,60,.95);
+  --grad-start:#e9edfb;
+  --violet:#a78bfa;
+  --violet-soft:#c4b5fd;
+  --blue:#60a5fa;
+  --sky:#38bdf8;
+  --pink:#f472b6;
+  --ok-ink:#7dd3fc;
+  --bad-ink:#fca5a5;
+  --sh-1:rgba(0,0,0,.45);
+  --sh-2:rgba(0,0,0,.5);
+  --sh-3:rgba(0,0,0,.55);
+  --sh-4:rgba(0,0,0,.62);
+  --sh-5:rgba(0,0,0,.68);
+  --sh-deep:rgba(0,0,0,.62);
+  --sh-deep2:rgba(0,0,0,.72);
+  --ring:rgba(255,255,255,.07);
+  --ring-2:rgba(255,255,255,.03);
+  /* 五位成员代表色（非官方色票，来源见上方注释） */
+  --m-tomori:#6EC1E4;
+  --m-anon:#FF6F91;
+  --m-raana:#6EEB83;
+  --m-soyo:#FFC857;
+  --m-taki:#7A5CFF;
+}
+/* 顶灯：从画面上方压下来的五束光 */
+html.theme-mygo .bg-fx{
+  background:
+    radial-gradient(46% 34% at 50% -6%,rgba(110,193,228,.22),rgba(110,193,228,0) 70%),
+    radial-gradient(26% 40% at 10% -8%,rgba(255,111,145,.20),rgba(255,111,145,0) 72%),
+    radial-gradient(24% 36% at 28% -8%,rgba(110,235,131,.16),rgba(110,235,131,0) 72%),
+    radial-gradient(24% 36% at 72% -8%,rgba(255,200,87,.17),rgba(255,200,87,0) 72%),
+    radial-gradient(28% 42% at 90% -8%,rgba(122,92,255,.24),rgba(122,92,255,0) 72%),
+    linear-gradient(180deg,var(--bg-top) 0%,var(--bg-mid) 46%,var(--bg-bot) 100%);
+}
+html.theme-mygo .bg-grid{opacity:.38}
+html.theme-mygo .aurora{opacity:.75}
+html.theme-mygo .spotlight{background:radial-gradient(circle,rgba(110,193,228,.16),rgba(110,193,228,0) 68%)}
+html.theme-mygo .progress{background:linear-gradient(90deg,var(--m-taki),var(--m-anon) 32%,var(--m-soyo) 58%,var(--m-raana) 78%,var(--m-tomori))}
+html.theme-mygo .landing::before{background:radial-gradient(circle at 50% 50%,rgba(122,92,255,.24),rgba(122,92,255,0) 62%)}
+html.theme-mygo .landing::after{background:radial-gradient(circle at 50% 50%,rgba(110,193,228,.2),rgba(110,193,228,0) 62%)}
+/* 五色圆点 + 成员行：纯文字与色块，没有图 */
+.lineup{display:flex;flex-wrap:wrap;gap:8px 18px;align-items:center;margin-top:14px;font-size:13px;color:var(--ink-dim)}
+.lineup li{display:inline-flex;align-items:center;gap:8px;list-style:none}
+.lineup i{width:10px;height:10px;border-radius:50%;background:var(--c,#888);box-shadow:0 0 0 3px color-mix(in srgb,var(--c,#888) 22%,transparent)}
+.lineup .part{font-size:11px;letter-spacing:1px;color:var(--ink-faint)}
+.lineup-src{font-size:11.5px;color:var(--ink-faint);margin-top:8px}
+.stage-note{display:inline-flex;align-items:center;gap:8px;margin-top:10px;font-size:12.5px;color:var(--ink-dim)}
+.stage-note .star{color:var(--m-soyo);font-size:13px}
+.foot-star{color:var(--m-soyo);margin-left:6px;font-size:11px}
+/* 主题开关：跟音乐按钮同一排，图标是★/☆ */
+.theme-btn{position:relative}
+.theme-btn .ic{transition:transform .35s var(--ease),opacity .2s linear}
+.theme-btn[aria-pressed="true"] .ic{transform:rotate(72deg)}
+
 )CSS";
 
 /* ==================================================================
@@ -1210,8 +1355,8 @@ const char* kJS = R"JS(
 
   function bindMusic(el) {
     el.addEventListener('play', function () { setMuted(false); startViz(); watchAudio(); });
-    el.addEventListener('pause', function () { setMuted(true); stopViz(); });
-    el.addEventListener('ended', function () { setMuted(true); stopViz(); });
+    el.addEventListener('pause', function () { setMuted(true); stopViz(); songRezero(); });
+    el.addEventListener('ended', function () { setMuted(true); stopViz(); songRezero(); });
     el.addEventListener('waiting', function () { if (settled()) audioWatch.waiting++; });
     el.addEventListener('stalled', function () { if (settled()) audioWatch.stalled++; });
     /* 真的出声了（且还在开头）→ 起步结束，抖动计数从这一刻重新开始 */
@@ -1411,10 +1556,41 @@ const char* kJS = R"JS(
   /* ============ 音游（canvas + rAF 时间轴） ============ */
   var cvs = $('#rhythmCanvas');
   var ctx = cvs ? cvs.getContext('2d') : null;
-  var LANES = 7, BPM = 168, BEAT = 60000 / BPM, TRAVEL = 1450;
+  var LANES = 7, TRAVEL = 1450;
+  /* 兜底节拍：起音间隔中位数 302ms（实测这首歌）。有起音表时用不到它。 */
+  var BEAT = 302;
+
+  /* ============ 谱面时间轴：跟着这首歌走 ============
+     起音点由生成器从 onsets.txt 内联（本机 ffmpeg + 谱通量分析实测，657 个），
+     音符落在真正的起音上，而不是拍脑袋写的 BPM。
+     判定时钟优先用 audio.currentTime：歌在播时它就是排谱与判定的唯一时钟；
+     没播或暂停时换成等速虚拟时钟，接着暂停那一刻的歌曲位置继续走。 */
+  var ONSETS = window.__RHYTHM_ONSETS || [];
+  var SONG_MS = window.__RHYTHM_SONG_MS || (ONSETS.length ? ONSETS[ONSETS.length - 1] + 4000 : 0);
+  var songZero = (window.performance && performance.now) ? performance.now() : Date.now();
+  var timeline = [], spawnIdx = 0, songLast = 0;
+
+  function perfNow() { return (window.performance && performance.now) ? performance.now() : Date.now(); }
+  function audioLive() { return !!(music && !music.paused && music.readyState >= 2); }
+  function songNow() { return audioLive() ? music.currentTime * 1000 : perfNow() - songZero; }
+  function songRezero() { if (music) songZero = perfNow() - music.currentTime * 1000; }
+  function buildTimeline(from, count) {
+    /* 从歌曲位置 from 往后取 count 个起音点；不够就绕回开头（一首歌循环着打） */
+    var out = [], first = 0, i;
+    if (!ONSETS.length) return out;
+    while (first < ONSETS.length && ONSETS[first] < from) first++;
+    for (i = 0; i < count; i++) {
+      var k = first + i;
+      out.push(ONSETS[k % ONSETS.length] + Math.floor(k / ONSETS.length) * SONG_MS);
+    }
+    return out;
+  }
+  var clockChip = $('#rhythmClock');
   var notes = [], sparks = [];
   var combo = 0, acc = 0, prev = 0, rafId = 0, running = false;
-  var W = 0, H = 0, laneW = 0, hitY = 0, glow = 0, noteGrad = null;
+  /* 五位成员的代表色（粉丝整理的色票，非官方）：舞台灯与轨道配色都用它 */
+  var MYGO_LANES = ['#6EC1E4', '#FF6F91', '#6EEB83', '#FFC857', '#7A5CFF'];
+  var W = 0, H = 0, laneW = 0, hitY = 0, glow = 0, noteGrad = null, laneGrad = null;
   var lastLane = -1, laneGlow = [], seen = false;
 
   for (var li = 0; li < LANES; li++) laneGlow.push(0);
@@ -1437,6 +1613,13 @@ const char* kJS = R"JS(
     noteGrad = ctx.createLinearGradient(0, 0, 0, 13);
     noteGrad.addColorStop(0, '#f2fbff');
     noteGrad.addColorStop(1, '#7dd3fc');
+    /* MyGO 舞台主题下，七条轨道循环用五位成员的代表色（色值来自粉丝色票，非官方） */
+    laneGrad = MYGO_LANES.map(function (c) {
+      var g = ctx.createLinearGradient(0, 0, 0, 13);
+      g.addColorStop(0, '#ffffff');
+      g.addColorStop(1, c);
+      return g;
+    });
     render();
   }
 
@@ -1739,6 +1922,9 @@ const char* kJS = R"JS(
     round.perfect = 0; round.good = 0; round.miss = 0; round.accPermille = 0;
     combo = 0; maxCombo = 0; lastJudge = '';
     notes.length = 0; sparks.length = 0; acc = 0; chartPos = 0; lastLane = -1;
+    /* 这一轮从「你现在听到的位置」开始：接下来的 ROUND_NOTES 个起音点 */
+    timeline = buildTimeline(songNow() + 900, ROUND_NOTES);
+    spawnIdx = 0; songLast = 0;
     if (kernelReset) kernelReset();
     setText('#comboNum', '0');
     var res = $('#rhythmResult'); if (res) { res.hidden = true; res.textContent = ''; }
@@ -1750,6 +1936,8 @@ const char* kJS = R"JS(
   function backToAuto() {
     mode = 'auto'; roundActive = false; pausedAt = 0;
     notes.length = 0; sparks.length = 0; acc = 0; combo = 0;
+    timeline = buildTimeline(songNow(), ROUND_NOTES * 2);
+    spawnIdx = 0; songLast = 0;
     round.perfect = 0; round.good = 0; round.miss = 0; round.accPermille = 0; maxCombo = 0;
     setText('#comboNum', '0');
     var res = $('#rhythmResult'); if (res) { res.hidden = true; res.textContent = ''; }
@@ -1780,13 +1968,31 @@ const char* kJS = R"JS(
   }
 
   /* 预览与自检用的钩子：都是页面自己会用到的函数，不是测试专用开关 */
+  /* 换主题时立刻重画一帧：轨道颜色跟着成员色走 */
+  window.addEventListener('themechange', function () { render(); });
+  /* 自检钩子：判定时钟现在跟着谁走、下一个音符是不是真的落在实测起音点上 */
+  window.__rhythmClockProbe = function () {
+    var at = spawnIdx < timeline.length ? timeline[spawnIdx] : null;
+    var pos = at === null ? null : at % SONG_MS;
+    return {
+      src: audioLive() ? 'audio' : 'virtual',
+      song: songNow(),
+      audio: music ? music.currentTime * 1000 : 0,
+      onsets: ONSETS.length,
+      songMs: SONG_MS,
+      timeline: timeline.length,
+      spawnIdx: spawnIdx,
+      next: at,
+      nextIsOnset: pos === null ? null : ONSETS.indexOf(pos) >= 0
+    };
+  };
   window.__rhythmNextDelta = function (lane) {
-    var h = nearestNote(lane, (window.performance && performance.now) ? performance.now() : Date.now());
+    var h = nearestNote(lane, songNow());
     return h ? Math.round(h.delta) : null;
   };
   window.__rhythmLaneOfNext = function () {
     var pick = null, bestD = 1e9;
-    var now = (window.performance && performance.now) ? performance.now() : Date.now();
+    var now = songNow();
     for (var i = 0; i < notes.length; i++) {
       var n = notes[i];
       if (n.judged || !n.hitAt) continue;
@@ -1804,17 +2010,12 @@ const char* kJS = R"JS(
   window.__rhythmJudgeFallback = jsJudge;
   window.__rhythmAccuracyFallback = jsAcc;
 
-  function spawn(now) {
-    /* 可玩模式打一轮固定长度：到数就不再生成，等场上音符都判完就结算 */
-    if (mode === 'play') {
-      if (roundIndex >= ROUND_NOTES) return;
-      roundIndex++;
-      setModeUI();
-    }
+  function spawn(hitAt) {
+    /* hitAt 是「歌曲时间」里的落点：由时间轴给，不再由当前时刻推 */
     var lane = chartLane();
     if (!(lane >= 0 && lane < LANES)) lane = 0;
     lastLane = lane;
-    notes.push({ lane: lane, y: -14, dead: 0, hitAt: now + TRAVEL, judged: 0, missed: 0 });
+    notes.push({ lane: lane, y: -14, dead: 0, hitAt: hitAt, judged: 0, missed: 0 });
   }
 
   function explode(x, y, lane) {
@@ -1830,9 +2031,28 @@ const char* kJS = R"JS(
   }
 
   function update(dt, now) {
-    acc += dt;
-    var guard = 0;
-    while (acc >= BEAT && guard++ < 4) { acc -= BEAT; spawn(now); }
+    /* 排谱：到点就生成，y 从 -14 落到判定线正好 TRAVEL 毫秒 */
+    if (timeline.length) {
+      var guard = 0;
+      while (spawnIdx < timeline.length && now >= timeline[spawnIdx] - TRAVEL && guard++ < 8) {
+        if (mode === 'play') { roundIndex++; setModeUI(); }
+        spawn(timeline[spawnIdx]);
+        spawnIdx++;
+      }
+      if (mode === 'auto' && spawnIdx >= timeline.length) {
+        /* 自动演奏：这一排打完再排下一排，一直循环下去 */
+        timeline = buildTimeline(now, ROUND_NOTES * 2);
+        spawnIdx = 0;
+      }
+    } else {
+      acc += dt;
+      var guard2 = 0;
+      while (acc >= BEAT && guard2++ < 4) {
+        acc -= BEAT;
+        if (mode === 'play') { if (roundIndex >= ROUND_NOTES) break; roundIndex++; setModeUI(); }
+        spawn(now + TRAVEL);
+      }
+    }
 
     var speed = (hitY + 20) / TRAVEL;
     for (var i = notes.length - 1; i >= 0; i--) {
@@ -1875,7 +2095,7 @@ const char* kJS = R"JS(
     }
 
     /* 一轮打完（最后一个音符也判完了）就结算 */
-    if (mode === 'play' && roundActive && roundIndex >= ROUND_NOTES) {
+    if (mode === 'play' && roundActive && (timeline.length ? spawnIdx >= timeline.length : roundIndex >= ROUND_NOTES)) {
       var pending = false;
       for (var q = 0; q < notes.length; q++) { if (!notes[q].judged) { pending = true; break; } }
       if (!pending) endRound();
@@ -1885,6 +2105,7 @@ const char* kJS = R"JS(
   function render() {
     if (!ctx) return;
     ctx.clearRect(0, 0, W, H);
+    var mg = document.documentElement.classList.contains('theme-mygo');
 
     ctx.fillStyle = 'rgba(125,211,252,' + (0.55 + glow * 0.45) + ')';
     ctx.fillRect(0, hitY + 10, W, 3);
@@ -1930,7 +2151,7 @@ const char* kJS = R"JS(
         ctx.fill();
         ctx.globalAlpha = 1;
       } else {
-        ctx.fillStyle = noteGrad;
+        ctx.fillStyle = mg && laneGrad ? laneGrad[note.lane % laneGrad.length] : noteGrad;
         roundRect(x, note.y, w, 13, 7);
         ctx.fill();
       }
@@ -1947,9 +2168,25 @@ const char* kJS = R"JS(
 
   function loop(t) {
     if (!running) return;
-    var dt = prev ? Math.min(t - prev, 64) : 16;
-    prev = t;
-    if (!document.hidden) { update(dt, t); render(); }
+    var now = songNow();
+    /* 歌从头开始（循环播放或手动 seek）→ 谱面跟着重排，别让旧音符卡在未来 */
+    if (songLast && now < songLast - 250) {
+      notes.length = 0; sparks.length = 0;
+      timeline = buildTimeline(now, mode === 'play' ? ROUND_NOTES : ROUND_NOTES * 2);
+      spawnIdx = 0;
+    }
+    var dt = songLast ? Math.min(Math.max(now - songLast, 0), 64) : 16;
+    songLast = now;
+    if (!document.hidden) {
+      update(dt, now);
+      render();
+      if (clockChip) {
+        var label = audioLive()
+          ? '跟随音轨 ' + music.currentTime.toFixed(0) + 's'
+          : (ONSETS.length ? '起音 ' + ONSETS.length + ' 个 · 虚拟时钟' : '固定节拍');
+        if (clockChip.textContent !== label) clockChip.textContent = label;
+      }
+    }
     rafId = requestAnimationFrame(loop);
   }
 
@@ -1957,10 +2194,12 @@ const char* kJS = R"JS(
     /* 「减少动态效果」下自动演奏不跑（那是装饰），但用户自己点开始挑战时照跑 */
     if (!ctx || running || (reduce && mode === 'auto')) { if (ctx) render(); return; }
     running = true;
-    prev = 0; acc = 0;
+    prev = 0; acc = 0; songLast = 0;
+    /* 第一次跑起来（滚到音游这一段）时排谱：从当前歌曲位置往后取一段起音点 */
+    if (!timeline.length) { timeline = buildTimeline(songNow(), ROUND_NOTES * 2); spawnIdx = 0; }
     /* 从暂停里回来：把没有判定的音符整体后移暂停的那段，别让它们瞬间全变成 MISS */
     if (pausedAt) {
-      var gap = performance.now() - pausedAt;
+      var gap = songNow() - pausedAt;
       pausedAt = 0;
       for (var i = 0; i < notes.length; i++) {
         if (!notes[i].judged && notes[i].hitAt) notes[i].hitAt += gap;
@@ -1972,7 +2211,7 @@ const char* kJS = R"JS(
 
   function stopRhythm() {
     running = false;
-    pausedAt = performance.now();
+    pausedAt = songNow();
     if (rafId) { cancelAnimationFrame(rafId); rafId = 0; }
   }
 
@@ -2008,7 +2247,7 @@ const char* kJS = R"JS(
       }
       if (lane < 0 || lane >= LANES) return;
       e.preventDefault();
-      hitLane(lane, performance.now());
+      hitLane(lane, songNow());
     });
 
     /* 触屏/鼠标：按 x 折算轨道，直接用手指打 */
@@ -2020,7 +2259,7 @@ const char* kJS = R"JS(
       if (lane < 0) lane = 0;
       if (lane > LANES - 1) lane = LANES - 1;
       e.preventDefault();
-      hitLane(lane, performance.now());
+      hitLane(lane, songNow());
     });
 
     window.addEventListener('resize', function () {
@@ -2079,7 +2318,7 @@ const char* kHead = R"HEAD(<!DOCTYPE html>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <!-- 第一件事：打上 js / entry 标记。整站默认按「没有 JavaScript」渲染 ——
      内容直接可读、不锁滚动、不做入场动画；只有这两个标记在，才会有入口门。 -->
-<script>document.documentElement.classList.add('js','entry')</script>
+<script>document.documentElement.classList.add('js','entry');/* 主题必须在首帧之前定下来，否则会闪一下白 */try{var q=new URLSearchParams(location.search).get('theme');if(!q){q=localStorage.getItem('myintro.theme')||(matchMedia('(prefers-color-scheme: dark)').matches?'mygo':'light')}if(q==='mygo')document.documentElement.classList.add('theme-mygo')}catch(e){}</script>
 <meta name="description" content="__NAME__的个人主页：C++ 开发者，在学编程，也看动漫。整站由 C++ 生成。">
 <meta name="theme-color" content="#f6f7fc">
 <link rel="canonical" href="__SITE__">
@@ -2208,9 +2447,9 @@ std::string build404(const Profile& me) {
 *{margin:0;padding:0;box-sizing:border-box}
 body{min-height:100vh;display:grid;place-items:center;padding:28px;text-align:center;
   font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Microsoft YaHei',sans-serif;
-  color:var(--ink);background:linear-gradient(180deg,#fbfcff,#eef1fa)}
+  color:var(--ink);background:linear-gradient(180deg,var(--bg-top),var(--bg-bot))}
 .code{font-family:Consolas,'Cascadia Mono',monospace;font-size:clamp(64px,18vw,132px);font-weight:700;
-  letter-spacing:6px;background:linear-gradient(110deg,#151a2e,var(--violet) 60%,var(--sky));
+  letter-spacing:6px;background:linear-gradient(110deg,var(--grad-start),var(--violet) 60%,var(--sky));
   -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
 h1{margin-top:10px;font-size:clamp(18px,3.4vw,24px)}
 p{margin-top:14px;color:var(--dim);font-size:14.5px;line-height:1.9}
@@ -2271,21 +2510,21 @@ const char* kToolCSS = R"TSS(
 .panel p{color:var(--ink-dim);font-size:14.5px;line-height:1.9}
 .ctl{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:18px 0 4px}
 .ctl label{font-family:var(--mono);font-size:11.5px;letter-spacing:1.6px;color:var(--ink-faint)}
-.ctl input,.ctl select{padding:10px 12px;border-radius:10px;border:1px solid var(--line);background:#fff;color:var(--ink);
+.ctl input,.ctl select{padding:10px 12px;border-radius:10px;border:1px solid var(--line);background:var(--panel);color:var(--ink);
   font-family:var(--mono);font-size:13.5px;min-width:150px}
 .ctl input:focus,.ctl select:focus{outline:2px solid rgba(109,77,250,.35);outline-offset:1px}
 .rbtn{font-family:inherit}
 .mono-line{font-family:var(--mono);font-size:12.5px;color:var(--ink-dim);word-break:break-all;line-height:1.9;margin-top:10px}
 .mono-line b{color:var(--violet)}
-.ok-text{color:#0f766e}
-.bad-text{color:#b91c1c;font-weight:700}
+.ok-text{color:var(--ok-ink)}
+.bad-text{color:var(--bad-ink);font-weight:700}
 .grid-wrap{margin-top:16px;padding:12px;border-radius:14px;background:#0d1224;border:1px solid rgba(109,77,250,.3)}
 #grid{display:block;width:100%;height:250px}
 .tbl{width:100%;border-collapse:collapse;margin-top:14px;font-family:var(--mono);font-size:13px}
 .tbl th,.tbl td{padding:8px 10px;text-align:left;border-bottom:1px solid var(--line)}
 .tbl th{color:var(--ink-faint);font-weight:600;letter-spacing:1px;font-size:11px;text-transform:uppercase}
-.tbl td.ok{color:#0f766e}
-.tbl td.bad{color:#b91c1c;font-weight:700}
+.tbl td.ok{color:var(--ok-ink)}
+.tbl td.bad{color:var(--bad-ink);font-weight:700}
 .tbl tr[data-bad="1"]{background:rgba(185,28,28,.06)}
 .frames{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:22px}
 @media (max-width:900px){.frames{grid-template-columns:1fr}}
@@ -2312,7 +2551,7 @@ std::string toolHead(const Profile& me, const std::string& title, const std::str
     s += "<!DOCTYPE html>\n<html lang=\"zh-CN\">\n<head>\n<meta charset=\"UTF-8\">\n";
     s += "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n";
     /* 工具页没有入口门：内容本身不需要等脚本，只打一个 js 标记给「实时部分」用 */
-    s += "<script>document.documentElement.classList.add('js')</script>\n";
+    s += "<script>document.documentElement.classList.add('js');try{var q=new URLSearchParams(location.search).get('theme');if(!q){q=localStorage.getItem('myintro.theme')||(matchMedia('(prefers-color-scheme: dark)').matches?'mygo':'light')}if(q==='mygo')document.documentElement.classList.add('theme-mygo')}catch(e){}</script>\n";
     s += "<meta name=\"description\" content=\"" + desc + "\">\n";
     s += "<meta name=\"theme-color\" content=\"#f6f7fc\">\n";
     s += "<link rel=\"canonical\" href=\"" + me.site + slug + "\">\n";
@@ -2334,6 +2573,7 @@ std::string toolNav(const Profile& me) {
     s += "<nav class=\"nav visible\" id=\"nav\" aria-label=\"站内导航\">\n";
     s += "  <a class=\"brand\" href=\"index.html\">\n    " + std::string(kBrandMark) + "\n";
     s += "    <span>" + me.name + "<span class=\"brand-sub mono\"> / TOOLS</span></span>\n  </a>\n";
+    s += "  <button class=\"icon-btn theme-btn\" id=\"themeBtn\" type=\"button\" aria-label=\"切换主题\" aria-pressed=\"false\"></button>\n";
     s += "</nav>\n";
     return s;
 }
@@ -2719,7 +2959,7 @@ std::string buildKernelPage(const Profile& me, const std::string& chart, const s
     s += toolConstants(chart, wasmB64, judgeProbe, judgeExpect, accProbe, accExpect);
     s += "<script>\n";
     s += kKernelJS;
-    s += "</script>\n</body>\n</html>\n";
+    s += "</script>\n" + themeRuntimeScript() + "</body>\n</html>\n";
     return s;
 }
 
@@ -2773,7 +3013,7 @@ std::string buildNojsPage(const Profile& me) {
 )NJ";
     s += "<script>\n";
     s += kNojsJS;
-    s += "</script>\n</body>\n</html>\n";
+    s += "</script>\n" + themeRuntimeScript() + "</body>\n</html>\n";
     return s;
 }
 
@@ -2786,7 +3026,7 @@ int main() {
          "push 之后由 GitHub Actions 自动编译并部署到 Pages。",
          "C++17 / GitHub Actions / GitHub Pages", me.github + "/my-intro", "查看源码", "01"},
         {"Rhythm 内置音游",
-         "页面里跑在 canvas 上的节奏小游戏，168 BPM 自动演奏。做一个能看的东西，顺便练 rAF 时间轴与性能取舍。",
+         "页面里跑在 canvas 上的节奏小游戏，谱面跟着背景音乐的实测起音点走，判定时钟用 audio.currentTime。做一个能看的东西，顺便练 rAF 时间轴与性能取舍。",
          "Canvas 2D / requestAnimationFrame / 性能优化", "#rhythm", "页面内查看", "02"},
         {"Project Alpha",
          "还在构思中的 C++ 小工具，目标是先把基础打牢，再动手写点真正有用的东西。仓库里以后会放它。",
@@ -2873,6 +3113,26 @@ int main() {
 
     /* rhythm_core.wasm 是可选的：有就内联进页面（运行时由 wasm 决定轨道），
        没有也不影响构建，只是音游退回上面那份谱面。 */
+    /* onsets.txt：这首歌实测的起音点（毫秒，一行一个），内联成谱面时间轴 */
+    std::string onsetsRaw = readFile("onsets.txt");
+    std::string onsetsJs;
+    int onsetsCount = 0, onsetsLast = 0;
+    {
+        std::string cur;
+        for (std::size_t oi = 0; oi <= onsetsRaw.size(); oi++) {
+            char oc = oi < onsetsRaw.size() ? onsetsRaw[oi] : '\n';
+            if (oc >= '0' && oc <= '9') { cur += oc; continue; }
+            if (!cur.empty()) {
+                if (!onsetsJs.empty()) onsetsJs += ',';
+                onsetsJs += cur;
+                int ov = 0;
+                for (std::size_t di = 0; di < cur.size(); di++) ov = ov * 10 + (cur[di] - '0');
+                onsetsLast = ov;
+                onsetsCount++;
+                cur.clear();
+            }
+        }
+    }
     std::string wasmRaw = readFile("rhythm_core.wasm");
     std::string wasmB64 = wasmRaw.empty() ? std::string() : base64(wasmRaw);
 
@@ -2953,6 +3213,7 @@ int main() {
   </div>
   <div class="nav-tools">
     <canvas id="viz" aria-hidden="true"></canvas>
+    <button class="icon-btn theme-btn" id="themeBtn" type="button" aria-label="切换到 MyGO 舞台暗色主题" aria-pressed="false"></button>
     <button class="icon-btn" id="musicBtn" type="button" aria-label="暂停背景音乐"></button>
   </div>
 </nav>
@@ -3105,8 +3366,8 @@ int main() {
   <div class="section-head reveal">
     <span class="eyebrow mono">07 / RHYTHM</span>
     <h2 class="section-title">音游</h2>
-    <p class="section-desc">一个跑在单个 canvas 上的节奏小游戏：168 BPM，七轨，命中特效由 requestAnimationFrame 时间轴驱动。滚出可视区域会自动暂停。默认自动演奏，想自己打就按下面那颗按钮。</p>
-    <p class="section-desc">轨道不是随机数表：<code>rhythm_core.cpp</code> 编译成 WebAssembly 在浏览器里跑，每个音符落在哪条轨由 C++ 决定；点开始挑战后，<b>判定窗口与准确率也由同一个 wasm 内核算</b>，生成器再用同一份头文件算一份探针逐条比对。</p>
+    <p class="section-desc">一个跑在单个 canvas 上的节奏小游戏：七轨，音符落在歌里真实响过的地方，命中特效由 requestAnimationFrame 时间轴驱动。滚出可视区域会自动暂停。默认自动演奏，想自己打就按下面那颗按钮。</p>
+    <p class="section-desc">谱面时间轴不是拍脑袋写的 BPM：生成器把<b>实测这首歌的 657 个起音点</b>内联进页面，音符落在真正的起音上；歌在播时<b>判定时钟就是 <code>audio.currentTime</code></b>，暂停或没播时换成等速虚拟时钟接着走。每个音符落在哪条轨由 <code>rhythm_core.cpp</code> 编译的 WebAssembly 决定，判定窗口与准确率也由同一个 wasm 内核给，生成器再用同一份头文件算一份探针逐条比对。</p>
     <p class="kernel-badge mono" id="kernelBadge">C++ / WASM 内核 · 检测中…</p>
   </div>
   <div class="seed-row reveal">
@@ -3126,7 +3387,7 @@ int main() {
         <span class="combo-label">COMBO</span>
       </div>
       <span class="rhythm-tag" id="rhythmTag">AUTO PLAY</span>
-      <span class="rhythm-tag right">168 BPM</span>
+      <span class="rhythm-tag right" id="rhythmClock">跟随音轨</span>
       <span class="rhythm-judge mono" id="rhythmJudge"></span>
     </div>
   </div>
@@ -3144,6 +3405,15 @@ int main() {
     <span>最好成绩 <b id="rBest">--</b></span>
   </div>
   <p class="rhythm-result reveal" id="rhythmResult" hidden></p>
+  <div class="stage-note reveal"><span class="star">★</span>迷路的五个人，也能站上同一个舞台。</div>
+  <ul class="lineup reveal">
+    <li><i style="--c:#6EC1E4"></i>高松灯 <span class="part">Vo</span></li>
+    <li><i style="--c:#FF6F91"></i>千早爱音 <span class="part">Gt</span></li>
+    <li><i style="--c:#6EEB83"></i>要乐奈 <span class="part">Gt</span></li>
+    <li><i style="--c:#FFC857"></i>长崎素世 <span class="part">Ba</span></li>
+    <li><i style="--c:#7A5CFF"></i>椎名立希 <span class="part">Dr</span></li>
+  </ul>
+  <p class="lineup-src">暗色主题的舞台灯、以及七条轨道循环用的颜色，就是这五个色值 —— 取自粉丝整理的成员色票，不是官方配色；页面里没有官方图片、歌词或音频素材。</p>
 </section>
 )HTML";
     html = replaceAll(html, "__BG__", me.bgImage);
@@ -3162,12 +3432,12 @@ int main() {
     <p>没有一行行纯手打那么硬核，也没法一键生成这么省事：主体自己手搓，卡住的地方让 AI 搭把手，写完再自己读一遍改到能看懂为止。</p>
     <p>写这个站点的过程本身就是练习：结构怎么拆、动画为什么卡、部署怎么跑通，都是一处处自己试出来的。</p>
     <p>性能上的取舍写在这里，方便以后自己回看：动画只用 <code>transform</code> 与 <code>opacity</code>；不使用 <code>backdrop-filter</code> 与 <code>background-attachment: fixed</code>；倾斜、聚光、视差全部 rAF 节流且只在桌面端启用；音游跑在单个 <code>canvas</code> 上；背景音乐在首次交互后才加载。</p>
-    <p>整站默认按「没有 JavaScript」渲染：脚本挂了，内容、技能条长度、数字条也都还是对的；入口门与入场动画是脚本跑起来之后才加上去的装饰。音游的谱面由 <code>rhythm_core.cpp</code> 编译成的 WebAssembly 在浏览器里算，点开始挑战之后判定窗口与准确率也由它给；生成器另用同一份头文件算一份谱面加两组探针（±45 / ±90ms 的边界），加载时逐条比对，对不上页面会自己说「自检不一致」。</p>
+    <p>整站默认按「没有 JavaScript」渲染：脚本挂了，内容、技能条长度、数字条也都还是对的；入口门与入场动画是脚本跑起来之后才加上去的装饰。音游的时间轴来自生成器内联的 657 个实测起音点（<code>onsets.txt</code>），歌在播时判定时钟直接用 <code>audio.currentTime</code>；每个音符落在哪条轨由 <code>rhythm_core.cpp</code> 编译成的 WebAssembly 在浏览器里算，点开始挑战之后判定窗口与准确率也由它给；生成器另用同一份头文件算一份谱面加两组探针（±45 / ±90ms 的边界），加载时逐条比对，对不上页面会自己说「自检不一致」。</p>
     <p>音游的谱面可以换：在音游那一栏填一个 seed（数字、<code>0x…</code> 或任意文字都行），或者直接开 <code>?seed=你的名字</code>。换完之后是 C++ 内核算的 256 个音符，JS 镜像再算一遍逐位核对，结论写在页面上。另外两个工具页也是这份生成器写出来的：<a href="kernel.html">内核控制台</a>把内核摊开（任意 seed 的谱面网格、判定窗口表、准确率用例，全部「期望值 vs 内核实算」逐行比对），<a href="nojs.html">无 JS 对照</a>把同一份 <code>index.html</code> 用「带 sandbox（禁脚本）」和「正常」两个 iframe 并排跑。</p>
     <div class="en-abstract" lang="en">
       <span class="en-tag mono">In short / English</span>
       <p>This page is a static site written by a single-file <strong>C++17 generator</strong>: no template engine, no framework, no hand-written HTML. Feature code, styles and scripts all live in <code>main.cpp</code>.</p>
-      <p>The rhythm-game chart is computed in the browser by a <strong>WebAssembly kernel</strong> compiled from the same C++ source, and the page compares the kernel's output with the generator's own chart on load — if they disagree, the badge says so instead of hiding it.</p>
+      <p>The rhythm-game chart is computed in the browser by a <strong>WebAssembly kernel</strong> compiled from the same C++ source, and the page compares the kernel's output with the generator's own chart on load — if they disagree, the badge says so instead of hiding it. The note timeline is not a made-up BPM either: it comes from 657 onsets measured off the bundled track, and while the music is playing the judging clock is <code>audio.currentTime</code> itself.</p>
       <p>JavaScript here is decoration: with scripting disabled the whole page is still readable, because the default CSS is already the final state.</p>
       <p>Source and build steps: <a href="__GITHUB__" target="_blank" rel="noopener">github.com/zhehong268/my-intro</a></p>
     </div>
@@ -3208,7 +3478,7 @@ int main() {
   </div>
   <div class="footer">
     <span>__NAME__ · © 2026</span>
-    <span><a href="kernel.html">内核控制台</a> · <a href="nojs.html">无 JS 对照</a> · Generated by C++ · GitHub Pages</span>
+    <span><a href="kernel.html">内核控制台</a> · <a href="nojs.html">无 JS 对照</a> · Generated by C++ · GitHub Pages<span class="foot-star" aria-hidden="true">★</span></span>
   </div>
 </section>
 )HTML";
@@ -3245,11 +3515,15 @@ window.__RHYTHM_CHART = ')HTML" + chart + R"HTML(';
 window.__RHYTHM_SEED = ')HTML" + std::to_string(rhythm::kSeed) + R"HTML(';
 window.__RHYTHM_LANES = ')HTML" + std::to_string(rhythm::kLanes) + R"HTML(';
 window.__RHYTHM_WASM = ')HTML" + wasmB64 + R"HTML(';
+window.__RHYTHM_ONSETS = [)HTML" + onsetsJs + R"HTML(];
+/* music.mp3 实测时长 256.6s（换歌要跟着换这个常数） */
+window.__RHYTHM_SONG_MS = 256600;
 window.__RHYTHM_JUDGE_PROBE = [)HTML" + judgeProbe + R"HTML(];
 window.__RHYTHM_JUDGE_EXPECT = [)HTML" + judgeExpect + R"HTML(];
 window.__RHYTHM_ACC_PROBE = [)HTML" + accProbe + R"HTML(];
 window.__RHYTHM_ACC_EXPECT = [)HTML" + accExpect + R"HTML(];
 </script>
+)HTML" + themeRuntimeScript() + R"HTML(
 <script>
 __JS__
 </script>
@@ -3299,6 +3573,12 @@ __JS__
                   << "要启用 wasm 内核：emcc rhythm_core.cpp -O3 -o rhythm_core.wasm --no-entry -sSTANDALONE_WASM=1"
                   << std::endl;
     } else {
+        if (onsetsCount > 0) {
+            std::cout << "谱面时间轴：内联 onsets.txt " << onsetsCount << " 个起音点（最后一个 "
+                      << onsetsLast << "ms）" << std::endl;
+        } else {
+            std::cout << "提示：没有 onsets.txt，音游退回固定节拍（302ms）。" << "重新生成：node tools/onsets.mjs music.mp3 > onsets.txt" << std::endl;
+        }
         std::cout << "音游内核：已内联 rhythm_core.wasm (" << wasmRaw.size() << " 字节 → base64 "
                   << wasmB64.size() << " 字节)" << std::endl;
     }
