@@ -69,8 +69,9 @@ generator.exe
 | `tools/asset-gate.mjs` | 资产门：页面引用到的本地文件必须都在发布目录里 |
 | `tools/budget.mjs` | 首屏体积门禁：文件表 + 预算判定 |
 | `tools/subset-fonts.py` | 重新生成字体子集：从 index.html 提取用字 → 下载源字体 → pyftsubset 出 woff2（改了标题文字后跑它补齐新字） |
+| `tools/font-coverage.mjs` | 字体覆盖门：页面真正用到的展示/等宽字符必须都在子集里；`—…·` 这三个按设计回退的标点只提醒，真漏字才红。负向测试 `_review/my-intro/font-gate-test.mjs`（4 棵造出来的树） |
 | `tools/og-card.html` `tools/make-og.mjs` | 分享卡片的模板与渲染脚本 |
-| `.github/workflows/deploy.yml` | CI：编 wasm → 编生成器 → 组装 `_site` → 资产门（三个页面各一遍）→ 内核门 → 体积门 → 发布 Pages |
+| `.github/workflows/deploy.yml` | CI：编 wasm → 编生成器 → 组装 `_site` → 资产门（三个页面各一遍）→ 内核门 → 体积门 → 字体覆盖门 → 发布 Pages |
 
 ## 站点上的几条约定
 
@@ -97,6 +98,7 @@ node selftest.mjs --dir=. --edge="C:\...\msedge.exe"
 node tools/wasm-check.mjs                       # 内核契约（CI 里跑的是同一条命令）
 node tools/asset-gate.mjs --dir=_site           # 资产门（对三个页面各跑一遍）
 node tools/budget.mjs                           # 首屏体积门禁
+node tools/font-coverage.mjs --dir=.            # 字体子集覆盖（改了标题/引言文字后跑）
 ```
 
 本地服务器（`selftest.mjs` 与音频探针里的那个）**必须支持 Range 请求**：GitHub Pages 支持，本地不支持的话 `<audio>` 会被判为不可 seek，降级后回填进度会被静默丢弃——那不是代码 bug，是测量环境的差异。

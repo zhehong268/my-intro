@@ -70,6 +70,11 @@ jobs:
       - name: Gate - first load size budget
         run: node tools/budget.mjs
 
+      # 字体子集覆盖门：改了标题/引言文字却没重新子集时，那个字会悄悄回退成
+      # 系统楷体——肉眼几乎看不出，这里让它变成一条红色。
+      - name: Gate - subset font coverage
+        run: node tools/font-coverage.mjs --dir=_site
+
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
         with:
