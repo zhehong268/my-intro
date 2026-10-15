@@ -47,9 +47,9 @@ jobs:
           cp index.html 404.html robots.txt sitemap.xml favicon.svg _site/
           cp kernel.html nojs.html _site/
           cp cover.jpg avatar.jpg bg.webp music.mp3 og-image.jpg _site/
-          # 音游横幅是可选槽位：仓库里有 stage-banner.* 才拷进发布目录
-          for f in stage-banner.webp stage-banner.jpg stage-banner.png; do
-            if [ -f "$f" ]; then cp "$f" _site/ && echo "stage banner: $f"; fi
+          # 音游进行界面的底图是可选槽位：仓库里有 stage-play.* 才拷进发布目录
+          for f in stage-play.webp stage-play.jpg stage-play.png; do
+            if [ -f "$f" ]; then cp "$f" _site/ && echo "stage play bg: $f"; fi
           done
           mkdir -p _site/assets/fonts
           cp assets/fonts/*.woff2 _site/assets/fonts/

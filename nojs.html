@@ -427,7 +427,7 @@ html.js .bar-fill.grow{transform:scaleX(var(--w,1))}
   background:#0b1020;border:1px solid rgba(109,77,250,.3);
   box-shadow:0 46px 80px -46px rgba(30,40,110,.75);
 }
-.rhythm-bg{position:absolute;inset:0;background:url('bg.webp') center/cover no-repeat;opacity:.24}
+.rhythm-bg{position:absolute;inset:0;background:url('stage-play.webp') center/cover no-repeat;opacity:.42}
 .rhythm-bg::after{content:'';position:absolute;inset:0;
   background:linear-gradient(180deg,rgba(11,16,32,.72),rgba(11,16,32,.93))}
 .rhythm-wrap canvas{position:relative;display:block;width:100%;height:100%}
@@ -666,34 +666,6 @@ html.theme-mygo .landing::after{background:radial-gradient(circle at 50% 50%,rgb
 .onset-strip{margin-top:12px;padding:10px 12px 8px;border-radius:12px;background:var(--panel);border:1px solid var(--line)}
 .onset-strip canvas{display:block;width:100%;height:56px}
 .strip-note{display:block;margin-top:6px;font-size:11px;color:var(--ink-faint)}
-.stage-banner{position:relative;margin:24px 0 0}
-.stage-frame{position:relative;aspect-ratio:1200/420;border-radius:18px;overflow:hidden;border:1px solid var(--line);
-  background:linear-gradient(180deg,color-mix(in srgb,var(--violet) 9%,var(--bg-top)),var(--panel));box-shadow:var(--sh-3)}
-.stage-banner-img{display:block;width:100%;height:100%;object-fit:cover;object-position:50% 14%}
-/* 亮色主题里不掺 MyGO（用户要求 MyGO 只落在暗色）：占位换成站点自己的紫色波形 */
-.stage-wave{position:absolute;inset:0;display:flex;align-items:center;gap:2.2%;padding:0 7%;opacity:.6}
-.stage-wave span{flex:1;height:var(--h);border-radius:8px;background:linear-gradient(180deg,color-mix(in srgb,var(--violet) 58%,transparent),color-mix(in srgb,var(--violet) 10%,transparent))}
-html.theme-mygo .stage-wave{display:none}
-.stage-stage{position:absolute;inset:0;overflow:hidden;display:none}
-html.theme-mygo .stage-stage{display:block}
-html.theme-mygo .stage-frame{background:linear-gradient(180deg,color-mix(in srgb,var(--m-taki) 11%,var(--bg-top)),var(--panel))}
-.stage-stage .beam{position:absolute;top:-14%;width:24%;height:132%;transform-origin:50% 0;filter:blur(15px);opacity:.55;
-  background:linear-gradient(180deg,var(--c),transparent 76%)}
-.beam.b1{left:3%;--c:var(--m-tomori);transform:rotate(10deg)}
-.beam.b2{left:21%;--c:var(--m-anon);transform:rotate(4.5deg)}
-.beam.b3{left:39%;--c:var(--m-raana);transform:rotate(0deg)}
-.beam.b4{left:57%;--c:var(--m-soyo);transform:rotate(-4.5deg)}
-.beam.b5{left:75%;--c:var(--m-taki);transform:rotate(-10deg)}
-.stage-floor{position:absolute;left:0;right:0;bottom:0;height:40%;
-  background:linear-gradient(180deg,transparent,color-mix(in srgb,var(--m-taki) 14%,transparent)),
-    radial-gradient(70% 130% at 50% 130%,rgba(255,255,255,.16),transparent 62%)}
-.stage-mark{position:absolute;left:50%;top:43%;transform:translate(-50%,-50%);font-size:40px;color:var(--m-soyo);
-  text-shadow:0 0 28px color-mix(in srgb,var(--m-soyo) 55%,transparent)}
-.stage-line{position:absolute;left:50%;bottom:12%;transform:translateX(-50%);white-space:nowrap;font-size:15px;
-  letter-spacing:4px;color:var(--ink)}
-.banner-note{margin:10px 0 26px;font-size:11.5px;color:var(--ink-faint)}
-@media (max-width:640px){.stage-mark{font-size:26px}.stage-line{font-size:12px;letter-spacing:2px}
-  .stage-frame{aspect-ratio:16/10}.stage-banner-img{object-position:50% 18%}}
 .drop-zone{display:flex;flex-direction:column;gap:7px;margin:18px 0 4px;padding:15px 18px;
   border:1px dashed color-mix(in srgb,var(--violet) 35%,transparent);
   border-radius:14px;background:var(--panel);cursor:pointer;transition:border-color .2s,background .2s,box-shadow .2s}

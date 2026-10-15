@@ -60,7 +60,7 @@ generator.exe
 | `onsets.txt` | 从 `music.mp3` 实测出来的 657 个起音点（毫秒，一行一个）——音游谱面的时间轴就是它，换歌要重跑 `tools/onsets.mjs` |
 | `404.html` `robots.txt` `sitemap.xml` | 生成产物（sitemap 里含两个工具页） |
 | `cover.jpg` `avatar.jpg` `bg.webp` | 素材图片：入口门封面（735×386）/ 头像 / 全站氛围底图（音游 canvas 底下那张也是它） |
-| `stage-banner.webp` | 音游段落横幅（1400×1113，137 KB，`loading=lazy` → 不计首屏）。仓库里没有这个文件时，生成器自动改用自绘占位（暗色五道光束 / 亮色波形柱） |
+| `stage-play.webp` | 音游段落横幅（1400×1113，137 KB，`loading=lazy` → 不计首屏）。仓库里没有这个文件时，生成器自动改用自绘占位（暗色五道光束 / 亮色波形柱） |
 | `music.mp3` | 背景音乐，128 kbps（4.1 MB，原 10.2 MB），`preload="none"`，点音乐按钮才加载 |
 | `og-image.jpg` | 分享卡片 1200×630（70 KB），由 `tools/make-og.mjs` 渲染后**提交进仓库**，CI 只负责复制 |
 | `assets/fonts/*.woff2` | 自托管字体子集（OFL）：霞鹜文楷 Medium 做展示标题（`--display`），JetBrains Mono Regular/Bold 做等宽（`--mono`）；按页面实际用字子集化，三个文件共约 53 KB，`font-display:swap`。来源、授权、重新生成方法见 `assets/fonts/README.md` |
@@ -144,7 +144,7 @@ assets/fonts/ 51.7 KB   霞鹜文楷子集 12.6 + JetBrains Mono Regular 15.0 / 
 含音频预热   513.1 KB   预热 = 入口门期间那 160 KB 的 Range 预取（省流量模式会跳过）
 music.mp3   4010.7 KB   按需（预算 4.5 MB）
 kernel.html   78.3 KB   nojs.html 50.5 KB   工具页（点进去才加载，gzip 27.8 / 15.0 KB）
-stage-banner.webp 136.9 KB  按需（loading=lazy，不计首屏）
+stage-play.webp 136.9 KB  按需（loading=lazy，不计首屏）
 ```
 
 从 319.2 KB 涨到 353.2 KB 的那 34 KB 花在：入口门那行自证徽章与复核脚本（约 2 KB）、

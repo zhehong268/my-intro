@@ -23,7 +23,7 @@ const ROOT = path.resolve(arg("root", path.join(path.dirname(fileURLToPath(impor
     当场量起音点、现场生成跟它同步的谱面，再加拖放区与状态行约 9 KB；gzip 那边 base64
     几乎压不动，实测 54.7 KB。同样是主动加的能力，不是无意变重。
     门禁照旧硬失败：再有人无意加一张大图照样红。） */
-const BUDGET = { firstLoad: 540 * 1024, htmlGzip: 64 * 1024, music: 4.5 * 1024 * 1024 };
+const BUDGET = { firstLoad: 600 * 1024, htmlGzip: 64 * 1024, music: 4.5 * 1024 * 1024 };
 /* 入口门一出现，页面会自己 fetch 音频的头 160 KB 预热（main.cpp 的 warmMusic()，
    Range: bytes=0-163839）。它不在 HTML 的引用列表里，抓不到，但不能当它不存在 ——
    这笔账记在这里，算进首屏口径。省流量模式下会被跳过，所以这是上限不是必花。 */

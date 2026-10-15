@@ -550,7 +550,7 @@ await evaluate(`localStorage.removeItem('myintro.theme'); window.__applyTheme('l
 const acd = await evaluate(`(() => {
   var proof = document.getElementById('landingProof');
   var strip = document.getElementById('onsetStrip');
-  var banner = document.querySelector('#stageBanner img.stage-banner-img');
+  var stageBg = getComputedStyle(document.querySelector('.rhythm-bg') || document.body).backgroundImage;
   return {
     sha: proof ? String(proof.getAttribute('data-sha')) : '',
     bytes: proof ? Number(proof.getAttribute('data-bytes')) : 0,
@@ -562,7 +562,8 @@ const acd = await evaluate(`(() => {
     diffNote: (document.getElementById('diffNote') || {}).textContent || '',
     strip: strip ? { w: strip.width, h: strip.height } : null,
     stripNote: (document.getElementById('stripNote') || {}).textContent || '',
-    banner: banner ? { lazy: banner.getAttribute('loading'), w: banner.getAttribute('width') } : null
+    minGap: (window.__rhythmClockProbe ? window.__rhythmClockProbe().minGap : null),
+    stageBg: stageBg
   };
 })()`);
 check("badge: 入口门自证徽章写着构建时算的内核摘要与字节数",
@@ -577,17 +578,20 @@ const diffHard = await evaluate(`(async () => {
   document.getElementById('diffHard').click();
   await new Promise(function (r) { setTimeout(r, 700); });
   var after = window.__rhythmClockProbe ? window.__rhythmClockProbe().timeline : 0;
-  return { stored: localStorage.getItem('myintro.diff'), pressed: document.getElementById('diffHard').getAttribute('aria-pressed'), before: before, after: after };
+  var gap = window.__rhythmClockProbe ? window.__rhythmClockProbe().minGap : null;
+  return { stored: localStorage.getItem('myintro.diff'), pressed: document.getElementById('diffHard').getAttribute('aria-pressed'), before: before, after: after, minGap: gap };
 })()`);
-check("diff: 点硬核 → 选择落盘 + 这一轮按双押重排（密度 x2）",
-  diffHard.stored === "hard" && diffHard.pressed === "true" && diffHard.after !== diffHard.before,
-  JSON.stringify(diffHard));
+check("diff: 点硬核 → 选择落盘 + 这一轮按硬核的间隔重排（不会再同一时刻压两条）",
+  diffHard.stored === "hard" && diffHard.pressed === "true" && diffHard.minGap >= 100 && diffHard.minGap < acd.minGap,
+  JSON.stringify(diffHard) + " | 标准档 minGap=" + acd.minGap);
 await evaluate(`document.getElementById('diffNormal').click(); localStorage.removeItem('myintro.diff'); true`);
 check("strip: 整首歌的起音点时间条画出来了（657 个 tick + 播放头）",
   !!(acd.strip && acd.strip.w > 200 && acd.strip.h > 10 && /657/.test(acd.stripNote)),
   JSON.stringify(acd.strip) + " | " + acd.stripNote.slice(0, 48));
-check("banner: 音游横幅按需加载（loading=lazy，不计首屏）",
-  !!(acd.banner && acd.banner.lazy === "lazy"), JSON.stringify(acd.banner));
+check("banner: 音游进行界面的底图用的是仓库里那张 stage-play 图",
+  /stage-play\.webp/.test(acd.stageBg), String(acd.stageBg).slice(0, 72));
+check("diff: 标准档的音符之间至少隔 150ms（不会再糊成一整排）",
+  acd.minGap !== null && acd.minGap >= 150, "minGap=" + acd.minGap + "ms");
 
 /* ---------- 生成物不该留下任何 __PLACEHOLDER__ ---------- */
 if (DIR) {
