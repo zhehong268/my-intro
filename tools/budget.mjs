@@ -13,12 +13,17 @@ const args = process.argv.slice(2);
 const arg = (k, d) => { const a = args.find((x) => x.startsWith("--" + k + "=")); return a ? a.slice(k.length + 3) : d; };
 const ROOT = path.resolve(arg("root", path.join(path.dirname(fileURLToPath(import.meta.url)), "..")));
 
-/* 预算：首屏 500 KB 原始字节 / HTML 压缩后 60 KB / 交互后按需加载的音频 4.5 MB
+/* 预算：首屏 540 KB 原始字节 / HTML 压缩后 64 KB / 交互后按需加载的音频 4.5 MB
    （首屏从 450 KB 上调到 500 KB：2026-10 引入自托管字体子集，三个 woff2 共约 52 KB，
    是主动的视觉升级而不是无意变重——标题换霞鹜文楷、等宽换 JetBrains Mono，
    按页面实际用字子集化。省掉的回退链在 Windows 上只能落到 Consolas/雅黑，
-   这个字节数花得值。门禁照旧硬失败：再有人无意加一张大图照样红。） */
-const BUDGET = { firstLoad: 500 * 1024, htmlGzip: 60 * 1024, music: 4.5 * 1024 * 1024 };
+   这个字节数花得值。
+    500 → 540 KB（gzip 60 → 64 KB）：内核升到 v3，加了浏览器内的起音点检测 —— 同一个
+    rhythm_core.cpp 编成 10 KB wasm（base64 内联 13.4 KB），让页面能对拖进来的任意一首歌
+    当场量起音点、现场生成跟它同步的谱面，再加拖放区与状态行约 9 KB；gzip 那边 base64
+    几乎压不动，实测 54.7 KB。同样是主动加的能力，不是无意变重。
+    门禁照旧硬失败：再有人无意加一张大图照样红。） */
+const BUDGET = { firstLoad: 540 * 1024, htmlGzip: 64 * 1024, music: 4.5 * 1024 * 1024 };
 /* 入口门一出现，页面会自己 fetch 音频的头 160 KB 预热（main.cpp 的 warmMusic()，
    Range: bytes=0-163839）。它不在 HTML 的引用列表里，抓不到，但不能当它不存在 ——
    这笔账记在这里，算进首屏口径。省流量模式下会被跳过，所以这是上限不是必花。 */
@@ -42,12 +47,21 @@ const external = (u) => /^(https?:|mailto:|tel:|data:|#|\/\/|\/)/.test(u);
 
 let firstLoad = 0, music = 0, bad = 0;
 const rows = [];
+/* <img loading="lazy"> 也是滚到那一段才取的，跟 music.mp3 一样算按需：
+   音游段落横幅走这条（它远在首屏之外，尺寸大一点也不该把首屏算胖）。 */
+const LAZY = new Set();
+for (const m of html.matchAll(/<img\b[^>]*>/g)) {
+  if (!/loading="lazy"/.test(m[0])) continue;
+  const s = /\bsrc="([^"]+)"/.exec(m[0]);
+  if (s) LAZY.add(s[1]);
+}
 for (const r of [...refs].sort()) {
   if (external(r)) continue;
   const p = path.join(ROOT, r);
   if (!fs.existsSync(p)) { console.log("::error::引用存在但文件不存在: " + r); bad = 1; continue; }
   const size = fs.statSync(p).size;
   if (r === "music.mp3") { music = size; rows.push([r, size, "按需"]); continue; }
+  if (LAZY.has(r)) { rows.push([r, size, "按需"]); continue; }
   if (NOT_FIRST_LOAD[r]) { rows.push([r, size, "不计"]); continue; }
   firstLoad += size;
   rows.push([r, size, "首屏"]);

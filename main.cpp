@@ -50,6 +50,8 @@ struct Profile {
     std::string avatar      = "avatar.jpg";
     std::string coverImage  = "cover.jpg";
     std::string bgImage     = "bg.webp";
+    std::string stageBanner;          /* 音游段落横幅：有图就 <img>，没图就自绘占位 */
+    std::string stageBannerNote;
     std::string bgMusic     = "music.mp3";
     std::string welcomeText = "欢迎来到遮鸿的个人主页";
     std::string email       = "3255484226@qq.com";
@@ -486,6 +488,8 @@ html.entry body{overflow:hidden}
 }
 .landing-photo img{display:block;width:100%;height:auto;aspect-ratio:16/9;object-fit:cover}
 .landing-latin{margin-top:30px;font-family:var(--mono);font-size:11.5px;letter-spacing:7px;color:var(--ink-faint)}
+.landing-proof{margin-top:22px;font-family:var(--mono);font-size:11.5px;letter-spacing:.06em;color:var(--ink-faint)}
+.landing-proof.bad{color:var(--bad-ink)}
 .landing-title{
   margin-top:12px;font-family:var(--display);font-size:clamp(26px,5vw,44px);font-weight:800;letter-spacing:1.5px;line-height:1.3;
   background:linear-gradient(110deg,var(--grad-start) 0%,var(--violet) 52%,var(--sky) 100%);
@@ -963,6 +967,51 @@ html.theme-mygo .landing::after{background:radial-gradient(circle at 50% 50%,rgb
 .lineup li{display:inline-flex;align-items:center;gap:8px;list-style:none}
 .lineup i{width:10px;height:10px;border-radius:50%;background:var(--c,#888);box-shadow:0 0 0 3px color-mix(in srgb,var(--c,#888) 22%,transparent)}
 .lineup .part{font-size:11px;letter-spacing:1px;color:var(--ink-faint)}
+.diff-row{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:12px 0 2px}
+.diff-label{font-size:12.5px;color:var(--ink-dim)}
+.diff-note{font-size:11px;color:var(--ink-faint)}
+.diff-row .rbtn[aria-pressed="true"]{border-color:var(--violet);color:var(--violet)}
+.onset-strip{margin-top:12px;padding:10px 12px 8px;border-radius:12px;background:var(--panel);border:1px solid var(--line)}
+.onset-strip canvas{display:block;width:100%;height:56px}
+.strip-note{display:block;margin-top:6px;font-size:11px;color:var(--ink-faint)}
+.stage-banner{position:relative;margin:24px 0 0}
+.stage-frame{position:relative;aspect-ratio:1200/420;border-radius:18px;overflow:hidden;border:1px solid var(--line);
+  background:linear-gradient(180deg,color-mix(in srgb,var(--violet) 9%,var(--bg-top)),var(--panel));box-shadow:var(--sh-3)}
+.stage-banner-img{display:block;width:100%;height:100%;object-fit:cover}
+/* 亮色主题里不掺 MyGO（用户要求 MyGO 只落在暗色）：占位换成站点自己的紫色波形 */
+.stage-wave{position:absolute;inset:0;display:flex;align-items:center;gap:2.2%;padding:0 7%;opacity:.6}
+.stage-wave span{flex:1;height:var(--h);border-radius:8px;background:linear-gradient(180deg,color-mix(in srgb,var(--violet) 58%,transparent),color-mix(in srgb,var(--violet) 10%,transparent))}
+html.theme-mygo .stage-wave{display:none}
+.stage-stage{position:absolute;inset:0;overflow:hidden;display:none}
+html.theme-mygo .stage-stage{display:block}
+html.theme-mygo .stage-frame{background:linear-gradient(180deg,color-mix(in srgb,var(--m-taki) 11%,var(--bg-top)),var(--panel))}
+.stage-stage .beam{position:absolute;top:-14%;width:24%;height:132%;transform-origin:50% 0;filter:blur(15px);opacity:.55;
+  background:linear-gradient(180deg,var(--c),transparent 76%)}
+.beam.b1{left:3%;--c:var(--m-tomori);transform:rotate(10deg)}
+.beam.b2{left:21%;--c:var(--m-anon);transform:rotate(4.5deg)}
+.beam.b3{left:39%;--c:var(--m-raana);transform:rotate(0deg)}
+.beam.b4{left:57%;--c:var(--m-soyo);transform:rotate(-4.5deg)}
+.beam.b5{left:75%;--c:var(--m-taki);transform:rotate(-10deg)}
+.stage-floor{position:absolute;left:0;right:0;bottom:0;height:40%;
+  background:linear-gradient(180deg,transparent,color-mix(in srgb,var(--m-taki) 14%,transparent)),
+    radial-gradient(70% 130% at 50% 130%,rgba(255,255,255,.16),transparent 62%)}
+.stage-mark{position:absolute;left:50%;top:43%;transform:translate(-50%,-50%);font-size:40px;color:var(--m-soyo);
+  text-shadow:0 0 28px color-mix(in srgb,var(--m-soyo) 55%,transparent)}
+.stage-line{position:absolute;left:50%;bottom:12%;transform:translateX(-50%);white-space:nowrap;font-size:15px;
+  letter-spacing:4px;color:var(--ink)}
+.banner-note{margin:10px 0 26px;font-size:11.5px;color:var(--ink-faint)}
+@media (max-width:640px){.stage-mark{font-size:26px}.stage-line{font-size:12px;letter-spacing:2px}}
+.drop-zone{display:flex;flex-direction:column;gap:7px;margin:18px 0 4px;padding:15px 18px;
+  border:1px dashed color-mix(in srgb,var(--violet) 35%,transparent);
+  border-radius:14px;background:var(--panel);cursor:pointer;transition:border-color .2s,background .2s,box-shadow .2s}
+.drop-zone:hover,.drop-zone:focus-visible{border-color:var(--violet);background:var(--panel-hover)}
+.drop-zone.over{border-color:var(--violet);background:var(--panel-hover);box-shadow:0 0 0 4px color-mix(in srgb,var(--violet) 16%,transparent)}
+.drop-main{font-size:13px;color:var(--ink)}
+.drop-sub{font-size:11.5px;color:var(--ink-faint);line-height:1.75}
+.drop-info{font-size:11.5px;color:var(--ink-dim);margin-top:9px}
+.drop-info.bad{color:var(--bad-ink)}
+.drop-actions{margin-top:10px}
+.drop-actions button[hidden]{display:none}
 .lineup-src{font-size:11.5px;color:var(--ink-faint);margin-top:8px}
 .stage-note{display:inline-flex;align-items:center;gap:8px;margin-top:10px;font-size:12.5px;color:var(--ink-dim)}
 .stage-note .star{color:var(--m-soyo);font-size:13px}
@@ -1567,6 +1616,9 @@ const char* kJS = R"JS(
      没播或暂停时换成等速虚拟时钟，接着暂停那一刻的歌曲位置继续走。 */
   var ONSETS = window.__RHYTHM_ONSETS || [];
   var SONG_MS = window.__RHYTHM_SONG_MS || (ONSETS.length ? ONSETS[ONSETS.length - 1] + 4000 : 0);
+  /* 当前在用的那份谱面：默认是生成器内联的本站那首歌，拖进来别的歌就换成它 */
+  var CUR_ONSETS = ONSETS, CUR_SONG_MS = SONG_MS;
+  var songLabel = '本站的歌', BUILTIN_SRC = music ? music.getAttribute('src') : '';
   var songZero = (window.performance && performance.now) ? performance.now() : Date.now();
   var timeline = [], spawnIdx = 0, songLast = 0;
 
@@ -1575,14 +1627,18 @@ const char* kJS = R"JS(
   function songNow() { return audioLive() ? music.currentTime * 1000 : perfNow() - songZero; }
   function songRezero() { if (music) songZero = perfNow() - music.currentTime * 1000; }
   function buildTimeline(from, count) {
-    /* 从歌曲位置 from 往后取 count 个起音点；不够就绕回开头（一首歌循环着打） */
+    /* 从歌曲位置 from 往后取 count 个起音点；不够就绕回开头（一首歌循环着打）。
+       难度只改「隔几个取一个」与「要不要双押」：时间戳永远来自实测起音点。 */
     var out = [], first = 0, i;
-    if (!ONSETS.length) return out;
-    while (first < ONSETS.length && ONSETS[first] < from) first++;
-    for (i = 0; i < count; i++) {
+    if (!CUR_ONSETS.length) return out;
+    while (first < CUR_ONSETS.length && CUR_ONSETS[first] < from) first++;
+    var stride = DIFF.stride, need = count * stride;
+    for (i = 0; i < need; i++) {
       var k = first + i;
-      out.push(ONSETS[k % ONSETS.length] + Math.floor(k / ONSETS.length) * SONG_MS);
+      out.push(CUR_ONSETS[k % CUR_ONSETS.length] + Math.floor(k / CUR_ONSETS.length) * CUR_SONG_MS);
     }
+    if (stride > 1) { var thin = []; for (i = 0; i < out.length; i += stride) thin.push(out[i]); out = thin; }
+    if (DIFF.dual) { var wide = []; for (i = 0; i < out.length; i++) { wide.push(out[i]); wide.push(out[i]); } out = wide; }
     return out;
   }
   var clockChip = $('#rhythmClock');
@@ -1685,6 +1741,20 @@ const char* kJS = R"JS(
         }
         ex.chart_reset(seed, lanes);
         window.__rhythmKernelVersion = ex.kernel_version ? ex.kernel_version() : 0;
+      /* 起音点自检：同一个函数在 native 里算过的校验值，这里让 wasm 再算一遍 */
+      window.__onsetParity = 'no-wasm';
+      if (typeof ex.onset_init === 'function' && typeof ex.onset_selftest === 'function') {
+        try {
+          ex.onset_init();
+          var onsetOutPtr = ex.onset_out_ptr();
+          new Int32Array(ex.memory.buffer, onsetOutPtr, 1)[0] = 0;
+          var onsetSum = ex.onset_selftest(onsetOutPtr) >>> 0;
+          var onsetCnt = new Int32Array(ex.memory.buffer, onsetOutPtr, 1)[0];
+          var onsetWant = (window.__ONSET_PROBE_EXPECT || 0) >>> 0;
+          window.__onsetProbe = { count: onsetCnt, checksum: onsetSum, expect: onsetWant };
+          window.__onsetParity = (onsetSum === onsetWant) ? 'ok' : 'mismatch';
+        } catch (e) { window.__onsetParity = 'error'; }
+      }
 
         /* 判定与算分的探针：期望值是生成器用同一份 rhythm_core.hpp 算的，
            探针压在窗口边界（±45 / ±90 与各差 1ms），窗口写错这里就会 mismatch */
@@ -1823,6 +1893,13 @@ const char* kJS = R"JS(
      加载内核时，生成器按同一份头文件算好的探针会逐条比对（含 ±45/±90 边界与差 1ms 的点），
      结果写进 window.__rhythmJudgeParity；内核不可用时退回本地 JS 镜像，页面照实标出来源。 */
   var GOODms = 90, PERFECTms = 45, ROUND_NOTES = 64;
+  /* 难度分级：只动「取多密」和「喂进内核的窗口」——判定永远由内核给出，双押也不是编造的时间戳 */
+  var DIFF_TIERS = {
+    easy: { label: '轻松', stride: 2, win: 1.25, dual: false },
+    normal: { label: '标准', stride: 1, win: 1, dual: false },
+    hard: { label: '硬核', stride: 1, win: 0.667, dual: true }
+  };
+  var diffKey = 'normal', DIFF = DIFF_TIERS.normal, WIN_SCALE = 1;
   var KERNEL_JUDGE = null, KERNEL_ACC = null, kernelReset = null;
   var mode = 'auto', roundActive = false, roundIndex = 0, pausedAt = 0, lastJudge = '';
   var round = { perfect: 0, good: 0, miss: 0, accPermille: 0 };
@@ -1832,7 +1909,8 @@ const char* kJS = R"JS(
 
   function jsJudge(d) { var a = d < 0 ? -d : d; return a <= PERFECTms ? 2 : a <= GOODms ? 1 : 0; }
   function jsAcc(p, g, n) { return n <= 0 ? 0 : Math.floor((p * 1000 + g * 600) / n); }
-  function doJudge(d) { return KERNEL_JUDGE ? KERNEL_JUDGE(d) : jsJudge(d); }
+  /* 难度只改喂进内核的窗口：偏差按档缩放后再交给内核，JS 回退同理 —— 判定者始终是内核 */
+  function doJudge(d) { var dd = d / WIN_SCALE; return KERNEL_JUDGE ? KERNEL_JUDGE(dd) : jsJudge(dd); }
   function doAcc(p, g, n) { return KERNEL_ACC ? KERNEL_ACC(p, g, n) : jsAcc(p, g, n); }
 
   function setText(sel, v) { var el = $(sel); if (el) el.textContent = v; }
@@ -1911,7 +1989,7 @@ const char* kJS = R"JS(
     if (mode !== 'play' || !roundActive) return;
     var hit = nearestNote(lane, now);
     /* 空击不扣分：只让该轨道亮一下，别把休闲玩家劝退 */
-    if (!hit || Math.abs(hit.delta) > GOODms) { laneGlow[lane] = Math.max(laneGlow[lane], 0.35); return; }
+    if (!hit || Math.abs(hit.delta) > GOODms * (WIN_SCALE > 1 ? WIN_SCALE : 1)) { laneGlow[lane] = Math.max(laneGlow[lane], 0.35); return; }
     var r = doJudge(hit.delta);
     if (r <= 0) { laneGlow[lane] = Math.max(laneGlow[lane], 0.35); return; }
     registerJudge(r, hit.note);
@@ -1969,21 +2047,328 @@ const char* kJS = R"JS(
 
   /* 预览与自检用的钩子：都是页面自己会用到的函数，不是测试专用开关 */
   /* 换主题时立刻重画一帧：轨道颜色跟着成员色走 */
-  window.addEventListener('themechange', function () { render(); });
+  /* ---------- 难度：换档只重排这一轮，时间戳仍是实测起音点 ---------- */
+  function diffBtn(k) { return document.getElementById('diff' + k.charAt(0).toUpperCase() + k.slice(1)); }
+  function diffNote() {
+    var el = document.getElementById('diffNote');
+    if (!el) return;
+    var p = Math.round(PERFECTms * WIN_SCALE), g = Math.round(GOODms * WIN_SCALE);
+    el.textContent = '密度 x' + (DIFF.dual ? 2 : (1 / DIFF.stride)) + ' · 判定窗口 ±' + p + ' / ±' + g + 'ms（内核给的）';
+  }
+  function setDiff(key, save) {
+    diffKey = DIFF_TIERS[key] ? key : 'normal';
+    DIFF = DIFF_TIERS[diffKey];
+    WIN_SCALE = DIFF.win;
+    ['easy', 'normal', 'hard'].forEach(function (k) {
+      var b = diffBtn(k);
+      if (b) b.setAttribute('aria-pressed', k === diffKey ? 'true' : 'false');
+    });
+    if (save) { try { localStorage.setItem('myintro.diff', diffKey); } catch (e) {} }
+    diffNote();
+    timeline = buildTimeline(mode === 'play' ? songNow() + 900 : songNow(), ROUND_NOTES);
+    spawnIdx = 0;
+  }
+  ['easy', 'normal', 'hard'].forEach(function (k) {
+    var b = diffBtn(k);
+    if (b) b.addEventListener('click', function () { setDiff(k, true); });
+  });
+  (function initDiff() {
+    var saved = null;
+    try { saved = localStorage.getItem('myintro.diff'); } catch (e) {}
+    setDiff(saved, false);
+  })();
+
+  /* ---------- 起音点时间条：整首歌 657 个 tick + 播放头 ---------- */
+  var stripCvs = document.getElementById('onsetStrip');
+  var stripLayer = null, stripDirty = true, stripAccent = '#a78bfa', stripSig = '';
+  function stripAccentSync() {
+    try { stripAccent = getComputedStyle(document.documentElement).getPropertyValue('--violet').trim() || '#a78bfa'; } catch (e) {}
+    stripDirty = true;
+  }
+  function drawStrip() {
+    if (!stripCvs) return;
+    var sig = CUR_ONSETS.length + ':' + (CUR_SONG_MS || 0);
+    if (sig !== stripSig) { stripSig = sig; stripDirty = true; }
+    var w = stripCvs.clientWidth || 640, h = 56, dpr = Math.min(2, window.devicePixelRatio || 1);
+    if (stripCvs.width !== Math.round(w * dpr) || stripCvs.height !== Math.round(h * dpr)) {
+      stripCvs.width = Math.round(w * dpr); stripCvs.height = Math.round(h * dpr);
+      stripDirty = true;
+    }
+    var g = stripCvs.getContext('2d');
+    if (!g) return;
+    if (!stripLayer || stripDirty) {
+      stripLayer = document.createElement('canvas');
+      stripLayer.width = stripCvs.width; stripLayer.height = stripCvs.height;
+      var l = stripLayer.getContext('2d');
+      l.setTransform(dpr, 0, 0, dpr, 0, 0);
+      var dur = CUR_SONG_MS || 1, n = CUR_ONSETS.length, i;
+      l.fillStyle = 'rgba(125,211,252,.14)';
+      l.fillRect(0, h * 0.46, w, Math.max(1, h * 0.08));
+      l.globalAlpha = n > 400 ? 0.55 : 0.8;
+      for (i = 0; i < n; i++) {
+        var x = Math.round(CUR_ONSETS[i] / dur * (w - 1));
+        l.fillStyle = MYGO_LANES[i % MYGO_LANES.length];
+        l.fillRect(x, h * 0.18, 1, h * 0.64);
+      }
+      l.globalAlpha = 1;
+      stripDirty = false;
+    }
+    g.setTransform(1, 0, 0, 1, 0, 0);
+    g.clearRect(0, 0, stripCvs.width, stripCvs.height);
+    g.drawImage(stripLayer, 0, 0);
+    g.setTransform(dpr, 0, 0, dpr, 0, 0);
+    var dur2 = CUR_SONG_MS || 1;
+    var pos = (((songNow() % dur2) + dur2) % dur2) / dur2 * (w - 1);
+    g.fillStyle = stripAccent;
+    g.fillRect(Math.round(pos) - 1, 0, 2, h);
+    g.beginPath(); g.arc(pos, h * 0.5, 3.2, 0, Math.PI * 2); g.fill();
+    var note = document.getElementById('stripNote');
+    if (note) {
+      var secs = Math.round(dur2 / 1000);
+      var txt = '谱面 · ' + songLabel + ' —— 整首 ' + Math.floor(secs / 60) + ':' + ('0' + (secs % 60)).slice(-2) +
+        ' · ' + CUR_ONSETS.length + ' 个起音点 · 上面每根 tick 都是歌里真实响过的地方';
+      if (note.textContent !== txt) note.textContent = txt;
+    }
+  }
+  stripAccentSync();
+  window.addEventListener('resize', function () { stripDirty = true; });
+  setInterval(function () { if (!document.hidden) drawStrip(); }, 80);
+  setTimeout(drawStrip, 400);
+
+  /* ---------- 入口门那行自证徽章：构建时算的哈希 vs 浏览器当场重算 ---------- */
+  (function kernelBadge() {
+    var el = document.getElementById('landingProof');
+    if (!el) return;
+    var want = el.getAttribute('data-sha') || '', bytes = el.getAttribute('data-bytes') || '?';
+    function show(tail, bad) {
+      el.className = 'landing-proof landing-fade mono' + (bad ? ' bad' : '');
+      el.textContent = '内核 SHA-256 ' + want + ' · ' + bytes + ' 字节 · ' + tail;
+    }
+    var b64 = window.__RHYTHM_WASM || '';
+    if (!b64) { show('生成时没有内联 wasm'); return; }
+    var sub = window.crypto && window.crypto.subtle;
+    if (!sub) { show('这个环境没有 crypto.subtle，没复核'); return; }
+    try {
+      sub.digest('SHA-256', base64ToBytes(b64)).then(function (buf) {
+        var v = new Uint8Array(buf), hex = '', i;
+        for (i = 0; i < v.length; i++) hex += (v[i] < 16 ? '0' : '') + v[i].toString(16);
+        window.__kernelSha = hex;
+        if (hex.slice(0, 12) === want) show('浏览器复核一致', false);
+        else show('浏览器复核不一致（' + hex.slice(0, 12) + '，以构建时那份为准）', true);
+      }).catch(function () { show('复核失败：crypto.subtle 拒绝了'); });
+    } catch (e) { show('复核失败：' + (e && e.message ? e.message : '异常')); }
+  })();
+
+  window.addEventListener('themechange', function () { render(); stripAccentSync(); });
+
+  /* ============ 拖一首歌进来：C++/WASM 内核当场量起音点 ============ 
+     文件不出浏览器：本地解码 → 重采样到 11025Hz → 写进 wasm 内存 → 内核算。
+     页面只把结果（毫秒数组）拿回来当谱面，音频连 <audio> 都没出过这台机器。 */
+  var ANALYSIS_RATE = 11025;
+  var dropBusy = false;
+
+  function onsetKernelReady() {
+    return !!(kernelExports && typeof kernelExports.detect_onsets === 'function' &&
+      typeof kernelExports.onset_ptr === 'function' && kernelExports.memory);
+  }
+
+  function fmtClock(sec) {
+    if (!isFinite(sec)) return '—';
+    var m = Math.floor(sec / 60), s = Math.floor(sec % 60);
+    return m + ':' + (s < 10 ? '0' + s : s);
+  }
+
+  /* 多声道混成单声道 */
+  function toMono(chans, frames) {
+    var out = new Float32Array(frames), c, i;
+    if (!chans.length) return out;
+    for (c = 0; c < chans.length; c++) {
+      var src = chans[c];
+      for (i = 0; i < frames; i++) out[i] += src[i] / chans.length;
+    }
+    return out;
+  }
+
+  /* 线性重采样：内核按 23ms 一帧看谱，11025Hz 足够，快很多 */
+  function resampleTo(mono, from, to) {
+    if (from === to) return mono;
+    var n = Math.max(1, Math.floor(mono.length * to / from));
+    var out = new Float32Array(n), step = from / to, i;
+    for (i = 0; i < n; i++) {
+      var x = i * step, i0 = Math.floor(x), f = x - i0;
+      var a = mono[i0] || 0, b = mono[i0 + 1] || 0;
+      out[i] = a + (b - a) * f;
+    }
+    return out;
+  }
+
+  /* 内核一次吃 20 秒，长歌自己分块：留 1 秒重叠，拼起来再按 93ms 去重 */
+  function onsetsFromPcm(pcm, rate) {
+    var cap = kernelExports.onset_capacity();
+    var inPtr = kernelExports.onset_ptr(), outPtr = kernelExports.onset_out_ptr();
+    var out = [], off = 0;
+    while (off < pcm.length) {
+      var len = Math.min(cap, pcm.length - off);
+      new Float32Array(kernelExports.memory.buffer, inPtr, len).set(pcm.subarray(off, off + len));
+      var n = kernelExports.detect_onsets(len, rate);
+      var got = new Float32Array(kernelExports.memory.buffer, outPtr, n);
+      for (var i = 0; i < n; i++) out.push(got[i] + off * 1000 / rate);
+      if (len < cap) break;
+      off += cap - rate;
+    }
+    var merged = [];
+    for (var k = 0; k < out.length; k++) {
+      if (!merged.length || out[k] - merged[merged.length - 1] >= 93) merged.push(out[k]);
+    }
+    return merged;
+  }
+
+  function dropZoneEl() { return document.getElementById('dropZone'); }
+  function dropInfoEl() { return document.getElementById('dropInfo'); }
+  function showDrop(text, bad) {
+    var el = dropInfoEl();
+    if (!el) return;
+    el.textContent = text;
+    el.className = 'drop-info mono reveal' + (bad ? ' bad' : '');
+  }
+
+  /* 换谱面来源：重新排一轮时间轴，时钟跟着新歌走 */
+  function useChart(onsets, songMs, label, srcUrl) {
+    CUR_ONSETS = onsets;
+    CUR_SONG_MS = songMs;
+    songLabel = label;
+    timeline = [];
+    spawnIdx = 0;
+    if (music && srcUrl && music.getAttribute('src') !== srcUrl) {
+      music.src = srcUrl;
+      if (music.load) music.load();
+    }
+    songRezero();
+    timeline = buildTimeline(songNow(), ROUND_NOTES * 2);
+    spawnIdx = 0;
+    if (clockChip) clockChip.textContent = '跟随 ' + label;
+  }
+
+  function backToBuiltinSong() {
+    useChart(ONSETS, SONG_MS, '本站的歌', BUILTIN_SRC);
+    if (clockChip) clockChip.textContent = '跟随音轨';
+    var btn = document.getElementById('dropReset');
+    if (btn) btn.hidden = true;
+    showDrop('当前谱面：本站的歌 · 内联了 ' + ONSETS.length + ' 个实测起音点', false);
+  }
+
+  function handleAudioFile(file) {
+    if (!file || dropBusy) return;
+    if (!onsetKernelReady()) {
+      showDrop('这个浏览器没跑起 wasm 内核，拖歌进来也只能用本站的歌', true);
+      return;
+    }
+    var AC = window.AudioContext || window.webkitAudioContext;
+    if (!AC) { showDrop('这个浏览器没有 WebAudio，解不了音频', true); return; }
+    dropBusy = true;
+    showDrop('正在量《' + file.name + '》的起音点…', false);
+    var ctx = new AC();
+    var reader = new FileReader();
+    reader.onload = function () {
+      var done = function (audio) {
+        try {
+          var chans = [], c;
+          for (c = 0; c < audio.numberOfChannels; c++) chans.push(audio.getChannelData(c));
+          var mono = toMono(chans, audio.length);
+          var pcm = resampleTo(mono, audio.sampleRate, ANALYSIS_RATE);
+          var t0 = perfNow();
+          var onsets = onsetsFromPcm(pcm, ANALYSIS_RATE);
+          var spent = Math.round(perfNow() - t0);
+          if (!onsets.length) {
+            dropBusy = false;
+            showDrop('这首歌没量出起音点（太安静？全是持续音？）—— 还是用本站的歌吧', true);
+            return;
+          }
+          if (ctx.close) ctx.close();
+          useChart(onsets, audio.duration * 1000, file.name.slice(0, 16), URL.createObjectURL(file));
+          dropBusy = false;
+          var btn = document.getElementById('dropReset');
+          if (btn) btn.hidden = false;
+          showDrop('当前谱面：' + file.name + ' · 量到 ' + onsets.length + ' 个起音点 · 曲长 ' +
+            fmtClock(audio.duration) + ' · 内核算了 ' + spent + 'ms（文件没上传）', false);
+        } catch (e) {
+          dropBusy = false;
+          showDrop('量失败了：' + (e && e.message ? e.message : e), true);
+        }
+      };
+      if (ctx.decodeAudioData.length >= 3) {
+        ctx.decodeAudioData(reader.result, done, function () {
+          dropBusy = false;
+          showDrop('这个格式浏览器解不开（试试 mp3 / m4a / wav / ogg）', true);
+        });
+      } else {
+        ctx.decodeAudioData(reader.result).then(done, function () {
+          dropBusy = false;
+          showDrop('这个格式浏览器解不开（试试 mp3 / m4a / wav / ogg）', true);
+        });
+      }
+    };
+    reader.onerror = function () { dropBusy = false; showDrop('读文件失败了', true); };
+    reader.readAsArrayBuffer(file);
+  }
+
+  function initDropZone() {
+    var zone = dropZoneEl(), input = document.getElementById('dropFile');
+    if (!zone) return;
+    zone.addEventListener('click', function () { if (input) input.click(); });
+    zone.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); if (input) input.click(); }
+    });
+    zone.addEventListener('dragover', function (e) { e.preventDefault(); zone.classList.add('over'); });
+    zone.addEventListener('dragleave', function () { zone.classList.remove('over'); });
+    zone.addEventListener('drop', function (e) {
+      e.preventDefault();
+      zone.classList.remove('over');
+      var dt = e.dataTransfer;
+      if (dt && dt.files && dt.files.length) handleAudioFile(dt.files[0]);
+    });
+    if (input) input.addEventListener('change', function () {
+      if (input.files && input.files.length) handleAudioFile(input.files[0]);
+      input.value = '';
+    });
+    var reset = document.getElementById('dropReset');
+    if (reset) reset.addEventListener('click', function (e) { e.stopPropagation(); backToBuiltinSong(); });
+    showDrop('当前谱面：本站的歌 · 内联了 ' + ONSETS.length + ' 个实测起音点 · ' +
+      (onsetKernelReady() ? 'wasm 内核就绪，拖别的歌进来当场量' : 'wasm 内核还没起来'), false);
+  }
+
+  /* 自检钩子：把一段 PCM 直接喂给内核，用于无头测试 */
+  window.__onsetsFromPcm = function (arr, rate) {
+    if (!onsetKernelReady()) return null;
+    return onsetsFromPcm(arr, rate || ANALYSIS_RATE);
+  };
+  window.__onsetState = function () {
+    return {
+      parity: window.__onsetParity || 'n/a',
+      ready: onsetKernelReady(),
+      source: songLabel,
+      onsets: CUR_ONSETS.length,
+      songMs: Math.round(CUR_SONG_MS),
+      probe: window.__onsetProbe || null
+    };
+  };
+
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', initDropZone);
+  else initDropZone();
   /* 自检钩子：判定时钟现在跟着谁走、下一个音符是不是真的落在实测起音点上 */
   window.__rhythmClockProbe = function () {
     var at = spawnIdx < timeline.length ? timeline[spawnIdx] : null;
-    var pos = at === null ? null : at % SONG_MS;
+    var pos = at === null ? null : at % CUR_SONG_MS;
     return {
       src: audioLive() ? 'audio' : 'virtual',
       song: songNow(),
       audio: music ? music.currentTime * 1000 : 0,
-      onsets: ONSETS.length,
-      songMs: SONG_MS,
+      onsets: CUR_ONSETS.length,
+      songMs: CUR_SONG_MS,
       timeline: timeline.length,
       spawnIdx: spawnIdx,
       next: at,
-      nextIsOnset: pos === null ? null : ONSETS.indexOf(pos) >= 0
+      nextIsOnset: pos === null ? null : CUR_ONSETS.indexOf(pos) >= 0
     };
   };
   window.__rhythmNextDelta = function (lane) {
@@ -2183,7 +2568,7 @@ const char* kJS = R"JS(
       if (clockChip) {
         var label = audioLive()
           ? '跟随音轨 ' + music.currentTime.toFixed(0) + 's'
-          : (ONSETS.length ? '起音 ' + ONSETS.length + ' 个 · 虚拟时钟' : '固定节拍');
+          : (CUR_ONSETS.length ? '起音 ' + CUR_ONSETS.length + ' 个 · 虚拟时钟' : '固定节拍');
         if (clockChip.textContent !== label) clockChip.textContent = label;
       }
     }
@@ -2383,6 +2768,84 @@ std::string replaceAll(std::string src, const std::string& from, const std::stri
         pos += to.size();
     }
     return src;
+}
+
+/* SHA-256：入口门那行自证徽章用 —— 生成器算一遍内联进页面的 wasm 字节，
+   浏览器再用 crypto.subtle 对同一份字节算一遍，对不上页面会自己说对不上 */
+namespace {
+inline uint32_t shaRotr(uint32_t x, int n) { return (x >> n) | (x << (32 - n)); }
+const uint32_t kShaK[64] = {
+    0x428a2f98u, 0x71374491u, 0xb5c0fbcfu, 0xe9b5dba5u, 0x3956c25bu, 0x59f111f1u, 0x923f82a4u, 0xab1c5ed5u,
+    0xd807aa98u, 0x12835b01u, 0x243185beu, 0x550c7dc3u, 0x72be5d74u, 0x80deb1feu, 0x9bdc06a7u, 0xc19bf174u,
+    0xe49b69c1u, 0xefbe4786u, 0x0fc19dc6u, 0x240ca1ccu, 0x2de92c6fu, 0x4a7484aau, 0x5cb0a9dcu, 0x76f988dau,
+    0x983e5152u, 0xa831c66du, 0xb00327c8u, 0xbf597fc7u, 0xc6e00bf3u, 0xd5a79147u, 0x06ca6351u, 0x14292967u,
+    0x27b70a85u, 0x2e1b2138u, 0x4d2c6dfcu, 0x53380d13u, 0x650a7354u, 0x766a0abbu, 0x81c2c92eu, 0x92722c85u,
+    0xa2bfe8a1u, 0xa81a664bu, 0xc24b8b70u, 0xc76c51a3u, 0xd192e819u, 0xd6990624u, 0xf40e3585u, 0x106aa070u,
+    0x19a4c116u, 0x1e376c08u, 0x2748774cu, 0x34b0bcb5u, 0x391c0cb3u, 0x4ed8aa4au, 0x5b9cca4fu, 0x682e6ff3u,
+    0x748f82eeu, 0x78a5636fu, 0x84c87814u, 0x8cc70208u, 0x90befffau, 0xa4506cebu, 0xbef9a3f7u, 0xc67178f2u};
+struct Sha256 {
+    uint32_t h[8];
+    unsigned char buf[64];
+    size_t n = 0;
+    uint64_t total = 0;
+    Sha256() {
+        h[0] = 0x6a09e667u; h[1] = 0xbb67ae85u; h[2] = 0x3c6ef372u; h[3] = 0xa54ff53au;
+        h[4] = 0x510e527fu; h[5] = 0x9b05688cu; h[6] = 0x1f83d9abu; h[7] = 0x5be0cd19u;
+    }
+    void block(const unsigned char* p) {
+        uint32_t w[64];
+        for (int i = 0; i < 16; i++)
+            w[i] = (uint32_t(p[i * 4]) << 24) | (uint32_t(p[i * 4 + 1]) << 16) | (uint32_t(p[i * 4 + 2]) << 8) | uint32_t(p[i * 4 + 3]);
+        for (int i = 16; i < 64; i++) {
+            uint32_t s0 = shaRotr(w[i - 15], 7) ^ shaRotr(w[i - 15], 18) ^ (w[i - 15] >> 3);
+            uint32_t s1 = shaRotr(w[i - 2], 17) ^ shaRotr(w[i - 2], 19) ^ (w[i - 2] >> 10);
+            w[i] = w[i - 16] + s0 + w[i - 7] + s1;
+        }
+        uint32_t a = h[0], b = h[1], c = h[2], d = h[3], e = h[4], f = h[5], g = h[6], hh = h[7];
+        for (int i = 0; i < 64; i++) {
+            uint32_t S1 = shaRotr(e, 6) ^ shaRotr(e, 11) ^ shaRotr(e, 25);
+            uint32_t ch = (e & f) ^ (~e & g);
+            uint32_t t1 = hh + S1 + ch + kShaK[i] + w[i];
+            uint32_t S0 = shaRotr(a, 2) ^ shaRotr(a, 13) ^ shaRotr(a, 22);
+            uint32_t mj = (a & b) ^ (a & c) ^ (b & c);
+            uint32_t t2 = S0 + mj;
+            hh = g; g = f; f = e; e = d + t1; d = c; c = b; b = a; a = t1 + t2;
+        }
+        h[0] += a; h[1] += b; h[2] += c; h[3] += d; h[4] += e; h[5] += f; h[6] += g; h[7] += hh;
+    }
+    void update(const unsigned char* p, size_t len) {
+        total += len;
+        while (len) {
+            size_t take = 64 - n; if (take > len) take = len;
+            for (size_t i = 0; i < take; i++) buf[n + i] = p[i];
+            n += take; p += take; len -= take;
+            if (n == 64) { block(buf); n = 0; }
+        }
+    }
+    std::string hex() {
+        uint64_t bits = total * 8;
+        unsigned char pad[72];
+        size_t padLen = (n < 56) ? (56 - n) : (120 - n);
+        pad[0] = 0x80;
+        for (size_t i = 1; i < padLen; i++) pad[i] = 0;
+        for (int i = 0; i < 8; i++) pad[padLen + i] = (unsigned char)(bits >> (56 - i * 8));
+        update(pad, padLen + 8);
+        static const char* hexd = "0123456789abcdef";
+        std::string out;
+        for (int i = 0; i < 8; i++)
+            for (int j = 3; j >= 0; j--) {
+                uint32_t byte = (h[i] >> (j * 8)) & 0xffu;
+                out.push_back(hexd[byte >> 4]);
+                out.push_back(hexd[byte & 0xf]);
+            }
+        return out;
+    }
+};
+}  // namespace
+std::string sha256Hex(const std::string& raw) {
+    Sha256 s;
+    s.update(reinterpret_cast<const unsigned char*>(raw.data()), raw.size());
+    return s.hex();
 }
 
 /* base64：把 rhythm_core.wasm 内联进 HTML（避免额外请求、也避免 MIME/路径问题） */
@@ -3096,6 +3559,12 @@ int main() {
        页面加载后拿 wasm 的 judge_ms / accuracy_permille 逐条比对。
        探针特意压在窗口边界上（±45 / ±90 与各差 1ms），窗口写错就会露馅。 */
     std::string judgeProbe, judgeExpect, accProbe, accExpect;
+    /* 起音点内核自检：native 先跑一遍合成信号，页面加载后由 wasm 跑同一个函数比对 */
+    rhythm::OnsetScratch onsetScratch;
+    rhythm::onsetInit(onsetScratch);
+    int onsetProbeCount = 0;
+    const unsigned onsetProbeValue = rhythm::onsetSelfTest(onsetScratch, &onsetProbeCount);
+    std::cout << "起音点自检：native 值 " << onsetProbeValue << "（合成信号里 " << onsetProbeCount << " 个起音点）" << std::endl;
     {
         const int deltas[] = {-200, -91, -90, -89, -46, -45, -44, 0, 44, 45, 46, 89, 90, 91, 200};
         for (int d : deltas) {
@@ -3135,6 +3604,9 @@ int main() {
     }
     std::string wasmRaw = readFile("rhythm_core.wasm");
     std::string wasmB64 = wasmRaw.empty() ? std::string() : base64(wasmRaw);
+    /* 入口门那行自证徽章：内核哈希 + 字节数，构建时算一遍内联进页面 */
+    std::string kernelSha = wasmRaw.empty() ? std::string("none") : sha256Hex(wasmRaw).substr(0, 12);
+    const size_t kernelBytes = wasmRaw.size();
 
     /* ---------- 组装 HTML ---------- */
     std::string html = kHead;
@@ -3158,6 +3630,7 @@ int main() {
     <p class="landing-latin landing-fade" style="animation-delay:.35s">__LATIN__</p>
     <h1 class="landing-title landing-fade" style="animation-delay:.45s">__WELCOME__</h1>
     <p class="landing-sub landing-fade" style="animation-delay:.6s">__TAGLINE__</p>
+    <p class="landing-proof landing-fade mono" id="landingProof" data-sha="__KERNEL_SHA__" data-bytes="__KERNEL_BYTES__" style="animation-delay:.68s">内核 SHA-256 __KERNEL_SHA__ · __KERNEL_BYTES__ 字节 · 构建时算的</p>
     <button class="enter-btn landing-fade" id="enterBtn" style="animation-delay:.75s" type="button">
       <span>进入主页</span>
     </button>
@@ -3166,10 +3639,27 @@ int main() {
 </div>
 )HTML";
 
+    {
+      /* 音游段落横幅：仓库里放了 stage-banner.webp（或 .jpg/.png）就用它；
+         没有就用自绘的舞台灯光示意 —— 两者占同一个槽位，换上不用改别的地方。 */
+      const char* bannerNames[] = {"stage-banner.webp", "stage-banner.jpg", "stage-banner.png"};
+      std::string bannerName;
+      for (int bi = 0; bi < 3; ++bi) if (!readFile(bannerNames[bi]).empty()) { bannerName = bannerNames[bi]; break; }
+      if (!bannerName.empty()) {
+        std::string img = R"HTML(<img class="stage-banner-img" src="__BANNER_SRC__" width="1200" height="420" loading="lazy" decoding="async" alt="音游段落横幅">)HTML";
+        me.stageBanner = replaceAll(img, "__BANNER_SRC__", bannerName);
+        me.stageBannerNote = "音游段落横幅 · " + bannerName + " · loading=lazy，滚到这一段才取，不计首屏";
+      } else {
+        me.stageBanner = R"HTML(<div class="stage-stage" aria-hidden="true"><span class="beam b1"></span><span class="beam b2"></span><span class="beam b3"></span><span class="beam b4"></span><span class="beam b5"></span><span class="stage-floor"></span><span class="stage-mark">★</span><span class="stage-line">五个人，一个舞台</span></div><div class="stage-wave" aria-hidden="true"><span style="--h:26%"></span><span style="--h:54%"></span><span style="--h:78%"></span><span style="--h:38%"></span><span style="--h:92%"></span><span style="--h:60%"></span><span style="--h:32%"></span><span style="--h:74%"></span><span style="--h:46%"></span><span style="--h:88%"></span><span style="--h:56%"></span><span style="--h:30%"></span></div>)HTML";
+        me.stageBannerNote = "自绘的示意图 · 放一张 stage-banner.webp 进仓库，这里就换成它";
+      }
+    }
     html = replaceAll(html, "__COVER__", me.coverImage);
     html = replaceAll(html, "__LATIN__", me.latin);
     html = replaceAll(html, "__WELCOME__", me.welcomeText);
     html = replaceAll(html, "__TAGLINE__", me.tagline);
+    html = replaceAll(html, "__KERNEL_SHA__", kernelSha);
+    html = replaceAll(html, "__KERNEL_BYTES__", std::to_string(kernelBytes));
 
     html += R"HTML(
 <div class="loader" id="loader" role="status" aria-live="polite">
@@ -3366,6 +3856,10 @@ int main() {
   <div class="section-head reveal">
     <span class="eyebrow mono">07 / RHYTHM</span>
     <h2 class="section-title">音游</h2>
+    <figure class="stage-banner reveal" id="stageBanner">
+      <div class="stage-frame">__STAGE_BANNER__</div>
+      <figcaption class="banner-note mono">__STAGE_BANNER_NOTE__</figcaption>
+    </figure>
     <p class="section-desc">一个跑在单个 canvas 上的节奏小游戏：七轨，音符落在歌里真实响过的地方，命中特效由 requestAnimationFrame 时间轴驱动。滚出可视区域会自动暂停。默认自动演奏，想自己打就按下面那颗按钮。</p>
     <p class="section-desc">谱面时间轴不是拍脑袋写的 BPM：生成器把<b>实测这首歌的 657 个起音点</b>内联进页面，音符落在真正的起音上；歌在播时<b>判定时钟就是 <code>audio.currentTime</code></b>，暂停或没播时换成等速虚拟时钟接着走。每个音符落在哪条轨由 <code>rhythm_core.cpp</code> 编译的 WebAssembly 决定，判定窗口与准确率也由同一个 wasm 内核给，生成器再用同一份头文件算一份探针逐条比对。</p>
     <p class="kernel-badge mono" id="kernelBadge">C++ / WASM 内核 · 检测中…</p>
@@ -3378,6 +3872,20 @@ int main() {
     <button class="rbtn ghost" id="seedReset" type="button">回默认谱面</button>
   </div>
   <p class="seed-info mono reveal" id="seedInfo">当前 seed 是生成器内联的那份 · 加载内核后会与 JS 镜像逐位核对</p>
+  <div class="diff-row reveal" role="group" aria-label="难度">
+    <span class="diff-label">难度</span>
+    <button class="rbtn ghost" id="diffEasy" type="button" aria-pressed="false">轻松</button>
+    <button class="rbtn ghost" id="diffNormal" type="button" aria-pressed="true">标准</button>
+    <button class="rbtn ghost" id="diffHard" type="button" aria-pressed="false">硬核</button>
+    <span class="diff-note mono" id="diffNote">密度 x1 · 判定窗口 ±45 / ±90ms（内核给的）</span>
+  </div>
+  <div class="drop-zone reveal" id="dropZone" tabindex="0" role="button" aria-label="拖一首歌进来，用 C++ / WebAssembly 内核当场量起音点">
+    <span class="drop-main mono">把一首歌拖到这里 · 或者点一下选文件</span>
+    <span class="drop-sub">浏览器里就地解码，<b>C++ 内核</b>当场量这首歌的起音点，谱面立刻跟着这首走 —— 文件不上传，也不出这台机器。</span>
+    <input type="file" id="dropFile" accept="audio/*" hidden>
+  </div>
+  <p class="drop-info mono reveal" id="dropInfo">当前谱面：本站的歌</p>
+  <div class="drop-actions reveal"><button class="rbtn ghost" id="dropReset" type="button" hidden>回到本站的歌</button></div>
   <div class="rhythm-wrap reveal">
     <div class="rhythm-bg" aria-hidden="true"></div>
     <canvas id="rhythmCanvas" role="img" aria-label="节奏小游戏：七条轨道上落下的音符，默认自动演奏，也可以自己按键挑战打分"></canvas>
@@ -3391,6 +3899,10 @@ int main() {
       <span class="rhythm-judge mono" id="rhythmJudge"></span>
     </div>
   </div>
+  <figure class="onset-strip reveal">
+    <canvas id="onsetStrip" aria-label="整首歌的起音点时间条：每根 tick 都是歌里真实响过的地方，游标跟着播放位置走"></canvas>
+    <figcaption class="strip-note mono" id="stripNote">谱面 · 整首歌 —— 上面每根 tick 都是歌里真实响过的地方</figcaption>
+  </figure>
   <div class="rhythm-ctl reveal">
     <button class="rbtn primary" id="rhythmPlay" type="button" aria-pressed="false">开始挑战（64 音符）</button>
     <button class="rbtn ghost" id="rhythmStop" type="button" hidden>回到自动演奏</button>
@@ -3437,7 +3949,9 @@ int main() {
     <div class="en-abstract" lang="en">
       <span class="en-tag mono">In short / English</span>
       <p>This page is a static site written by a single-file <strong>C++17 generator</strong>: no template engine, no framework, no hand-written HTML. Feature code, styles and scripts all live in <code>main.cpp</code>.</p>
-      <p>The rhythm-game chart is computed in the browser by a <strong>WebAssembly kernel</strong> compiled from the same C++ source, and the page compares the kernel's output with the generator's own chart on load — if they disagree, the badge says so instead of hiding it. The note timeline is not a made-up BPM either: it comes from 657 onsets measured off the bundled track, and while the music is playing the judging clock is <code>audio.currentTime</code> itself.</p>
+      <p>The rhythm game is the part that is not a mock-up. Its chart is computed in the browser by a <strong>WebAssembly kernel</strong> compiled from the same C++ source; on load the page compares the kernel's output with the generator's own chart, and the entry screen prints the kernel's <strong>SHA-256</strong> — the browser re-hashes the same bytes with <code>crypto.subtle</code> and says on the spot whether the two agree.</p>
+      <p>The note timeline is not a made-up BPM either: the generator measures onsets off the bundled track (spectral flux over a radix-2 FFT, adaptive threshold, 93&nbsp;ms merge) and inlines all 657 of them. While the music plays the judging clock <em>is</em> <code>audio.currentTime</code>, so every note sits where the song actually sounded.</p>
+      <p>Drop any audio file on the page and the same kernel measures <em>that</em> file in the browser — about 5&nbsp;ms for 10&nbsp;seconds of audio, nothing uploaded — and the chart follows your song. Difficulty tiers only change how many of those onsets become notes and how wide a window is handed to the kernel: the kernel stays the only judge.</p>
       <p>JavaScript here is decoration: with scripting disabled the whole page is still readable, because the default CSS is already the final state.</p>
       <p>Source and build steps: <a href="__GITHUB__" target="_blank" rel="noopener">github.com/zhehong268/my-intro</a></p>
     </div>
@@ -3520,6 +4034,7 @@ window.__RHYTHM_ONSETS = [)HTML" + onsetsJs + R"HTML(];
 window.__RHYTHM_SONG_MS = 256600;
 window.__RHYTHM_JUDGE_PROBE = [)HTML" + judgeProbe + R"HTML(];
 window.__RHYTHM_JUDGE_EXPECT = [)HTML" + judgeExpect + R"HTML(];
+window.__ONSET_PROBE_EXPECT = )HTML" + std::to_string(onsetProbeValue) + R"HTML(;
 window.__RHYTHM_ACC_PROBE = [)HTML" + accProbe + R"HTML(];
 window.__RHYTHM_ACC_EXPECT = [)HTML" + accExpect + R"HTML(];
 </script>
@@ -3532,6 +4047,11 @@ __JS__
 )HTML";
 
     html = replaceAll(html, "__JS__", kJS);
+
+    /* 横幅的两个占位符要等所有 HTML 片段都拼完再换 —— 音游段落的那段标记
+       是在上面几个 R"HTML(...)HTML" 块里追加的，早换会漏掉它。 */
+    html = replaceAll(html, "__STAGE_BANNER__", me.stageBanner);
+    html = replaceAll(html, "__STAGE_BANNER_NOTE__", me.stageBannerNote);
 
     /* ---------- 写出文件 ---------- */
     std::ofstream out("index.html", std::ios::binary);
@@ -3579,6 +4099,7 @@ __JS__
         } else {
             std::cout << "提示：没有 onsets.txt，音游退回固定节拍（302ms）。" << "重新生成：node tools/onsets.mjs music.mp3 > onsets.txt" << std::endl;
         }
+    std::cout << "入口门自证徽章：内核 SHA-256 " << kernelSha << "（" << kernelBytes << " 字节）\n";
         std::cout << "音游内核：已内联 rhythm_core.wasm (" << wasmRaw.size() << " 字节 → base64 "
                   << wasmB64.size() << " 字节)" << std::endl;
     }

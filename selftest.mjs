@@ -182,7 +182,7 @@ check("js: 进站后 #page 可见", st.pageOpacity === "1" && st.pageVisibleClas
 check("js: 解除滚动锁", st.stillEntry === false);
 check("js: wasm 谱面一致(parity=ok)", st.parity === "ok", String(st.parity));
 check("js: 轨道来自 wasm", st.laneSource === "wasm", String(st.laneSource));
-check("js: 内核版本号=2（含判定导出）", st.kernelVersion === 2, String(st.kernelVersion));
+check("js: 内核版本号=3（含判定与起音检测导出）", st.kernelVersion === 3, String(st.kernelVersion));
 check("js: 内联谱面 256 个合法轨道", st.chartLen === 256 && st.chartChars, "len=" + st.chartLen);
 check("js: 内核徽章文案", /WASM/.test(st.badge), st.badge);
 check("js: canvas 背板=Css×dpr", st.canvasBacking[0] === Math.round(st.canvasCss[0] * st.dpr) && st.canvasBacking[1] === Math.round(st.canvasCss[1] * st.dpr), `css=${st.canvasCss} backing=${st.canvasBacking} dpr=${st.dpr}`);
@@ -210,8 +210,10 @@ const nav = await evaluate(`(() => {
 })()`);
 check("js: 滚到底高亮最后一节", nav.active.includes("#contact"), `scrollY=${nav.scrollY}/${nav.max} active=${JSON.stringify(nav.active)} contactTop=${nav.contactTop}`);
 
-/* 音游在跑：等一会儿看 COMBO 是否递增 */
-await evaluate(`document.getElementById('rhythm').scrollIntoView(); true`);
+/* 音游在跑：等一会儿看 COMBO 是否递增。
+   注意要滚到 canvas 本身，不能只滚到 #rhythm 段落顶部 —— 段落里现在有横幅与说明，
+   滚到顶部时 canvas 还在视口外，按设计会自动暂停，谱面就不再推进了。 */
+await evaluate(`document.getElementById('rhythmCanvas').scrollIntoView({block:'center'}); true`);
 let combo = 0;
 for (let i = 0; i < 12; i++) { await shot(); await sleep(700); combo = await evaluate(`parseInt((document.getElementById('comboNum')||{textContent:'0'}).textContent,10)||0`); if (combo > 3) break; }
 check("js: 音游 COMBO 递增", combo > 3, "combo=" + combo);
@@ -378,7 +380,7 @@ const soundMs = await evaluate(`window.__soundMs`);
 check("audio: 点进入主页到出声 <= 1.2s", soundMs >= 0 && soundMs <= 1200, `${soundMs} ms`);
 
 /* 谱面跟着这首歌走：时间轴 = 生成器内联的实测起音点；判定时钟 = audio.currentTime */
-await evaluate(`document.getElementById('rhythm').scrollIntoView(); true`);
+await evaluate(`document.getElementById('rhythmCanvas').scrollIntoView({block:'center'}); true`);
 for (let i = 0; i < 40; i++) {
   if (await evaluate(`window.__rhythmClockProbe().timeline > 0`)) break;
   await sleep(150);
@@ -475,7 +477,7 @@ const kcWasm = await evaluate(`(() => ({ b64: window.__RHYTHM_WASM || "", sha: (
 const kcBytes = Buffer.from(kcWasm.b64, "base64");
 const kcSha = crypto.createHash("sha256").update(kcBytes).digest("hex");
 check("kernel 页: 默认 seed 谱面与 Node 一致 + kernel_version/SHA-256",
-  kc.parity === "ok" && kc.head === nodeChart(KSEED, 7, 16).join("") && kc.ver === 2 && kc.sha === 64 &&
+  kc.parity === "ok" && kc.head === nodeChart(KSEED, 7, 16).join("") && kc.ver === 3 && kc.sha === 64 &&
   kc.bytes === kcBytes.length && kcWasm.sha === kcSha,
   `head=${kc.head} ver=${kc.ver} wasm=${kc.bytes}B(内联 ${kcBytes.length}B) sha与内联一致=${kcWasm.sha === kcSha}`);
 

@@ -198,6 +198,8 @@ html.entry body{overflow:hidden}
 }
 .landing-photo img{display:block;width:100%;height:auto;aspect-ratio:16/9;object-fit:cover}
 .landing-latin{margin-top:30px;font-family:var(--mono);font-size:11.5px;letter-spacing:7px;color:var(--ink-faint)}
+.landing-proof{margin-top:22px;font-family:var(--mono);font-size:11.5px;letter-spacing:.06em;color:var(--ink-faint)}
+.landing-proof.bad{color:var(--bad-ink)}
 .landing-title{
   margin-top:12px;font-family:var(--display);font-size:clamp(26px,5vw,44px);font-weight:800;letter-spacing:1.5px;line-height:1.3;
   background:linear-gradient(110deg,var(--grad-start) 0%,var(--violet) 52%,var(--sky) 100%);
@@ -675,6 +677,51 @@ html.theme-mygo .landing::after{background:radial-gradient(circle at 50% 50%,rgb
 .lineup li{display:inline-flex;align-items:center;gap:8px;list-style:none}
 .lineup i{width:10px;height:10px;border-radius:50%;background:var(--c,#888);box-shadow:0 0 0 3px color-mix(in srgb,var(--c,#888) 22%,transparent)}
 .lineup .part{font-size:11px;letter-spacing:1px;color:var(--ink-faint)}
+.diff-row{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:12px 0 2px}
+.diff-label{font-size:12.5px;color:var(--ink-dim)}
+.diff-note{font-size:11px;color:var(--ink-faint)}
+.diff-row .rbtn[aria-pressed="true"]{border-color:var(--violet);color:var(--violet)}
+.onset-strip{margin-top:12px;padding:10px 12px 8px;border-radius:12px;background:var(--panel);border:1px solid var(--line)}
+.onset-strip canvas{display:block;width:100%;height:56px}
+.strip-note{display:block;margin-top:6px;font-size:11px;color:var(--ink-faint)}
+.stage-banner{position:relative;margin:24px 0 0}
+.stage-frame{position:relative;aspect-ratio:1200/420;border-radius:18px;overflow:hidden;border:1px solid var(--line);
+  background:linear-gradient(180deg,color-mix(in srgb,var(--violet) 9%,var(--bg-top)),var(--panel));box-shadow:var(--sh-3)}
+.stage-banner-img{display:block;width:100%;height:100%;object-fit:cover}
+/* 亮色主题里不掺 MyGO（用户要求 MyGO 只落在暗色）：占位换成站点自己的紫色波形 */
+.stage-wave{position:absolute;inset:0;display:flex;align-items:center;gap:2.2%;padding:0 7%;opacity:.6}
+.stage-wave span{flex:1;height:var(--h);border-radius:8px;background:linear-gradient(180deg,color-mix(in srgb,var(--violet) 58%,transparent),color-mix(in srgb,var(--violet) 10%,transparent))}
+html.theme-mygo .stage-wave{display:none}
+.stage-stage{position:absolute;inset:0;overflow:hidden;display:none}
+html.theme-mygo .stage-stage{display:block}
+html.theme-mygo .stage-frame{background:linear-gradient(180deg,color-mix(in srgb,var(--m-taki) 11%,var(--bg-top)),var(--panel))}
+.stage-stage .beam{position:absolute;top:-14%;width:24%;height:132%;transform-origin:50% 0;filter:blur(15px);opacity:.55;
+  background:linear-gradient(180deg,var(--c),transparent 76%)}
+.beam.b1{left:3%;--c:var(--m-tomori);transform:rotate(10deg)}
+.beam.b2{left:21%;--c:var(--m-anon);transform:rotate(4.5deg)}
+.beam.b3{left:39%;--c:var(--m-raana);transform:rotate(0deg)}
+.beam.b4{left:57%;--c:var(--m-soyo);transform:rotate(-4.5deg)}
+.beam.b5{left:75%;--c:var(--m-taki);transform:rotate(-10deg)}
+.stage-floor{position:absolute;left:0;right:0;bottom:0;height:40%;
+  background:linear-gradient(180deg,transparent,color-mix(in srgb,var(--m-taki) 14%,transparent)),
+    radial-gradient(70% 130% at 50% 130%,rgba(255,255,255,.16),transparent 62%)}
+.stage-mark{position:absolute;left:50%;top:43%;transform:translate(-50%,-50%);font-size:40px;color:var(--m-soyo);
+  text-shadow:0 0 28px color-mix(in srgb,var(--m-soyo) 55%,transparent)}
+.stage-line{position:absolute;left:50%;bottom:12%;transform:translateX(-50%);white-space:nowrap;font-size:15px;
+  letter-spacing:4px;color:var(--ink)}
+.banner-note{margin:10px 0 26px;font-size:11.5px;color:var(--ink-faint)}
+@media (max-width:640px){.stage-mark{font-size:26px}.stage-line{font-size:12px;letter-spacing:2px}}
+.drop-zone{display:flex;flex-direction:column;gap:7px;margin:18px 0 4px;padding:15px 18px;
+  border:1px dashed color-mix(in srgb,var(--violet) 35%,transparent);
+  border-radius:14px;background:var(--panel);cursor:pointer;transition:border-color .2s,background .2s,box-shadow .2s}
+.drop-zone:hover,.drop-zone:focus-visible{border-color:var(--violet);background:var(--panel-hover)}
+.drop-zone.over{border-color:var(--violet);background:var(--panel-hover);box-shadow:0 0 0 4px color-mix(in srgb,var(--violet) 16%,transparent)}
+.drop-main{font-size:13px;color:var(--ink)}
+.drop-sub{font-size:11.5px;color:var(--ink-faint);line-height:1.75}
+.drop-info{font-size:11.5px;color:var(--ink-dim);margin-top:9px}
+.drop-info.bad{color:var(--bad-ink)}
+.drop-actions{margin-top:10px}
+.drop-actions button[hidden]{display:none}
 .lineup-src{font-size:11.5px;color:var(--ink-faint);margin-top:8px}
 .stage-note{display:inline-flex;align-items:center;gap:8px;margin-top:10px;font-size:12.5px;color:var(--ink-dim)}
 .stage-note .star{color:var(--m-soyo);font-size:13px}
@@ -705,6 +752,7 @@ html.theme-mygo .landing::after{background:radial-gradient(circle at 50% 50%,rgb
     <p class="landing-latin landing-fade" style="animation-delay:.35s">ZHE HONG</p>
     <h1 class="landing-title landing-fade" style="animation-delay:.45s">欢迎来到遮鸿的个人主页</h1>
     <p class="landing-sub landing-fade" style="animation-delay:.6s">写代码，也看番。</p>
+    <p class="landing-proof landing-fade mono" id="landingProof" data-sha="a982fd00a101" data-bytes="10056" style="animation-delay:.68s">内核 SHA-256 a982fd00a101 · 10056 字节 · 构建时算的</p>
     <button class="enter-btn landing-fade" id="enterBtn" style="animation-delay:.75s" type="button">
       <span>进入主页</span>
     </button>
@@ -843,6 +891,10 @@ html.theme-mygo .landing::after{background:radial-gradient(circle at 50% 50%,rgb
   <div class="section-head reveal">
     <span class="eyebrow mono">07 / RHYTHM</span>
     <h2 class="section-title">音游</h2>
+    <figure class="stage-banner reveal" id="stageBanner">
+      <div class="stage-frame"><div class="stage-stage" aria-hidden="true"><span class="beam b1"></span><span class="beam b2"></span><span class="beam b3"></span><span class="beam b4"></span><span class="beam b5"></span><span class="stage-floor"></span><span class="stage-mark">★</span><span class="stage-line">五个人，一个舞台</span></div><div class="stage-wave" aria-hidden="true"><span style="--h:26%"></span><span style="--h:54%"></span><span style="--h:78%"></span><span style="--h:38%"></span><span style="--h:92%"></span><span style="--h:60%"></span><span style="--h:32%"></span><span style="--h:74%"></span><span style="--h:46%"></span><span style="--h:88%"></span><span style="--h:56%"></span><span style="--h:30%"></span></div></div>
+      <figcaption class="banner-note mono">自绘的示意图 · 放一张 stage-banner.webp 进仓库，这里就换成它</figcaption>
+    </figure>
     <p class="section-desc">一个跑在单个 canvas 上的节奏小游戏：七轨，音符落在歌里真实响过的地方，命中特效由 requestAnimationFrame 时间轴驱动。滚出可视区域会自动暂停。默认自动演奏，想自己打就按下面那颗按钮。</p>
     <p class="section-desc">谱面时间轴不是拍脑袋写的 BPM：生成器把<b>实测这首歌的 657 个起音点</b>内联进页面，音符落在真正的起音上；歌在播时<b>判定时钟就是 <code>audio.currentTime</code></b>，暂停或没播时换成等速虚拟时钟接着走。每个音符落在哪条轨由 <code>rhythm_core.cpp</code> 编译的 WebAssembly 决定，判定窗口与准确率也由同一个 wasm 内核给，生成器再用同一份头文件算一份探针逐条比对。</p>
     <p class="kernel-badge mono" id="kernelBadge">C++ / WASM 内核 · 检测中…</p>
@@ -855,6 +907,20 @@ html.theme-mygo .landing::after{background:radial-gradient(circle at 50% 50%,rgb
     <button class="rbtn ghost" id="seedReset" type="button">回默认谱面</button>
   </div>
   <p class="seed-info mono reveal" id="seedInfo">当前 seed 是生成器内联的那份 · 加载内核后会与 JS 镜像逐位核对</p>
+  <div class="diff-row reveal" role="group" aria-label="难度">
+    <span class="diff-label">难度</span>
+    <button class="rbtn ghost" id="diffEasy" type="button" aria-pressed="false">轻松</button>
+    <button class="rbtn ghost" id="diffNormal" type="button" aria-pressed="true">标准</button>
+    <button class="rbtn ghost" id="diffHard" type="button" aria-pressed="false">硬核</button>
+    <span class="diff-note mono" id="diffNote">密度 x1 · 判定窗口 ±45 / ±90ms（内核给的）</span>
+  </div>
+  <div class="drop-zone reveal" id="dropZone" tabindex="0" role="button" aria-label="拖一首歌进来，用 C++ / WebAssembly 内核当场量起音点">
+    <span class="drop-main mono">把一首歌拖到这里 · 或者点一下选文件</span>
+    <span class="drop-sub">浏览器里就地解码，<b>C++ 内核</b>当场量这首歌的起音点，谱面立刻跟着这首走 —— 文件不上传，也不出这台机器。</span>
+    <input type="file" id="dropFile" accept="audio/*" hidden>
+  </div>
+  <p class="drop-info mono reveal" id="dropInfo">当前谱面：本站的歌</p>
+  <div class="drop-actions reveal"><button class="rbtn ghost" id="dropReset" type="button" hidden>回到本站的歌</button></div>
   <div class="rhythm-wrap reveal">
     <div class="rhythm-bg" aria-hidden="true"></div>
     <canvas id="rhythmCanvas" role="img" aria-label="节奏小游戏：七条轨道上落下的音符，默认自动演奏，也可以自己按键挑战打分"></canvas>
@@ -868,6 +934,10 @@ html.theme-mygo .landing::after{background:radial-gradient(circle at 50% 50%,rgb
       <span class="rhythm-judge mono" id="rhythmJudge"></span>
     </div>
   </div>
+  <figure class="onset-strip reveal">
+    <canvas id="onsetStrip" aria-label="整首歌的起音点时间条：每根 tick 都是歌里真实响过的地方，游标跟着播放位置走"></canvas>
+    <figcaption class="strip-note mono" id="stripNote">谱面 · 整首歌 —— 上面每根 tick 都是歌里真实响过的地方</figcaption>
+  </figure>
   <div class="rhythm-ctl reveal">
     <button class="rbtn primary" id="rhythmPlay" type="button" aria-pressed="false">开始挑战（64 音符）</button>
     <button class="rbtn ghost" id="rhythmStop" type="button" hidden>回到自动演奏</button>
@@ -910,7 +980,9 @@ html.theme-mygo .landing::after{background:radial-gradient(circle at 50% 50%,rgb
     <div class="en-abstract" lang="en">
       <span class="en-tag mono">In short / English</span>
       <p>This page is a static site written by a single-file <strong>C++17 generator</strong>: no template engine, no framework, no hand-written HTML. Feature code, styles and scripts all live in <code>main.cpp</code>.</p>
-      <p>The rhythm-game chart is computed in the browser by a <strong>WebAssembly kernel</strong> compiled from the same C++ source, and the page compares the kernel's output with the generator's own chart on load — if they disagree, the badge says so instead of hiding it. The note timeline is not a made-up BPM either: it comes from 657 onsets measured off the bundled track, and while the music is playing the judging clock is <code>audio.currentTime</code> itself.</p>
+      <p>The rhythm game is the part that is not a mock-up. Its chart is computed in the browser by a <strong>WebAssembly kernel</strong> compiled from the same C++ source; on load the page compares the kernel's output with the generator's own chart, and the entry screen prints the kernel's <strong>SHA-256</strong> — the browser re-hashes the same bytes with <code>crypto.subtle</code> and says on the spot whether the two agree.</p>
+      <p>The note timeline is not a made-up BPM either: the generator measures onsets off the bundled track (spectral flux over a radix-2 FFT, adaptive threshold, 93&nbsp;ms merge) and inlines all 657 of them. While the music plays the judging clock <em>is</em> <code>audio.currentTime</code>, so every note sits where the song actually sounded.</p>
+      <p>Drop any audio file on the page and the same kernel measures <em>that</em> file in the browser — about 5&nbsp;ms for 10&nbsp;seconds of audio, nothing uploaded — and the chart follows your song. Difficulty tiers only change how many of those onsets become notes and how wide a window is handed to the kernel: the kernel stays the only judge.</p>
       <p>JavaScript here is decoration: with scripting disabled the whole page is still readable, because the default CSS is already the final state.</p>
       <p>Source and build steps: <a href="https://github.com/zhehong268" target="_blank" rel="noopener">github.com/zhehong268/my-intro</a></p>
     </div>
@@ -970,12 +1042,13 @@ window.__ICON_CLOSE = '<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="c
 window.__RHYTHM_CHART = '1051265142524253526134526204036065030460256546563234542610262041045240426421521603121542021526164214614643053512613602021601312656052343413230602523406131235356246035151643262531052643012421262142526345162624105120426301425451210210254125405410305235121045';
 window.__RHYTHM_SEED = '1592598566';
 window.__RHYTHM_LANES = '7';
-window.__RHYTHM_WASM = 'AGFzbQEAAAABHQZgAAF/YAN/f38Bf2AAAGACf38AYAF/AX9gAX8AAwoJAgADAAEEAQUABAUBcAECAgUGAQGCAoICBggBfwFBkIgECwfFAQsGbWVtb3J5AgAOa2VybmVsX3ZlcnNpb24AAQtjaGFydF9yZXNldAACCmNoYXJ0X25leHQAAwhjaGFydF9hdAAECGp1ZGdlX21zAAURYWNjdXJhY3lfcGVybWlsbGUABhlfX2luZGlyZWN0X2Z1bmN0aW9uX3RhYmxlAQALX2luaXRpYWxpemUAABlfZW1zY3JpcHRlbl9zdGFja19yZXN0b3JlAAccZW1zY3JpcHRlbl9zdGFja19nZXRfY3VycmVudAAICQcBAEEBCwEADAEBCqcDCQMAAQsEAEECCy8AQYQIQX82AgBBgAggAEG5893xeSAAGzYCAEGICEEHIAEgAUEBa0HAAE8bNgIAC4ABAQR/QYAIQYAIKAIAIgBBDXQgAHMiAEERdiAAcyIAQQV0IABzIgA2AgAgAEGICCgCACICcCIBQYQIKAIAIgNGBEBBgAggAEENdCAAcyIAQRF2IABzIgBBBXQgAHMiADYCACADIAAgAkEBa3BqQQFqIAJvIQELQYQIIAE2AgAgAQuPAQEEfyAAQQBOBEBBfyEDIAJBAWshBiABQbnz3fF5IAEbIQEDQAJ/IAMgAUENdCABcyIBQRF2IAFzIgFBBXQgAXMiASACcCIFRwRAIAUMAQsgAyABQQ10IAFzIgFBEXYgAXMiAUEFdCABcyIBIAZwakEBaiACbwshAyAAIARHIQUgBEEBaiEEIAUNAAsLIAMLHwEBf0ECIAAgAEEfdSIBcyABayIAQdsASSAAQS5JGwstACACQQBMBEBBAA8LIAFBACABQQBKG0HYBGwgAEEAIABBAEobQegHbGogAm4LBgAgACQACwQAIwALCxABAEGACAsJJiDtXv////8H';
+window.__RHYTHM_WASM = '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';
 window.__RHYTHM_ONSETS = [557,697,998,1138,1324,1579,1950,2252,2577,3019,3181,3437,3808,4133,4365,4737,5039,5341,5968,6293,6571,6687,7198,7500,7825,8104,8452,8731,9056,9683,9985,10449,10588,10913,11540,11842,12167,12446,12771,13096,13398,13700,14025,14327,14652,14954,15093,15256,15395,15534,16486,17113,17392,18344,18460,18669,19249,19900,20201,20805,21130,22059,22384,22663,22825,22988,23290,23615,23917,24520,24822,25031,25774,26378,26680,27609,28212,28537,28653,29489,30116,30395,31324,31927,32229,32601,33181,33506,33808,34087,34737,35039,35643,35968,36873,37222,37361,37500,37686,37825,38011,38452,38754,39381,39683,40287,40612,40937,41215,41517,42167,42469,43096,43398,44002,44327,44954,45232,45883,46184,46347,46811,47113,47299,47717,48042,48646,48948,49575,49876,50503,50805,51432,51734,52663,53313,53615,54219,54520,55147,55449,56053,56378,56982,57307,57911,58236,58863,59164,59629,59768,60070,61974,62578,62880,63205,63483,63808,63948,64134,64435,65666,65968,66270,67524,67825,68151,68476,69079,69381,69683,70008,70914,71239,71378,71541,71703,71843,72469,72795,73096,73723,74025,74350,74652,74768,74931,75860,76487,76788,77415,77717,78321,78623,79250,79575,79923,80202,80504,80829,81131,81432,81734,82036,82361,82686,82988,83290,83917,84056,84219,84521,84985,85148,85751,86053,86703,87005,87632,87934,88236,88561,88723,88863,89466,89792,90419,90720,91324,91649,91951,92392,92555,93182,93344,93484,93832,94110,94296,94412,94737,95062,95364,96015,96595,96897,97199,97826,98128,98731,99056,99521,99823,99985,100589,100914,101239,101541,101843,102470,102632,102772,103236,103538,103700,104141,104304,104652,105256,105558,106162,106487,106951,107114,107253,107416,108019,108321,108507,108948,109273,109877,110202,110481,110829,111107,111409,111734,112686,112988,113615,113917,114381,114567,114707,114846,115008,115171,115310,115450,115775,117330,117632,117934,118259,118561,118863,119002,119165,119443,120094,120395,121022,121324,121951,122253,122555,122857,123182,123809,124111,124738,125039,125225,125666,125968,126572,126874,126990,127222,127826,128453,128755,129080,129358,129683,129823,130287,130589,131239,131541,132145,132331,132470,133074,133375,134002,134327,134931,135256,135860,136162,136789,137114,137555,137718,138019,139598,139900,140829,141108,141433,141758,142060,142245,142687,143012,143314,143615,144242,144567,145473,147029,147331,147656,147934,148863,149188,149490,149606,149792,150117,150419,150721,151023,151208,151673,151928,152253,152555,152694,152834,153809,154436,154738,155365,155667,155783,156270,156572,157222,157524,157663,157872,158151,158453,158778,159080,159359,159684,159823,159985,160148,160287,160938,161239,161843,162145,162772,163074,163677,164003,164328,164629,164931,165535,165837,166301,166464,166766,167114,167393,167695,168321,168647,169250,169575,170202,170504,171108,171410,172037,172362,172965,173291,173917,174219,174521,174823,175148,175264,175473,175752,176054,176681,177029,177609,177911,178260,178585,178724,178840,179212,179467,179769,180373,180674,181325,181626,182230,182579,182880,183043,183159,183484,183832,184088,184459,185040,185342,185945,186270,186596,186897,187199,187803,188151,188453,188732,189057,189359,189962,190914,191843,192401,192795,192958,193167,193701,194630,194955,195257,195396,195558,195860,196185,196325,196487,196789,197114,197393,198322,198949,199250,199576,200040,200179,200783,201108,201758,202060,202362,202687,202989,203291,203778,203918,204196,204405,204545,204846,205473,205752,206077,206402,206681,207006,207470,207610,208213,208538,209026,209142,209305,209467,210071,210373,210698,211000,211325,211627,211929,212230,213020,213182,213786,213972,214111,214413,214877,215040,215690,216573,216898,217525,217826,218128,218453,218616,218755,218918,219359,219684,220288,220613,221217,221542,221681,221820,222308,222470,222610,223376,223724,224003,224328,224955,225257,225559,225884,226487,226789,227114,227695,228020,228624,228949,229576,229878,230528,230830,231131,231410,231735,232385,232641,233128,233453,233593,233755,234196,234498,235450,236054,236379,237006,237169,237308,237610,237912,238214,238840,239003,239142,239769,240071,240419,240721,240861,241000,241302,241627,241743,241929,242881,243484,243786,244135,244251,244413,244576,244715,245319,245458,245597,246271,246573,246875,247200,247478,247618,247803,248105,248407,248732,249057,249359];
 /* music.mp3 实测时长 256.6s（换歌要跟着换这个常数） */
 window.__RHYTHM_SONG_MS = 256600;
 window.__RHYTHM_JUDGE_PROBE = [-200,-91,-90,-89,-46,-45,-44,0,44,45,46,89,90,91,200];
 window.__RHYTHM_JUDGE_EXPECT = [0,0,1,1,1,2,2,2,2,2,1,1,1,0,0];
+window.__ONSET_PROBE_EXPECT = 1435864337;
 window.__RHYTHM_ACC_PROBE = [[0,0,0],[64,0,64],[0,64,64],[32,32,64],[1,0,3],[8,0,9]];
 window.__RHYTHM_ACC_EXPECT = [0,1000,600,800,333,888];
 </script>
@@ -1599,6 +1672,9 @@ window.__ICON_STAR_ON = '<svg class="ic" viewBox="0 0 24 24" fill="currentColor"
      没播或暂停时换成等速虚拟时钟，接着暂停那一刻的歌曲位置继续走。 */
   var ONSETS = window.__RHYTHM_ONSETS || [];
   var SONG_MS = window.__RHYTHM_SONG_MS || (ONSETS.length ? ONSETS[ONSETS.length - 1] + 4000 : 0);
+  /* 当前在用的那份谱面：默认是生成器内联的本站那首歌，拖进来别的歌就换成它 */
+  var CUR_ONSETS = ONSETS, CUR_SONG_MS = SONG_MS;
+  var songLabel = '本站的歌', BUILTIN_SRC = music ? music.getAttribute('src') : '';
   var songZero = (window.performance && performance.now) ? performance.now() : Date.now();
   var timeline = [], spawnIdx = 0, songLast = 0;
 
@@ -1607,14 +1683,18 @@ window.__ICON_STAR_ON = '<svg class="ic" viewBox="0 0 24 24" fill="currentColor"
   function songNow() { return audioLive() ? music.currentTime * 1000 : perfNow() - songZero; }
   function songRezero() { if (music) songZero = perfNow() - music.currentTime * 1000; }
   function buildTimeline(from, count) {
-    /* 从歌曲位置 from 往后取 count 个起音点；不够就绕回开头（一首歌循环着打） */
+    /* 从歌曲位置 from 往后取 count 个起音点；不够就绕回开头（一首歌循环着打）。
+       难度只改「隔几个取一个」与「要不要双押」：时间戳永远来自实测起音点。 */
     var out = [], first = 0, i;
-    if (!ONSETS.length) return out;
-    while (first < ONSETS.length && ONSETS[first] < from) first++;
-    for (i = 0; i < count; i++) {
+    if (!CUR_ONSETS.length) return out;
+    while (first < CUR_ONSETS.length && CUR_ONSETS[first] < from) first++;
+    var stride = DIFF.stride, need = count * stride;
+    for (i = 0; i < need; i++) {
       var k = first + i;
-      out.push(ONSETS[k % ONSETS.length] + Math.floor(k / ONSETS.length) * SONG_MS);
+      out.push(CUR_ONSETS[k % CUR_ONSETS.length] + Math.floor(k / CUR_ONSETS.length) * CUR_SONG_MS);
     }
+    if (stride > 1) { var thin = []; for (i = 0; i < out.length; i += stride) thin.push(out[i]); out = thin; }
+    if (DIFF.dual) { var wide = []; for (i = 0; i < out.length; i++) { wide.push(out[i]); wide.push(out[i]); } out = wide; }
     return out;
   }
   var clockChip = $('#rhythmClock');
@@ -1717,6 +1797,20 @@ window.__ICON_STAR_ON = '<svg class="ic" viewBox="0 0 24 24" fill="currentColor"
         }
         ex.chart_reset(seed, lanes);
         window.__rhythmKernelVersion = ex.kernel_version ? ex.kernel_version() : 0;
+      /* 起音点自检：同一个函数在 native 里算过的校验值，这里让 wasm 再算一遍 */
+      window.__onsetParity = 'no-wasm';
+      if (typeof ex.onset_init === 'function' && typeof ex.onset_selftest === 'function') {
+        try {
+          ex.onset_init();
+          var onsetOutPtr = ex.onset_out_ptr();
+          new Int32Array(ex.memory.buffer, onsetOutPtr, 1)[0] = 0;
+          var onsetSum = ex.onset_selftest(onsetOutPtr) >>> 0;
+          var onsetCnt = new Int32Array(ex.memory.buffer, onsetOutPtr, 1)[0];
+          var onsetWant = (window.__ONSET_PROBE_EXPECT || 0) >>> 0;
+          window.__onsetProbe = { count: onsetCnt, checksum: onsetSum, expect: onsetWant };
+          window.__onsetParity = (onsetSum === onsetWant) ? 'ok' : 'mismatch';
+        } catch (e) { window.__onsetParity = 'error'; }
+      }
 
         /* 判定与算分的探针：期望值是生成器用同一份 rhythm_core.hpp 算的，
            探针压在窗口边界（±45 / ±90 与各差 1ms），窗口写错这里就会 mismatch */
@@ -1855,6 +1949,13 @@ window.__ICON_STAR_ON = '<svg class="ic" viewBox="0 0 24 24" fill="currentColor"
      加载内核时，生成器按同一份头文件算好的探针会逐条比对（含 ±45/±90 边界与差 1ms 的点），
      结果写进 window.__rhythmJudgeParity；内核不可用时退回本地 JS 镜像，页面照实标出来源。 */
   var GOODms = 90, PERFECTms = 45, ROUND_NOTES = 64;
+  /* 难度分级：只动「取多密」和「喂进内核的窗口」——判定永远由内核给出，双押也不是编造的时间戳 */
+  var DIFF_TIERS = {
+    easy: { label: '轻松', stride: 2, win: 1.25, dual: false },
+    normal: { label: '标准', stride: 1, win: 1, dual: false },
+    hard: { label: '硬核', stride: 1, win: 0.667, dual: true }
+  };
+  var diffKey = 'normal', DIFF = DIFF_TIERS.normal, WIN_SCALE = 1;
   var KERNEL_JUDGE = null, KERNEL_ACC = null, kernelReset = null;
   var mode = 'auto', roundActive = false, roundIndex = 0, pausedAt = 0, lastJudge = '';
   var round = { perfect: 0, good: 0, miss: 0, accPermille: 0 };
@@ -1864,7 +1965,8 @@ window.__ICON_STAR_ON = '<svg class="ic" viewBox="0 0 24 24" fill="currentColor"
 
   function jsJudge(d) { var a = d < 0 ? -d : d; return a <= PERFECTms ? 2 : a <= GOODms ? 1 : 0; }
   function jsAcc(p, g, n) { return n <= 0 ? 0 : Math.floor((p * 1000 + g * 600) / n); }
-  function doJudge(d) { return KERNEL_JUDGE ? KERNEL_JUDGE(d) : jsJudge(d); }
+  /* 难度只改喂进内核的窗口：偏差按档缩放后再交给内核，JS 回退同理 —— 判定者始终是内核 */
+  function doJudge(d) { var dd = d / WIN_SCALE; return KERNEL_JUDGE ? KERNEL_JUDGE(dd) : jsJudge(dd); }
   function doAcc(p, g, n) { return KERNEL_ACC ? KERNEL_ACC(p, g, n) : jsAcc(p, g, n); }
 
   function setText(sel, v) { var el = $(sel); if (el) el.textContent = v; }
@@ -1943,7 +2045,7 @@ window.__ICON_STAR_ON = '<svg class="ic" viewBox="0 0 24 24" fill="currentColor"
     if (mode !== 'play' || !roundActive) return;
     var hit = nearestNote(lane, now);
     /* 空击不扣分：只让该轨道亮一下，别把休闲玩家劝退 */
-    if (!hit || Math.abs(hit.delta) > GOODms) { laneGlow[lane] = Math.max(laneGlow[lane], 0.35); return; }
+    if (!hit || Math.abs(hit.delta) > GOODms * (WIN_SCALE > 1 ? WIN_SCALE : 1)) { laneGlow[lane] = Math.max(laneGlow[lane], 0.35); return; }
     var r = doJudge(hit.delta);
     if (r <= 0) { laneGlow[lane] = Math.max(laneGlow[lane], 0.35); return; }
     registerJudge(r, hit.note);
@@ -2001,21 +2103,328 @@ window.__ICON_STAR_ON = '<svg class="ic" viewBox="0 0 24 24" fill="currentColor"
 
   /* 预览与自检用的钩子：都是页面自己会用到的函数，不是测试专用开关 */
   /* 换主题时立刻重画一帧：轨道颜色跟着成员色走 */
-  window.addEventListener('themechange', function () { render(); });
+  /* ---------- 难度：换档只重排这一轮，时间戳仍是实测起音点 ---------- */
+  function diffBtn(k) { return document.getElementById('diff' + k.charAt(0).toUpperCase() + k.slice(1)); }
+  function diffNote() {
+    var el = document.getElementById('diffNote');
+    if (!el) return;
+    var p = Math.round(PERFECTms * WIN_SCALE), g = Math.round(GOODms * WIN_SCALE);
+    el.textContent = '密度 x' + (DIFF.dual ? 2 : (1 / DIFF.stride)) + ' · 判定窗口 ±' + p + ' / ±' + g + 'ms（内核给的）';
+  }
+  function setDiff(key, save) {
+    diffKey = DIFF_TIERS[key] ? key : 'normal';
+    DIFF = DIFF_TIERS[diffKey];
+    WIN_SCALE = DIFF.win;
+    ['easy', 'normal', 'hard'].forEach(function (k) {
+      var b = diffBtn(k);
+      if (b) b.setAttribute('aria-pressed', k === diffKey ? 'true' : 'false');
+    });
+    if (save) { try { localStorage.setItem('myintro.diff', diffKey); } catch (e) {} }
+    diffNote();
+    timeline = buildTimeline(mode === 'play' ? songNow() + 900 : songNow(), ROUND_NOTES);
+    spawnIdx = 0;
+  }
+  ['easy', 'normal', 'hard'].forEach(function (k) {
+    var b = diffBtn(k);
+    if (b) b.addEventListener('click', function () { setDiff(k, true); });
+  });
+  (function initDiff() {
+    var saved = null;
+    try { saved = localStorage.getItem('myintro.diff'); } catch (e) {}
+    setDiff(saved, false);
+  })();
+
+  /* ---------- 起音点时间条：整首歌 657 个 tick + 播放头 ---------- */
+  var stripCvs = document.getElementById('onsetStrip');
+  var stripLayer = null, stripDirty = true, stripAccent = '#a78bfa', stripSig = '';
+  function stripAccentSync() {
+    try { stripAccent = getComputedStyle(document.documentElement).getPropertyValue('--violet').trim() || '#a78bfa'; } catch (e) {}
+    stripDirty = true;
+  }
+  function drawStrip() {
+    if (!stripCvs) return;
+    var sig = CUR_ONSETS.length + ':' + (CUR_SONG_MS || 0);
+    if (sig !== stripSig) { stripSig = sig; stripDirty = true; }
+    var w = stripCvs.clientWidth || 640, h = 56, dpr = Math.min(2, window.devicePixelRatio || 1);
+    if (stripCvs.width !== Math.round(w * dpr) || stripCvs.height !== Math.round(h * dpr)) {
+      stripCvs.width = Math.round(w * dpr); stripCvs.height = Math.round(h * dpr);
+      stripDirty = true;
+    }
+    var g = stripCvs.getContext('2d');
+    if (!g) return;
+    if (!stripLayer || stripDirty) {
+      stripLayer = document.createElement('canvas');
+      stripLayer.width = stripCvs.width; stripLayer.height = stripCvs.height;
+      var l = stripLayer.getContext('2d');
+      l.setTransform(dpr, 0, 0, dpr, 0, 0);
+      var dur = CUR_SONG_MS || 1, n = CUR_ONSETS.length, i;
+      l.fillStyle = 'rgba(125,211,252,.14)';
+      l.fillRect(0, h * 0.46, w, Math.max(1, h * 0.08));
+      l.globalAlpha = n > 400 ? 0.55 : 0.8;
+      for (i = 0; i < n; i++) {
+        var x = Math.round(CUR_ONSETS[i] / dur * (w - 1));
+        l.fillStyle = MYGO_LANES[i % MYGO_LANES.length];
+        l.fillRect(x, h * 0.18, 1, h * 0.64);
+      }
+      l.globalAlpha = 1;
+      stripDirty = false;
+    }
+    g.setTransform(1, 0, 0, 1, 0, 0);
+    g.clearRect(0, 0, stripCvs.width, stripCvs.height);
+    g.drawImage(stripLayer, 0, 0);
+    g.setTransform(dpr, 0, 0, dpr, 0, 0);
+    var dur2 = CUR_SONG_MS || 1;
+    var pos = (((songNow() % dur2) + dur2) % dur2) / dur2 * (w - 1);
+    g.fillStyle = stripAccent;
+    g.fillRect(Math.round(pos) - 1, 0, 2, h);
+    g.beginPath(); g.arc(pos, h * 0.5, 3.2, 0, Math.PI * 2); g.fill();
+    var note = document.getElementById('stripNote');
+    if (note) {
+      var secs = Math.round(dur2 / 1000);
+      var txt = '谱面 · ' + songLabel + ' —— 整首 ' + Math.floor(secs / 60) + ':' + ('0' + (secs % 60)).slice(-2) +
+        ' · ' + CUR_ONSETS.length + ' 个起音点 · 上面每根 tick 都是歌里真实响过的地方';
+      if (note.textContent !== txt) note.textContent = txt;
+    }
+  }
+  stripAccentSync();
+  window.addEventListener('resize', function () { stripDirty = true; });
+  setInterval(function () { if (!document.hidden) drawStrip(); }, 80);
+  setTimeout(drawStrip, 400);
+
+  /* ---------- 入口门那行自证徽章：构建时算的哈希 vs 浏览器当场重算 ---------- */
+  (function kernelBadge() {
+    var el = document.getElementById('landingProof');
+    if (!el) return;
+    var want = el.getAttribute('data-sha') || '', bytes = el.getAttribute('data-bytes') || '?';
+    function show(tail, bad) {
+      el.className = 'landing-proof landing-fade mono' + (bad ? ' bad' : '');
+      el.textContent = '内核 SHA-256 ' + want + ' · ' + bytes + ' 字节 · ' + tail;
+    }
+    var b64 = window.__RHYTHM_WASM || '';
+    if (!b64) { show('生成时没有内联 wasm'); return; }
+    var sub = window.crypto && window.crypto.subtle;
+    if (!sub) { show('这个环境没有 crypto.subtle，没复核'); return; }
+    try {
+      sub.digest('SHA-256', base64ToBytes(b64)).then(function (buf) {
+        var v = new Uint8Array(buf), hex = '', i;
+        for (i = 0; i < v.length; i++) hex += (v[i] < 16 ? '0' : '') + v[i].toString(16);
+        window.__kernelSha = hex;
+        if (hex.slice(0, 12) === want) show('浏览器复核一致', false);
+        else show('浏览器复核不一致（' + hex.slice(0, 12) + '，以构建时那份为准）', true);
+      }).catch(function () { show('复核失败：crypto.subtle 拒绝了'); });
+    } catch (e) { show('复核失败：' + (e && e.message ? e.message : '异常')); }
+  })();
+
+  window.addEventListener('themechange', function () { render(); stripAccentSync(); });
+
+  /* ============ 拖一首歌进来：C++/WASM 内核当场量起音点 ============ 
+     文件不出浏览器：本地解码 → 重采样到 11025Hz → 写进 wasm 内存 → 内核算。
+     页面只把结果（毫秒数组）拿回来当谱面，音频连 <audio> 都没出过这台机器。 */
+  var ANALYSIS_RATE = 11025;
+  var dropBusy = false;
+
+  function onsetKernelReady() {
+    return !!(kernelExports && typeof kernelExports.detect_onsets === 'function' &&
+      typeof kernelExports.onset_ptr === 'function' && kernelExports.memory);
+  }
+
+  function fmtClock(sec) {
+    if (!isFinite(sec)) return '—';
+    var m = Math.floor(sec / 60), s = Math.floor(sec % 60);
+    return m + ':' + (s < 10 ? '0' + s : s);
+  }
+
+  /* 多声道混成单声道 */
+  function toMono(chans, frames) {
+    var out = new Float32Array(frames), c, i;
+    if (!chans.length) return out;
+    for (c = 0; c < chans.length; c++) {
+      var src = chans[c];
+      for (i = 0; i < frames; i++) out[i] += src[i] / chans.length;
+    }
+    return out;
+  }
+
+  /* 线性重采样：内核按 23ms 一帧看谱，11025Hz 足够，快很多 */
+  function resampleTo(mono, from, to) {
+    if (from === to) return mono;
+    var n = Math.max(1, Math.floor(mono.length * to / from));
+    var out = new Float32Array(n), step = from / to, i;
+    for (i = 0; i < n; i++) {
+      var x = i * step, i0 = Math.floor(x), f = x - i0;
+      var a = mono[i0] || 0, b = mono[i0 + 1] || 0;
+      out[i] = a + (b - a) * f;
+    }
+    return out;
+  }
+
+  /* 内核一次吃 20 秒，长歌自己分块：留 1 秒重叠，拼起来再按 93ms 去重 */
+  function onsetsFromPcm(pcm, rate) {
+    var cap = kernelExports.onset_capacity();
+    var inPtr = kernelExports.onset_ptr(), outPtr = kernelExports.onset_out_ptr();
+    var out = [], off = 0;
+    while (off < pcm.length) {
+      var len = Math.min(cap, pcm.length - off);
+      new Float32Array(kernelExports.memory.buffer, inPtr, len).set(pcm.subarray(off, off + len));
+      var n = kernelExports.detect_onsets(len, rate);
+      var got = new Float32Array(kernelExports.memory.buffer, outPtr, n);
+      for (var i = 0; i < n; i++) out.push(got[i] + off * 1000 / rate);
+      if (len < cap) break;
+      off += cap - rate;
+    }
+    var merged = [];
+    for (var k = 0; k < out.length; k++) {
+      if (!merged.length || out[k] - merged[merged.length - 1] >= 93) merged.push(out[k]);
+    }
+    return merged;
+  }
+
+  function dropZoneEl() { return document.getElementById('dropZone'); }
+  function dropInfoEl() { return document.getElementById('dropInfo'); }
+  function showDrop(text, bad) {
+    var el = dropInfoEl();
+    if (!el) return;
+    el.textContent = text;
+    el.className = 'drop-info mono reveal' + (bad ? ' bad' : '');
+  }
+
+  /* 换谱面来源：重新排一轮时间轴，时钟跟着新歌走 */
+  function useChart(onsets, songMs, label, srcUrl) {
+    CUR_ONSETS = onsets;
+    CUR_SONG_MS = songMs;
+    songLabel = label;
+    timeline = [];
+    spawnIdx = 0;
+    if (music && srcUrl && music.getAttribute('src') !== srcUrl) {
+      music.src = srcUrl;
+      if (music.load) music.load();
+    }
+    songRezero();
+    timeline = buildTimeline(songNow(), ROUND_NOTES * 2);
+    spawnIdx = 0;
+    if (clockChip) clockChip.textContent = '跟随 ' + label;
+  }
+
+  function backToBuiltinSong() {
+    useChart(ONSETS, SONG_MS, '本站的歌', BUILTIN_SRC);
+    if (clockChip) clockChip.textContent = '跟随音轨';
+    var btn = document.getElementById('dropReset');
+    if (btn) btn.hidden = true;
+    showDrop('当前谱面：本站的歌 · 内联了 ' + ONSETS.length + ' 个实测起音点', false);
+  }
+
+  function handleAudioFile(file) {
+    if (!file || dropBusy) return;
+    if (!onsetKernelReady()) {
+      showDrop('这个浏览器没跑起 wasm 内核，拖歌进来也只能用本站的歌', true);
+      return;
+    }
+    var AC = window.AudioContext || window.webkitAudioContext;
+    if (!AC) { showDrop('这个浏览器没有 WebAudio，解不了音频', true); return; }
+    dropBusy = true;
+    showDrop('正在量《' + file.name + '》的起音点…', false);
+    var ctx = new AC();
+    var reader = new FileReader();
+    reader.onload = function () {
+      var done = function (audio) {
+        try {
+          var chans = [], c;
+          for (c = 0; c < audio.numberOfChannels; c++) chans.push(audio.getChannelData(c));
+          var mono = toMono(chans, audio.length);
+          var pcm = resampleTo(mono, audio.sampleRate, ANALYSIS_RATE);
+          var t0 = perfNow();
+          var onsets = onsetsFromPcm(pcm, ANALYSIS_RATE);
+          var spent = Math.round(perfNow() - t0);
+          if (!onsets.length) {
+            dropBusy = false;
+            showDrop('这首歌没量出起音点（太安静？全是持续音？）—— 还是用本站的歌吧', true);
+            return;
+          }
+          if (ctx.close) ctx.close();
+          useChart(onsets, audio.duration * 1000, file.name.slice(0, 16), URL.createObjectURL(file));
+          dropBusy = false;
+          var btn = document.getElementById('dropReset');
+          if (btn) btn.hidden = false;
+          showDrop('当前谱面：' + file.name + ' · 量到 ' + onsets.length + ' 个起音点 · 曲长 ' +
+            fmtClock(audio.duration) + ' · 内核算了 ' + spent + 'ms（文件没上传）', false);
+        } catch (e) {
+          dropBusy = false;
+          showDrop('量失败了：' + (e && e.message ? e.message : e), true);
+        }
+      };
+      if (ctx.decodeAudioData.length >= 3) {
+        ctx.decodeAudioData(reader.result, done, function () {
+          dropBusy = false;
+          showDrop('这个格式浏览器解不开（试试 mp3 / m4a / wav / ogg）', true);
+        });
+      } else {
+        ctx.decodeAudioData(reader.result).then(done, function () {
+          dropBusy = false;
+          showDrop('这个格式浏览器解不开（试试 mp3 / m4a / wav / ogg）', true);
+        });
+      }
+    };
+    reader.onerror = function () { dropBusy = false; showDrop('读文件失败了', true); };
+    reader.readAsArrayBuffer(file);
+  }
+
+  function initDropZone() {
+    var zone = dropZoneEl(), input = document.getElementById('dropFile');
+    if (!zone) return;
+    zone.addEventListener('click', function () { if (input) input.click(); });
+    zone.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); if (input) input.click(); }
+    });
+    zone.addEventListener('dragover', function (e) { e.preventDefault(); zone.classList.add('over'); });
+    zone.addEventListener('dragleave', function () { zone.classList.remove('over'); });
+    zone.addEventListener('drop', function (e) {
+      e.preventDefault();
+      zone.classList.remove('over');
+      var dt = e.dataTransfer;
+      if (dt && dt.files && dt.files.length) handleAudioFile(dt.files[0]);
+    });
+    if (input) input.addEventListener('change', function () {
+      if (input.files && input.files.length) handleAudioFile(input.files[0]);
+      input.value = '';
+    });
+    var reset = document.getElementById('dropReset');
+    if (reset) reset.addEventListener('click', function (e) { e.stopPropagation(); backToBuiltinSong(); });
+    showDrop('当前谱面：本站的歌 · 内联了 ' + ONSETS.length + ' 个实测起音点 · ' +
+      (onsetKernelReady() ? 'wasm 内核就绪，拖别的歌进来当场量' : 'wasm 内核还没起来'), false);
+  }
+
+  /* 自检钩子：把一段 PCM 直接喂给内核，用于无头测试 */
+  window.__onsetsFromPcm = function (arr, rate) {
+    if (!onsetKernelReady()) return null;
+    return onsetsFromPcm(arr, rate || ANALYSIS_RATE);
+  };
+  window.__onsetState = function () {
+    return {
+      parity: window.__onsetParity || 'n/a',
+      ready: onsetKernelReady(),
+      source: songLabel,
+      onsets: CUR_ONSETS.length,
+      songMs: Math.round(CUR_SONG_MS),
+      probe: window.__onsetProbe || null
+    };
+  };
+
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', initDropZone);
+  else initDropZone();
   /* 自检钩子：判定时钟现在跟着谁走、下一个音符是不是真的落在实测起音点上 */
   window.__rhythmClockProbe = function () {
     var at = spawnIdx < timeline.length ? timeline[spawnIdx] : null;
-    var pos = at === null ? null : at % SONG_MS;
+    var pos = at === null ? null : at % CUR_SONG_MS;
     return {
       src: audioLive() ? 'audio' : 'virtual',
       song: songNow(),
       audio: music ? music.currentTime * 1000 : 0,
-      onsets: ONSETS.length,
-      songMs: SONG_MS,
+      onsets: CUR_ONSETS.length,
+      songMs: CUR_SONG_MS,
       timeline: timeline.length,
       spawnIdx: spawnIdx,
       next: at,
-      nextIsOnset: pos === null ? null : ONSETS.indexOf(pos) >= 0
+      nextIsOnset: pos === null ? null : CUR_ONSETS.indexOf(pos) >= 0
     };
   };
   window.__rhythmNextDelta = function (lane) {
@@ -2215,7 +2624,7 @@ window.__ICON_STAR_ON = '<svg class="ic" viewBox="0 0 24 24" fill="currentColor"
       if (clockChip) {
         var label = audioLive()
           ? '跟随音轨 ' + music.currentTime.toFixed(0) + 's'
-          : (ONSETS.length ? '起音 ' + ONSETS.length + ' 个 · 虚拟时钟' : '固定节拍');
+          : (CUR_ONSETS.length ? '起音 ' + CUR_ONSETS.length + ' 个 · 虚拟时钟' : '固定节拍');
         if (clockChip.textContent !== label) clockChip.textContent = label;
       }
     }

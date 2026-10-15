@@ -21,11 +21,12 @@ check("wasm 不需要任何 import", imports.length === 0, JSON.stringify(import
 const inst = await WebAssembly.instantiate(mod, {});
 const e = inst.exports;
 if (typeof e._initialize === "function") e._initialize(); // standalone wasm 的初始化（若存在）
-const want = ["kernel_version", "chart_reset", "chart_next", "chart_at", "judge_ms", "accuracy_permille"];
+const want = ["kernel_version", "chart_reset", "chart_next", "chart_at", "judge_ms", "accuracy_permille",
+  "onset_init", "onset_capacity", "onset_max", "onset_ptr", "onset_out_ptr", "detect_onsets", "onset_selftest"];
 check("导出函数齐全", want.every((n) => typeof e[n] === "function"), want.filter((n) => typeof e[n] !== "function").join(",") || "全部存在");
 
 const SEED = 0x5eed2026, LANES = 7;
-check("kernel_version()=2", e.kernel_version() === 2, String(e.kernel_version()));
+check("kernel_version()=3", e.kernel_version() === 3, String(e.kernel_version()));
 
 /* 谱面前 12 个轨道（与生成器内联的那份必须一致，页面也会比这 12 个） */
 e.chart_reset(SEED, LANES);
@@ -45,6 +46,33 @@ check("judge_ms 边界与窗口一致", JSON.stringify(gotJudge) === JSON.string
 const accCases = [[0, 0, 0, 0], [64, 0, 64, 1000], [0, 64, 64, 600], [32, 32, 64, 800], [1, 0, 3, 333], [8, 0, 9, 888]];
 const accGot = accCases.map(([p, g, n]) => e.accuracy_permille(p, g, n));
 check("accuracy_permille 与整数权重一致", JSON.stringify(accGot) === JSON.stringify(accCases.map((c) => c[3])), accGot.join(","));
+
+/* v3：浏览器内的起音点检测。合成信号的自检值必须与 native 生成器内联进页面的那个一致，
+   否则「页面里量的」和「仓库里量好的」就不是同一套算法。 */
+const mem = e.memory instanceof WebAssembly.Memory ? e.memory : null;
+check("导出了 memory（页面要往里写 PCM）", !!mem);
+if (mem) {
+  e.onset_init();
+  check("onset_capacity() = 20 秒分析窗", e.onset_capacity() === 11025 * 20, String(e.onset_capacity()));
+  check("onset_max() = 4096 帧上限", e.onset_max() === 4096, String(e.onset_max()));
+  const outPtr = e.onset_out_ptr();
+  const sum = e.onset_selftest(outPtr) >>> 0;
+  const count = new Int32Array(mem.buffer, outPtr, 1)[0];
+  check("onset_selftest() 与 native 校验值一致", sum === 1435864337, "checksum=" + sum);
+  check("onset_selftest() 数出 23 个起音点", count === 23, "count=" + count);
+
+  /* 再走一遍真实调用路径：8 秒、每 500ms 一击、每击 50ms 衰减音 */
+  const rate = 11025, total = rate * 8;
+  const pcm = new Float32Array(mem.buffer, e.onset_ptr(), total);
+  for (let i = 0; i < total; i++) {
+    const t = i / rate, phase = t % 0.5;
+    pcm[i] = phase < 0.05 ? Math.sin(2 * Math.PI * 880 * t) * 0.8 * (1 - phase / 0.05) : 0;
+  }
+  const got = e.detect_onsets(total, rate);
+  const ms = new Float32Array(mem.buffer, outPtr, got);
+  check("detect_onsets() 在 500ms 一击的合成信号上量出 14~17 个起音点", got >= 14 && got <= 17,
+    "n=" + got + (got ? " 首个 " + ms[0].toFixed(0) + "ms" : ""));
+}
 
 console.log(bad ? "wasm check FAILED" : "wasm check OK - " + bytes.length + " 字节");
 process.exit(bad);
