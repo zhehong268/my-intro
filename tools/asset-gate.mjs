@@ -20,11 +20,13 @@ const canonical = (html.match(/<link rel="canonical" href="([^"]+)"/) || [, ""])
 const refs = new Set();
 for (const m of html.matchAll(/(?:src|href)="([^"]+)"/g)) refs.add(m[1]);
 for (const m of html.matchAll(/url\(\s*[\x22\x27]?([^)\x22\x27\s]+)/g)) refs.add(m[1]);
-for (const m of html.matchAll(/[\w./:-]+\.(?:png|jpe?g|webp|svg|gif|mp3|wav|ogg|ico)\b/g)) {
-  let r = m[0];
-  const own = (u) => canonical && u.startsWith(canonical);
-  if (own(r) || r.startsWith("/")) r = r.split("/").pop(); // 本站绝对地址 / 根路径 → 折算成文件名
-  refs.add(r);
+for (const m of html.matchAll(/<meta[^>]*content="([^"]*)"[^>]*>/g)) {
+  for (const mm of m[1].matchAll(/[\w./:-]+\.(?:png|jpe?g|webp|svg|gif|mp3|wav|ogg|ico)\b/g)) {
+    let r = mm[0];
+    if (r.startsWith("/")) r = r.split("/").pop(); // 根路径 → 折算成文件名
+    else if (canonical && r.startsWith(canonical)) r = r.split("/").pop();
+    refs.add(r);
+  }
 }
 
 const external = (u) => /^(https?:|mailto:|tel:|data:|#|\/\/|\/)/.test(u);

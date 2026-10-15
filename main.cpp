@@ -28,6 +28,7 @@
  *    - 触摸设备与 prefers-reduced-motion 下自动降级
  */
 
+#include <cstdint>
 #include <fstream>
 #include <iostream>
 #include <iterator>
@@ -3651,7 +3652,7 @@ int main() {
         me.stageBannerNote = "音游段落横幅 · " + bannerName + " · loading=lazy，滚到这一段才取，不计首屏";
       } else {
         me.stageBanner = R"HTML(<div class="stage-stage" aria-hidden="true"><span class="beam b1"></span><span class="beam b2"></span><span class="beam b3"></span><span class="beam b4"></span><span class="beam b5"></span><span class="stage-floor"></span><span class="stage-mark">★</span><span class="stage-line">五个人，一个舞台</span></div><div class="stage-wave" aria-hidden="true"><span style="--h:26%"></span><span style="--h:54%"></span><span style="--h:78%"></span><span style="--h:38%"></span><span style="--h:92%"></span><span style="--h:60%"></span><span style="--h:32%"></span><span style="--h:74%"></span><span style="--h:46%"></span><span style="--h:88%"></span><span style="--h:56%"></span><span style="--h:30%"></span></div>)HTML";
-        me.stageBannerNote = "自绘的示意图 · 放一张 stage-banner.webp 进仓库，这里就换成它";
+        me.stageBannerNote = "自绘的舞台示意图 · 这一段留了横幅槽位，换成正式插图时直接替掉";
       }
     }
     html = replaceAll(html, "__COVER__", me.coverImage);
@@ -3925,7 +3926,6 @@ int main() {
     <li><i style="--c:#FFC857"></i>长崎素世 <span class="part">Ba</span></li>
     <li><i style="--c:#7A5CFF"></i>椎名立希 <span class="part">Dr</span></li>
   </ul>
-  <p class="lineup-src">暗色主题的舞台灯、以及七条轨道循环用的颜色，就是这五个色值 —— 取自粉丝整理的成员色票，不是官方配色；页面里没有官方图片、歌词或音频素材。</p>
 </section>
 )HTML";
     html = replaceAll(html, "__BG__", me.bgImage);

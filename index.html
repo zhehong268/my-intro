@@ -893,7 +893,7 @@ html.theme-mygo .stage-frame{background:linear-gradient(180deg,color-mix(in srgb
     <h2 class="section-title">音游</h2>
     <figure class="stage-banner reveal" id="stageBanner">
       <div class="stage-frame"><div class="stage-stage" aria-hidden="true"><span class="beam b1"></span><span class="beam b2"></span><span class="beam b3"></span><span class="beam b4"></span><span class="beam b5"></span><span class="stage-floor"></span><span class="stage-mark">★</span><span class="stage-line">五个人，一个舞台</span></div><div class="stage-wave" aria-hidden="true"><span style="--h:26%"></span><span style="--h:54%"></span><span style="--h:78%"></span><span style="--h:38%"></span><span style="--h:92%"></span><span style="--h:60%"></span><span style="--h:32%"></span><span style="--h:74%"></span><span style="--h:46%"></span><span style="--h:88%"></span><span style="--h:56%"></span><span style="--h:30%"></span></div></div>
-      <figcaption class="banner-note mono">自绘的示意图 · 放一张 stage-banner.webp 进仓库，这里就换成它</figcaption>
+      <figcaption class="banner-note mono">自绘的舞台示意图 · 这一段留了横幅槽位，换成正式插图时直接替掉</figcaption>
     </figure>
     <p class="section-desc">一个跑在单个 canvas 上的节奏小游戏：七轨，音符落在歌里真实响过的地方，命中特效由 requestAnimationFrame 时间轴驱动。滚出可视区域会自动暂停。默认自动演奏，想自己打就按下面那颗按钮。</p>
     <p class="section-desc">谱面时间轴不是拍脑袋写的 BPM：生成器把<b>实测这首歌的 657 个起音点</b>内联进页面，音符落在真正的起音上；歌在播时<b>判定时钟就是 <code>audio.currentTime</code></b>，暂停或没播时换成等速虚拟时钟接着走。每个音符落在哪条轨由 <code>rhythm_core.cpp</code> 编译的 WebAssembly 决定，判定窗口与准确率也由同一个 wasm 内核给，生成器再用同一份头文件算一份探针逐条比对。</p>
@@ -960,7 +960,6 @@ html.theme-mygo .stage-frame{background:linear-gradient(180deg,color-mix(in srgb
     <li><i style="--c:#FFC857"></i>长崎素世 <span class="part">Ba</span></li>
     <li><i style="--c:#7A5CFF"></i>椎名立希 <span class="part">Dr</span></li>
   </ul>
-  <p class="lineup-src">暗色主题的舞台灯、以及七条轨道循环用的颜色，就是这五个色值 —— 取自粉丝整理的成员色票，不是官方配色；页面里没有官方图片、歌词或音频素材。</p>
 </section>
 
 <section class="section" id="site">

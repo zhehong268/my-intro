@@ -1,21 +1,10 @@
-音游：拖任意一首歌当场量起音点、自证徽章、难度三档、起音点时间条
+修 CI 红：补 <cstdint>；删掉成员色票那段说明；资产门只认真正的引用
 
-内核（rhythm_core.hpp / .cpp，kernel_version 3）
-- 新增起音检测：1024 点 FFT 谱通量 → ±8 帧自适应阈值 → 93ms 合并（detect_onsets / onset_selftest）
-- wasm 从 732 字节长到 10,056 字节；native(MinGW -O2) 与 wasm(emcc -O3) 的合成信号校验值
-  完全一致（count=23 checksum=1435864337），整数毫秒级一致靠「主循环只有 + - * / 与 sqrt」
-
-页面
-- 拖放区：拖一首歌进来 → 浏览器里 decodeAudioData → 同一个 wasm 内核对这首歌量起音点 →
-  谱面立刻跟着这首走（10 秒素材约 5ms）；文件不上传，走 blob URL
-- 入口门自证徽章：生成器用同一份 C++ 算 wasm 的 SHA-256 与字节数，页面加载后再用 crypto.subtle 复核
-- 难度三档：轻松/标准/硬核（隔点抽稀 / 双押 + 喂给内核的判定窗口 ×倍率），时间戳永远来自实测起音点
-- 起音点时间条：整首歌一条 657 根成员色 tick + 播放头，跟着 songNow() 走
-- 音游段落横幅槽位：仓里有 stage-banner.webp/.jpg/.png 就用它（loading=lazy，不计首屏），
-  没有就用自绘的示意图（暗色是五位成员色舞台灯，亮色是站点紫色的波形）
-
-门禁与测试
-- tools/onsets.mjs（离线量起音点，可逐字节复现 onsets.txt）、tools/rhythm-gate.mjs
-  （内联起音点必须与 onsets.txt 逐个相等）、tools/drop-test.mjs（无头浏览器走一遍真拖放路径）
-- wasm-check 覆盖 v3 导出与起音检测调用路径；预算 540/64 KB（内联 wasm 13.4KB base64 记在注释里）
-- selftest 70/70；五道门全绿
+- CI（Ubuntu GCC 13）报了一串 `'uint32_t' was not declared in this scope` /
+  `'uint64_t'` / `'byte'`，根因是生成器里的 SHA-256 用了定长类型却没写 <cstdint>：
+  本地 MinGW 8.1 会顺着别的头文件把 uint32_t 带进来，新一点的 libstdc++ 不会，
+  所以只有 CI 红。补一行 #include <cstdint>，本地编译运行照旧。
+- 按用户要求删掉音游段落里「…取自粉丝整理的成员色票，不是官方配色…」那段说明。
+- 横幅占位说明改成不写文件名的文案（原来那行会把 stage-banner.webp 当成一处资产引用）。
+- asset-gate 的第三类扫描收窄到 <meta content> 里（og:image / twitter:image 那两处），
+  不再把正文里出现的文件名当成引用 —— 之前是全文匹配后缀，正文一提文件名就误报。
