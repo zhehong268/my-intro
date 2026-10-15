@@ -1592,15 +1592,15 @@ window.__ICON_STAR_ON = '<svg class="ic" viewBox="0 0 24 24" fill="currentColor"
   /* 立刻发，但压到最低优先级：封面是 fetchpriority=high 的 LCP，预热不能抢它的带宽 */
   warmMusic();
   /* 建 AudioContext 放两重保险后面：先等 load（封面 LCP 画完），再等浏览器空闲。
-     实测「一进页面就建」会在导航后 0.28s 吃掉 234ms 主线程、正好压在首屏绘制上；
+     实测 600ms 那一档会落在导航后 0.40s——正是首屏渐变入场动画，255ms 冻一下看得出来；
      挪到这里，卡顿落在「入口门摆着、用户还没点」的空档里，交互段实测 0 长动画帧。 */
   (function primeWhenIdle() {
     function go() {
       if (window.requestIdleCallback) requestIdleCallback(primeAudioContext, { timeout: 2500 });
       else setTimeout(primeAudioContext, 900);
     }
-    if (document.readyState === 'complete') setTimeout(go, 600);
-    else window.addEventListener('load', function () { setTimeout(go, 600); }, { once: true });
+    if (document.readyState === 'complete') setTimeout(go, 1800);
+    else window.addEventListener('load', function () { setTimeout(go, 1800); }, { once: true });
   })();
   ['pointermove', 'touchstart', 'keydown'].forEach(function (evName) {
     window.addEventListener(evName, warmMusic, { once: true, passive: true });

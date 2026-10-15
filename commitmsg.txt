@@ -1,7 +1,6 @@
-修三处：底图挪进音游进行界面、音符不再成排/重叠、主线程卡顿
+卡顿收尾：建音频图的空档挪到 load+1.8s，避开首屏入场动画
 
-- 底图：stage-banner.webp → stage-play.webp（900 宽、66KB），挂到 .rhythm-bg 当 canvas 底图（opacity .42）；段落顶部那块横幅连同 CSS / 占位符 / 探测代码一起删掉
-- 谱面：DIFF_TIERS 去掉 dual 与 stride，改成按难度最小间隔（轻松 320 / 标准 170 / 硬核 120 ms）过滤起音点，时间戳仍来自实测起音点；spawn 里同一轨道 260ms 内不重复 → 不再出现一整排和同轨重叠
-- 卡顿：滚动回调不再每帧 getBoundingClientRect + scrollHeight（改成缓存的 sectionTops/docH/viewH）；AudioContext 建图从 playing 事件挪到 load+600ms 的 idle 里；时间条视口判断每 4 拍一次
-- 实测（有头 Edge + LoAF/longtask）：唯一的长动画帧是建音频图那次 255ms（音频设备初始化本身，换 sampleRate 也一样），已挪到用户交互之前；滚动与音游三段 0 掉帧、0 长任务
-- selftest 77/77、drop-test 通过、五道门全绿
+- 实测 600ms 那一档会让 255ms 的停顿落在导航后 0.40s——正是入口门渐变入场的时候，看得出来
+- 改成 load 之后 1800ms 再进 idle：真访客路径上它落在「进场动画结束、用户还在读入口门」的窗口里，点按钮之前就已经建好，起播时只剩接线（很快）
+- ?enter=1 自动进站的测试路径仍会撞上起播，但那条路真实用户不走
+- selftest 77/77、drop-test 通过
