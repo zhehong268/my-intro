@@ -50,21 +50,22 @@ generator.exe
 
 | 文件 | 说明 |
 | --- | --- |
-| `main.cpp` | 生成器：内容 + 模板 + 全部 CSS / JS（179 KB） |
+| `main.cpp` | 生成器：内容 + 模板 + 全部 CSS / JS（208 KB） |
 | `rhythm_core.hpp` | 谱面 + 判定窗口 + 准确率算法，native 与 wasm 共用的唯一实现 |
-| `rhythm_core.cpp` | `extern "C"` 导出层（`kernel_version` / `chart_reset` / `chart_next` / `chart_at` / `judge_ms` / `accuracy_permille`） |
-| `rhythm_core.wasm` | emcc 产物（732 B），仓库里留一份兜底 |
-| `index.html` | 生成产物（134.7 KB，含内联 CSS / JS / wasm / 657 个实测起音点） |
-| `kernel.html` | 生成产物：内核控制台（任意 seed 的谱面网格 + 判定窗口表 + 算分表，逐行比对内核与期望值，62.4 KB） |
-| `nojs.html` | 生成产物：无 JS 对照（同一份 index.html 用禁脚本 / 正常两个 iframe 并排跑，46.7 KB） |
+| `rhythm_core.cpp` | `extern "C"` 导出层（`kernel_version` / `chart_reset` / `chart_next` / `chart_at` / `judge_ms` / `accuracy_permille` / `detect_onsets` / `onset_selftest`；起音检测的输入输出放在静态区，用 `onset_ptr` / `onset_out_ptr` 取地址） |
+| `rhythm_core.wasm` | emcc 产物（9.8 KB，内核 v3：谱面 + 判定窗口 + 起音检测），仓库里留一份兜底 |
+| `index.html` | 生成产物（168.6 KB，含内联 CSS / JS / wasm / 657 个实测起音点） |
+| `kernel.html` | 生成产物：内核控制台（任意 seed 的谱面网格 + 判定窗口表 + 算分表，逐行比对内核与期望值，78.3 KB） |
+| `nojs.html` | 生成产物：无 JS 对照（同一份 index.html 用禁脚本 / 正常两个 iframe 并排跑，50.5 KB） |
 | `onsets.txt` | 从 `music.mp3` 实测出来的 657 个起音点（毫秒，一行一个）——音游谱面的时间轴就是它，换歌要重跑 `tools/onsets.mjs` |
 | `404.html` `robots.txt` `sitemap.xml` | 生成产物（sitemap 里含两个工具页） |
-| `cover.jpg` `avatar.jpg` `bg.webp` | 素材图片 |
+| `cover.jpg` `avatar.jpg` `bg.webp` | 素材图片：入口门封面（735×386）/ 头像 / 全站氛围底图（音游 canvas 底下那张也是它） |
+| `stage-banner.webp` | 音游段落横幅（1400×1113，137 KB，`loading=lazy` → 不计首屏）。仓库里没有这个文件时，生成器自动改用自绘占位（暗色五道光束 / 亮色波形柱） |
 | `music.mp3` | 背景音乐，128 kbps（4.1 MB，原 10.2 MB），`preload="none"`，点音乐按钮才加载 |
 | `og-image.jpg` | 分享卡片 1200×630（70 KB），由 `tools/make-og.mjs` 渲染后**提交进仓库**，CI 只负责复制 |
 | `assets/fonts/*.woff2` | 自托管字体子集（OFL）：霞鹜文楷 Medium 做展示标题（`--display`），JetBrains Mono Regular/Bold 做等宽（`--mono`）；按页面实际用字子集化，三个文件共约 53 KB，`font-display:swap`。来源、授权、重新生成方法见 `assets/fonts/README.md` |
 | `LICENSE` | 代码 MIT；素材版权说明写在同一个文件的下半部分 |
-| `selftest.mjs` | 本机自检：起本地静态服务器 + 无头 Edge，本地 70 条 / 线上 69 条断言（差的那条查生成物里有没有占位符残留，需要磁盘上的文件） |
+| `selftest.mjs` | 本机自检：起本地静态服务器 + 无头 Edge，本地 76 条 / 线上 75 条断言（差的那条查生成物里有没有占位符残留，需要磁盘上的文件） |
 | `audio-start.mjs` | 量「点进入主页 → 真的出声」：走真实入口门、真点按钮，打印 `play` / `loadedmetadata` / `playing` / 遮罩撤掉的时刻，以及预热 fetch 发没发、元素那次请求是不是命中缓存。用法 `node audio-start.mjs <url> 0 <cdp端口> - <点门前等多少毫秒>` |
 | `tools/wasm-check.mjs` | 内核契约门：导出、版本号、谱面、判定窗口边界、准确率权重 |
 | `tools/asset-gate.mjs` | 资产门：页面引用到的本地文件必须都在发布目录里 |
@@ -74,6 +75,9 @@ generator.exe
 | `tools/font-coverage.mjs` | 字体覆盖门：页面真正用到的展示/等宽字符必须都在子集里；`—…·` 这三个按设计回退的标点只提醒，真漏字才红。负向测试 `_review/my-intro/font-gate-test.mjs`（4 棵造出来的树） |
 | `tools/og-card.html` `tools/make-og.mjs` | 分享卡片的模板与渲染脚本 |
 | `tools/rhythm-gate.mjs` | 谱面时间轴门：`onsets.txt` 必须是递增的整数、`index.html` 里内联的那份必须与它逐个相等、`__RHYTHM_SONG_MS` 必须大于最后一个起音点（换了歌忘了重跑 `tools/onsets.mjs` 会在这里红掉） |
+| `tools/drop-test.mjs` | 拖歌路径的端到端测试（本地跑，CI 里没有浏览器）：现场合成 10 秒点击轨 → `DOM.setFileInputFiles` 塞进真的 `#dropFile` → 断言页面内 wasm 自检、量到的起音点数、`audio.src` 变 `blob:`、时钟标签与 `__rhythmClockProbe`；`--theme=mygo` 还出暗色图 |
+| `tools/drop-test.mjs` | 拖歌路径的端到端测试（本地跑，CI 里没有浏览器）：现场合成 10 秒点击轨 → `DOM.setFileInputFiles` 塞进真的 `#dropFile` → 断言页面内 wasm 自检、量到的起音点数、`audio.src` 变 `blob:`、时钟标签与 `__rhythmClockProbe`；`--theme=mygo` 还出暗色图 |
+| `tools/drop-test.mjs` | 拖歌路径的端到端测试（本地跑，CI 里没有浏览器）：现场合成 10 秒点击轨 → `DOM.setFileInputFiles` 塞进真的 `#dropFile` → 断言页面内 wasm 自检、量到的起音点数、`audio.src` 变 `blob:`、时钟标签与 `__rhythmClockProbe`；`--theme=mygo` 还出暗色图 |
 | `.github/workflows/deploy.yml` | CI：编 wasm → 编生成器 → 组装 `_site` → 资产门（三个页面各一遍）→ 内核门 → 体积门 → 字体覆盖门 → 谱面时间轴门 → 发布 Pages |
 
 ## 站点上的几条约定
@@ -94,7 +98,19 @@ generator.exe
 
 - **暗色主题是「MyGO 舞台」，而且首帧不闪**：`html.theme-mygo` 一套令牌换肤（近黑底 + 顶部五束成员色光池 + 深色亚克力卡片），导航栏那颗 ★ 负责切换，选择写进 `localStorage['myintro.theme']`，`?theme=mygo|light` 可以强制。决定主题的那段脚本在 `<head>` 里同步跑完，`selftest.mjs` 用 `MutationObserver` 断言类名是在 `readyState === "loading"` 阶段挂上去的——不会先亮一下再变暗。
 - **音游跟着正在播的那首歌走**：谱面时间轴不是拍脑袋的 BPM，而是 `tools/onsets.mjs` 从 `music.mp3` 里量出来的 **657 个起音点**（实测曲长 256.6 s、起音间隔中位数 302 ms；同一份工具做梳状滤波给出的速度是 65.3 BPM、每拍 919.5 ms），生成器把它内联进页面。歌在播时**判定时钟就是 `audio.currentTime`**，暂停或没播时换成等速虚拟时钟、接着暂停那一刻的音频位置走；`window.__rhythmClockProbe()` 能读出当前时钟来源、时间轴长度和下一个音符的落点。换歌要重跑 `tools/onsets.mjs` 并改生成器里的 `__RHYTHM_SONG_MS`。
-- **致敬只用事实数据和自绘元素**：舞台灯与七条轨道用的五个色值来自粉丝整理的成员色票（Lee-W/maigo 的 `character-colors`，非官方配色），成员名与担当是事实性描述，「迷子」那句和 ★/☆ 图标都是自己写的、自绘 SVG；页面里没有官方图片、没有歌词，音频文件也没动过。
+- **拖任意一首歌进来，浏览器里当场量起音点**：`decodeAudioData` 解出来的 PCM 分块喂给同一个内核（`detect_onsets`），谱面立刻换成这首、音源换成 `blob:` 地址 —— 文件不出这台机器，`tools/drop-test.mjs` 走的就是这条路径。10 秒音频实测 5 ms。
+- **难度三档只改密度与窗口，判定者仍是内核**：轻松 / 标准 / 硬核 = 起音点抽稀 ×0.5 / ×1 / ×2（硬核用双押：同一下真实起音点落两个音符，时间戳不编造）、判定窗口 ×1.25 / ×1 / ×0.67，窗口倍率是在调用 `judge_ms` 之前折算的。
+- **入口门那行徽章是自证的**：生成器用自己的 SHA-256 算出内联内核的摘要写进 `data-sha`，页面加载后再用浏览器的 `crypto.subtle.digest('SHA-256')` 复核同一份 base64 字节 —— 一致才写「浏览器复核一致」，环境没有 `crypto.subtle` 就如实写「构建时算的」。
+- **整首歌的起音点时间条**：canvas 下面那条画着 657 根 tick 的条就是内联的时间轴本身，播放头取 `songNow() % CUR_SONG_MS`，换谱面或换主题会重画。
+- **拖任意一首歌进来，浏览器里当场量起音点**：`decodeAudioData` 解出来的 PCM 分块喂给同一个内核（`detect_onsets`），谱面立刻换成这首、音源换成 `blob:` 地址 —— 文件不出这台机器，`tools/drop-test.mjs` 走的就是这条路径。10 秒音频实测 5 ms。
+- **难度三档只改密度与窗口，判定者仍是内核**：轻松 / 标准 / 硬核 = 起音点抽稀 ×0.5 / ×1 / ×2（硬核用双押：同一下真实起音点落两个音符，时间戳不编造）、判定窗口 ×1.25 / ×1 / ×0.67，窗口倍率是在调用 `judge_ms` 之前折算的。
+- **入口门那行徽章是自证的**：生成器用自己的 SHA-256 算出内联内核的摘要写进 `data-sha`，页面加载后再用浏览器的 `crypto.subtle.digest('SHA-256')` 复核同一份 base64 字节 —— 一致才写「浏览器复核一致」，环境没有 `crypto.subtle` 就如实写「构建时算的」。
+- **整首歌的起音点时间条**：canvas 下面那条画着 657 根 tick 的条就是内联的时间轴本身，播放头取 `songNow() % CUR_SONG_MS`，换谱面或换主题会重画。
+- **拖任意一首歌进来，浏览器里当场量起音点**：`decodeAudioData` 解出来的 PCM 分块喂给同一个内核（`detect_onsets`），谱面立刻换成这首、音源换成 `blob:` 地址 —— 文件不出这台机器，`tools/drop-test.mjs` 走的就是这条路径。10 秒音频实测 5 ms。
+- **难度三档只改密度与窗口，判定者仍是内核**：轻松 / 标准 / 硬核 = 起音点抽稀 ×0.5 / ×1 / ×2（硬核用双押：同一下真实起音点落两个音符，时间戳不编造）、判定窗口 ×1.25 / ×1 / ×0.67，窗口倍率是在调用 `judge_ms` 之前折算的。
+- **入口门那行徽章是自证的**：生成器用自己的 SHA-256 算出内联内核的摘要写进 `data-sha`，页面加载后再用浏览器的 `crypto.subtle.digest('SHA-256')` 复核同一份 base64 字节 —— 一致才写「浏览器复核一致」，环境没有 `crypto.subtle` 就如实写「构建时算的」。
+- **整首歌的起音点时间条**：canvas 下面那条画着 657 根 tick 的条就是内联的时间轴本身，播放头取 `songNow() % CUR_SONG_MS`，换谱面或换主题会重画。
+- **致敬只用事实数据和自绘元素**：舞台灯与七条轨道用的五个色值来自公开的成员色票整理（Lee-W/maigo 的 `character-colors`，非官方配色），成员名与担当是事实性描述，「迷子」那句和 ★/☆ 图标都是自己写的、自绘 SVG；歌词没有入库，音频文件没动过。音游段落那张横幅插画由站长自己提供，来源见下面的素材说明。
 
 ## 自检
 
@@ -107,27 +123,33 @@ node tools/asset-gate.mjs --dir=_site           # 资产门（对三个页面各
 node tools/budget.mjs                           # 首屏体积门禁
 node tools/font-coverage.mjs --dir=.            # 字体子集覆盖（改了标题/引言文字后跑）
 node tools/rhythm-gate.mjs --dir=.              # 谱面时间轴 vs onsets.txt（换了歌之后跑）
+node tools/drop-test.mjs                        # 拖歌路径端到端（真塞文件 + 出图，本地跑）
+node tools/drop-test.mjs                        # 拖歌路径端到端（真塞文件 + 出图，本地跑）
+node tools/drop-test.mjs                        # 拖歌路径端到端（真塞文件 + 出图，本地跑）
 ```
 
 本地服务器（`selftest.mjs` 与音频探针里的那个）**必须支持 Range 请求**：GitHub Pages 支持，本地不支持的话 `<audio>` 会被判为不可 seek，降级后回填进度会被静默丢弃——那不是代码 bug，是测量环境的差异。
 
 断言里**不写死 wasm 的字节数**：本地 emsdk 与 CI 的 emcc 版本不同，同一个 `rhythm_core.cpp` 编出来会差几个字节（实测本地 732 B / CI 724 B）。所以那条断言是拿页面里真正内联的那段 base64 现算长度与 SHA-256，再和页面自己算的 `sha256` 对齐——换 emcc 版本不会假失败。
 
-70 条断言覆盖：无 JS 下的可见性 / 滚动 / 数字 / 技能条 / `.reveal`，入口门，wasm 谱面一致性（`parity`、`laneSource`、`kernel_version=2`），内联谱面 256 个合法轨道，canvas 背板 = CSS 尺寸 × dpr，滚到底部导航高亮，COMBO 递增，rAF 帧率，skip-link / aria-pressed / canonical / 1200×630 og 卡片 / twitter card / 英文摘要 / 预加载，小字对比度 ≥ 4.5:1，控制台无异常；可玩模式 9 条（判定内核自检、边界串 `001112222211100`、JS 回退镜像与内核同答案、控制条就位、真按键拿到非 MISS 且 `judgeSource=wasm`、漏判记 MISS、`#rAcc` 等于内核千分比、结算面板 + 最好成绩落盘、刷新后仍在）；音频 8 条（图采样率 = 文件 44100 且 `running`、几十秒无 waiting/stalled/frozen、抖动时降级到原生通路、降级后进度接得上、降级后只剩一个 audio、`?audio=plain` 不建图也照样放、入口门期间预热首包已发出 `window.__musicWarm === 206`、点进入主页到出声 ≤ 1.2s）；歌曲同步 4 条（时间轴来自内联的 657 个起音点、在播时判定时钟就是 `audio.currentTime`、下一个音符落点确实等于某个实测起音点、暂停后退回虚拟时钟且接着音频位置）；主题 5 条（初始主题与 `localStorage` 一致、点 ★ 换肤且 `meta[theme-color]` / 底色 / `aria-pressed` 一起变、选择落盘、刷新后仍是暗色、类名在解析阶段就挂上 = 首帧不闪）；seed 与工具页 8 条（默认 seed 的 16 音符与 Node 独立实现一致、任意文字 seed 折成 32 位后内核与镜像逐位一致、换 seed 确实换谱面、`?seed=` 进入就生效、内核控制台三张表全对、控制台换 seed 后仍一致且地址同步、无 JS 对照页的 sandbox 确实禁脚本且右框已进主页）。
+76 条断言覆盖：无 JS 下的可见性 / 滚动 / 数字 / 技能条 / `.reveal`，入口门，wasm 谱面一致性（`parity`、`laneSource`、`kernel_version=3`），内联谱面 256 个合法轨道，canvas 背板 = CSS 尺寸 × dpr，滚到底部导航高亮，COMBO 递增，rAF 帧率，skip-link / aria-pressed / canonical / 1200×630 og 卡片 / twitter card / 英文摘要 / 预加载，小字对比度 ≥ 4.5:1，控制台无异常；可玩模式 9 条（判定内核自检、边界串 `001112222211100`、JS 回退镜像与内核同答案、控制条就位、真按键拿到非 MISS 且 `judgeSource=wasm`、漏判记 MISS、`#rAcc` 等于内核千分比、结算面板 + 最好成绩落盘、刷新后仍在）；音频 8 条（图采样率 = 文件 44100 且 `running`、几十秒无 waiting/stalled/frozen、抖动时降级到原生通路、降级后进度接得上、降级后只剩一个 audio、`?audio=plain` 不建图也照样放、入口门期间预热首包已发出 `window.__musicWarm === 206`、点进入主页到出声 ≤ 1.2s）；歌曲同步 4 条（时间轴来自内联的 657 个起音点、在播时判定时钟就是 `audio.currentTime`、下一个音符落点确实等于某个实测起音点、暂停后退回虚拟时钟且接着音频位置）；主题 5 条（初始主题与 `localStorage` 一致、点 ★ 换肤且 `meta[theme-color]` / 底色 / `aria-pressed` 一起变、选择落盘、刷新后仍是暗色、类名在解析阶段就挂上 = 首帧不闪）；seed 与工具页 8 条（默认 seed 的 16 音符与 Node 独立实现一致、任意文字 seed 折成 32 位后内核与镜像逐位一致、换 seed 确实换谱面、`?seed=` 进入就生效、内核控制台三张表全对、控制台换 seed 后仍一致且地址同步、无 JS 对照页的 sandbox 确实禁脚本且右框已进主页）；自证与新交互 6 条（入口门徽章写着构建时的内核摘要与字节数、进页面后 `crypto.subtle` 复核同一份字节并给出结论、三档难度按钮就位且默认标准、点硬核后选择落盘并按双押重排这一轮、起音点时间条画出 657 根 tick、横幅是 `loading=lazy`）。
 
-首屏体积（`node tools/budget.mjs` 实测，预算 500 KB）：
+首屏体积（`node tools/budget.mjs` 实测，预算 540 KB）：
 
 ```
 avatar.jpg    17.8 KB   bg.webp  43.9 KB   cover.jpg  70.4 KB
-favicon.svg    0.8 KB   index.html 134.7 KB
+favicon.svg    0.8 KB   index.html 168.6 KB
 assets/fonts/ 51.7 KB   霞鹜文楷子集 12.6 + JetBrains Mono Regular 15.0 / Bold 24.1
-首屏合计     319.2 KB   其中 HTML gzip 后 43.8 KB
-含音频预热   479.2 KB   预热 = 入口门期间那 160 KB 的 Range 预取（省流量模式会跳过）
+首屏合计     353.2 KB   其中 HTML gzip 后 57.9 KB
+含音频预热   513.1 KB   预热 = 入口门期间那 160 KB 的 Range 预取（省流量模式会跳过）
 music.mp3   4010.7 KB   按需（预算 4.5 MB）
-kernel.html   62.4 KB   nojs.html 46.7 KB   工具页（点进去才加载，gzip 19.3 / 14.1 KB）
+kernel.html   78.3 KB   nojs.html 50.5 KB   工具页（点进去才加载，gzip 27.8 / 15.0 KB）
+stage-banner.webp 136.9 KB  按需（loading=lazy，不计首屏）
 ```
 
-从 303.9 KB 涨到 319.2 KB 的那 15 KB 花在：内联的 657 个起音点（约 4 KB）、
+从 319.2 KB 涨到 353.2 KB 的那 34 KB 花在：入口门那行自证徽章与复核脚本（约 2 KB）、
+拖歌那一段（分块喂内核 + 窗口起音检测 + 拖放区样式，约 9 KB）、难度三档与起音点时间条（约 5 KB）、
+英文摘要扩写与成员阵容（约 3 KB）、
 MyGO 舞台主题的令牌与光效（约 5 KB）、跟着音轨走的判定时钟与成员色轨道（约 3 KB）、
 成员阵容那一段文字（约 1 KB）。
 
@@ -136,18 +158,30 @@ MyGO 舞台主题的令牌与光效（约 5 KB）、跟着音轨走的判定时�
 `font-display:swap` 不阻塞首屏。子集没覆盖的字按 `Kaiti SC → KaiTi → serif` 回退；
 改了标题文字后跑 `python tools/subset-fonts.py` 补齐（见 `assets/fonts/README.md`）。
 
+预算再从 500 KB 上调到 540 KB 的那 40 KB，是为了让页面能对**拖进来的任意一首歌**当场量起音点：
+内核 v3 多出来的 10 KB wasm 内联成 13.4 KB base64（base64 几乎压不动），加上拖放区与状态行约 9 KB，
+剩下留作余量。
+
+预算再从 500 KB 上调到 540 KB 的那 40 KB，是为了让页面能对**拖进来的任意一首歌**当场量起音点：
+内核 v3 多出来的 10 KB wasm 内联成 13.4 KB base64（base64 几乎压不动），加上拖放区与状态行约 9 KB，
+剩下留作余量。
+
+预算再从 500 KB 上调到 540 KB 的那 40 KB，是为了让页面能对**拖进来的任意一首歌**当场量起音点：
+内核 v3 多出来的 10 KB wasm 内联成 13.4 KB base64（base64 几乎压不动），加上拖放区与状态行约 9 KB，
+剩下留作余量。
+
 ## 已知限制
 
 - `music.mp3` 已从 320 kbps（10.2 MB）压到 128 kbps（4.1 MB），页面仍是 `preload="none"`；不参与首屏，但点开音乐仍要下 4 MB。仓库历史里还留着旧的那个 10 MB blob（想让 clone 变小要重写历史，暂没做）。
 - 页面正文只有中文，英文只有「关于本站」里的一段摘要，没有完整英文版、没有 RSS。
-- 音游现在是**可玩的一轮挑战**（64 音符、两档判定），但没有长按 / 滑条 / 多押，也没有难度分级；默认仍然是自动演奏展示。
+- 音游现在是**可玩的一轮挑战**（64 音符、两档判定），难度三档已经上了（轻松 / 标准 / 硬核：抽稀与双押、窗口按倍率折算后再交给内核），但没有长按 / 滑条；默认仍然是自动演奏展示。
 - Pages 部署走 artifact，`_site` 里只有该发布的文件；源码不再随站点一起公开。
 - 音频降级只在**真的观测到** `waiting` / `stalled` 时才发生，无头浏览器用的是空音频设备，声卡那端的实际听感没法自动断言——这一条只能靠 `?audio=debug` 读数和人耳确认。
 - 起播那约 0.8s 里，剩下的时间主要花在浏览器的音频管线启动（拿到数据 → 真的出声）上，这一层页面管不到；`preload="auto"` 能让它更早开始解码，但代价是可能把整个 4 MB 拉下来，所以没那么做。
 - 本地 MSVC 生成的是 CRLF、CI 的 g++ 是 LF，所以「本地 vs 线上逐字节比对」要先归一化行尾，否则每个换行都是一处分歧（`selftest.mjs` 与 `audio-start.mjs` 都不受影响，它们比的是行为）。
 - 素材（封面、头像、音乐）不是我的作品，版权说明见 `LICENSE` 下半部分。
-- 音游跟的是**自己量的起音点**，不是官方谱面：`onsets.txt` 里 657 个点是 `tools/onsets.mjs` 对 `music.mp3` 做谱通量峰检测得到的，换一首歌必须重跑它、并同步改生成器里的 `__RHYTHM_SONG_MS`；起音点只对齐「响的瞬间」，没有分声部、没有难度分级。
-- 「MyGO 舞台」那五个色值取自**粉丝整理的色票**（Lee-W/maigo），不是官方配色标准；如果哪天官方给了更权威的色值，改 `main.cpp` 里 `MYGO_LANES` 与主题令牌那几行即可。
+- 音游跟的是**自己量的起音点**，不是官方谱面：`onsets.txt` 里 657 个点是 `tools/onsets.mjs` 对 `music.mp3` 做谱通量峰检测得到的，换一首歌有两条路：重跑 `tools/onsets.mjs` 并改 `__RHYTHM_SONG_MS`（进仓库的那一首），或者在页面上把歌拖进拖放区、让 wasm 内核当场量（只对这次访问有效，不上传、不落盘）。起音点只对齐「响的瞬间」，没有分声部。
+- 舞台灯与七条轨道那五个色值来自公开的成员色票整理（Lee-W/maigo，非官方配色）；要换色改 `main.cpp` 里 `MYGO_LANES` 与主题令牌那几行即可。
 
 ## 最后
 我是遮鸿，感谢你的到来qwq

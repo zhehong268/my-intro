@@ -978,7 +978,7 @@ html.theme-mygo .landing::after{background:radial-gradient(circle at 50% 50%,rgb
 .stage-banner{position:relative;margin:24px 0 0}
 .stage-frame{position:relative;aspect-ratio:1200/420;border-radius:18px;overflow:hidden;border:1px solid var(--line);
   background:linear-gradient(180deg,color-mix(in srgb,var(--violet) 9%,var(--bg-top)),var(--panel));box-shadow:var(--sh-3)}
-.stage-banner-img{display:block;width:100%;height:100%;object-fit:cover}
+.stage-banner-img{display:block;width:100%;height:100%;object-fit:cover;object-position:50% 14%}
 /* 亮色主题里不掺 MyGO（用户要求 MyGO 只落在暗色）：占位换成站点自己的紫色波形 */
 .stage-wave{position:absolute;inset:0;display:flex;align-items:center;gap:2.2%;padding:0 7%;opacity:.6}
 .stage-wave span{flex:1;height:var(--h);border-radius:8px;background:linear-gradient(180deg,color-mix(in srgb,var(--violet) 58%,transparent),color-mix(in srgb,var(--violet) 10%,transparent))}
@@ -3649,7 +3649,7 @@ int main() {
       if (!bannerName.empty()) {
         std::string img = R"HTML(<img class="stage-banner-img" src="__BANNER_SRC__" width="1200" height="420" loading="lazy" decoding="async" alt="音游段落横幅">)HTML";
         me.stageBanner = replaceAll(img, "__BANNER_SRC__", bannerName);
-        me.stageBannerNote = "音游段落横幅 · " + bannerName + " · loading=lazy，滚到这一段才取，不计首屏";
+        me.stageBannerNote = "舞台上的五个人";
       } else {
         me.stageBanner = R"HTML(<div class="stage-stage" aria-hidden="true"><span class="beam b1"></span><span class="beam b2"></span><span class="beam b3"></span><span class="beam b4"></span><span class="beam b5"></span><span class="stage-floor"></span><span class="stage-mark">★</span><span class="stage-line">五个人，一个舞台</span></div><div class="stage-wave" aria-hidden="true"><span style="--h:26%"></span><span style="--h:54%"></span><span style="--h:78%"></span><span style="--h:38%"></span><span style="--h:92%"></span><span style="--h:60%"></span><span style="--h:32%"></span><span style="--h:74%"></span><span style="--h:46%"></span><span style="--h:88%"></span><span style="--h:56%"></span><span style="--h:30%"></span></div>)HTML";
         me.stageBannerNote = "自绘的舞台示意图 · 这一段留了横幅槽位，换成正式插图时直接替掉";

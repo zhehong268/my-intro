@@ -546,6 +546,49 @@ check("theme: 类名在 head 解析阶段就挂好（首帧不闪）",
 /* 收尾：把记忆清掉，免得下次跑这条断言时起点不是亮色 */
 await evaluate(`localStorage.removeItem('myintro.theme'); window.__applyTheme('light', false); true`);
 
+/* ---------- 自证徽章 / 难度三档 / 起音点时间条 / 音游横幅 ---------- */
+const acd = await evaluate(`(() => {
+  var proof = document.getElementById('landingProof');
+  var strip = document.getElementById('onsetStrip');
+  var banner = document.querySelector('#stageBanner img.stage-banner-img');
+  return {
+    sha: proof ? String(proof.getAttribute('data-sha')) : '',
+    bytes: proof ? Number(proof.getAttribute('data-bytes')) : 0,
+    proofText: proof ? proof.textContent.trim() : '',
+    diff: ['diffEasy', 'diffNormal', 'diffHard'].map(function (id) {
+      var b = document.getElementById(id);
+      return b ? id + ':' + b.getAttribute('aria-pressed') : id + ':missing';
+    }),
+    diffNote: (document.getElementById('diffNote') || {}).textContent || '',
+    strip: strip ? { w: strip.width, h: strip.height } : null,
+    stripNote: (document.getElementById('stripNote') || {}).textContent || '',
+    banner: banner ? { lazy: banner.getAttribute('loading'), w: banner.getAttribute('width') } : null
+  };
+})()`);
+check("badge: 入口门自证徽章写着构建时算的内核摘要与字节数",
+  /^[0-9a-f]{12}$/.test(acd.sha) && acd.bytes > 0, `sha=${acd.sha} bytes=${acd.bytes}`);
+check("badge: 进页面后用 crypto.subtle 复核同一个内核，结论写在徽章上",
+  /一致/.test(acd.proofText) && !/不一致/.test(acd.proofText), acd.proofText.slice(0, 64));
+check("diff: 三档难度按钮就位、默认标准（判定窗口由内核给）",
+  acd.diff.length === 3 && !acd.diff.some((d) => /missing/.test(d)) && /diffNormal:true/.test(acd.diff.join(" ")) && /内核/.test(acd.diffNote),
+  acd.diff.join(" ") + " | " + acd.diffNote.slice(0, 40));
+const diffHard = await evaluate(`(async () => {
+  var before = window.__rhythmClockProbe ? window.__rhythmClockProbe().timeline : 0;
+  document.getElementById('diffHard').click();
+  await new Promise(function (r) { setTimeout(r, 700); });
+  var after = window.__rhythmClockProbe ? window.__rhythmClockProbe().timeline : 0;
+  return { stored: localStorage.getItem('myintro.diff'), pressed: document.getElementById('diffHard').getAttribute('aria-pressed'), before: before, after: after };
+})()`);
+check("diff: 点硬核 → 选择落盘 + 这一轮按双押重排（密度 x2）",
+  diffHard.stored === "hard" && diffHard.pressed === "true" && diffHard.after !== diffHard.before,
+  JSON.stringify(diffHard));
+await evaluate(`document.getElementById('diffNormal').click(); localStorage.removeItem('myintro.diff'); true`);
+check("strip: 整首歌的起音点时间条画出来了（657 个 tick + 播放头）",
+  !!(acd.strip && acd.strip.w > 200 && acd.strip.h > 10 && /657/.test(acd.stripNote)),
+  JSON.stringify(acd.strip) + " | " + acd.stripNote.slice(0, 48));
+check("banner: 音游横幅按需加载（loading=lazy，不计首屏）",
+  !!(acd.banner && acd.banner.lazy === "lazy"), JSON.stringify(acd.banner));
+
 /* ---------- 生成物不该留下任何 __PLACEHOLDER__ ---------- */
 if (DIR) {
   const files = ["index.html", "kernel.html", "nojs.html", "404.html"].filter((f) => fs.existsSync(path.join(DIR, f)));

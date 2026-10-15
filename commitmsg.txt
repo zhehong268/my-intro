@@ -1,10 +1,6 @@
-修 CI 红：补 <cstdint>；删掉成员色票那段说明；资产门只认真正的引用
+横幅落地：用站长提供的那张插画 + 文档同步
 
-- CI（Ubuntu GCC 13）报了一串 `'uint32_t' was not declared in this scope` /
-  `'uint64_t'` / `'byte'`，根因是生成器里的 SHA-256 用了定长类型却没写 <cstdint>：
-  本地 MinGW 8.1 会顺着别的头文件把 uint32_t 带进来，新一点的 libstdc++ 不会，
-  所以只有 CI 红。补一行 #include <cstdint>，本地编译运行照旧。
-- 按用户要求删掉音游段落里「…取自粉丝整理的成员色票，不是官方配色…」那段说明。
-- 横幅占位说明改成不写文件名的文案（原来那行会把 stage-banner.webp 当成一处资产引用）。
-- asset-gate 的第三类扫描收窄到 <meta content> 里（og:image / twitter:image 那两处），
-  不再把正文里出现的文件名当成引用 —— 之前是全文匹配后缀，正文一提文件名就误报。
+- stage-banner.webp（1400x1113，137 KB，loading=lazy 不计首屏）进仓库；横幅 img 加 object-position:50% 14%，脸不会被扁框裁掉；caption 改成中性的「舞台上的五个人」
+- deploy.yml：有 stage-banner.* 才拷进 _site（没有就用生成器里的自绘占位）
+- selftest 加 6 条：徽章 data-sha/data-bytes 与「一致」文案、难度三档与落盘、时间条 tick、横幅 loading=lazy → 76/76
+- README/LICENSE 同步：首屏 353.2/540、含预热 513.1、gzip 57.9/64、wasm v3 与 detect_onsets、drop-test 跑法、断言 76/75、素材清单加 stage-banner.webp、去掉「页面里没有官方图片」的说法
