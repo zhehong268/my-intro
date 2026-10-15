@@ -5,3 +5,4 @@ generator.exe
 *.obj
 *.pdb
 _site/
+.fontsubset-tmp/

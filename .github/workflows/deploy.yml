@@ -47,6 +47,8 @@ jobs:
           cp index.html 404.html robots.txt sitemap.xml favicon.svg _site/
           cp kernel.html nojs.html _site/
           cp cover.jpg avatar.jpg bg.webp music.mp3 og-image.jpg _site/
+          mkdir -p _site/assets/fonts
+          cp assets/fonts/*.woff2 _site/assets/fonts/
           ls -l _site
 
       # 资产门：三个页面里引用到的每个本地文件都必须真的在 _site 里，

@@ -28,9 +28,19 @@
 <meta name="twitter:image:alt" content="遮鸿 的主页分享卡片">
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
 <link rel="preload" as="image" href="cover.jpg" fetchpriority="high">
+<link rel="preload" as="font" type="font/woff2" href="assets/fonts/lxgw-wenkai-display.woff2" crossorigin>
+<link rel="preload" as="font" type="font/woff2" href="assets/fonts/jetbrains-mono-regular.woff2" crossorigin>
+<link rel="preload" as="font" type="font/woff2" href="assets/fonts/jetbrains-mono-bold.woff2" crossorigin>
 <title>遮鸿 · 个人主页</title>
 <style>
 
+/* 自托管字体（OFL 授权，子集化后仅 53 KB，明细见 assets/fonts/README.md）：
+   展示字体用霞鹜文楷 Medium（只子集了标题/引言实际用到的 60 字），
+   等宽用 JetBrains Mono Regular/Bold（子集化到页面实际出现的 96 个字符）。
+   font-display:swap：字体没到位前用回退字体渲染，不阻塞首屏。 */
+@font-face{font-family:'LxgwWenKai';src:url('assets/fonts/lxgw-wenkai-display.woff2') format('woff2');font-weight:400 900;font-style:normal;font-display:swap}
+@font-face{font-family:'JetBrains Mono';src:url('assets/fonts/jetbrains-mono-regular.woff2') format('woff2');font-weight:400;font-style:normal;font-display:swap}
+@font-face{font-family:'JetBrains Mono';src:url('assets/fonts/jetbrains-mono-bold.woff2') format('woff2');font-weight:700;font-style:normal;font-display:swap}
 :root{
   --bg:#f6f7fc;
   --ink:#151a2e;
@@ -47,6 +57,7 @@
   --ease:cubic-bezier(.22,.61,.36,1);
   --mono:'JetBrains Mono','Cascadia Mono',Consolas,'SF Mono',Menlo,monospace;
   --sans:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif;
+  --display:'LxgwWenKai','LXGW WenKai','Kaiti SC','KaiTi','STKaiti',serif;
 }
 *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
 html{scroll-behavior:smooth}
@@ -169,11 +180,11 @@ html.entry body{overflow:hidden}
 .landing-photo img{display:block;width:100%;height:auto;aspect-ratio:16/9;object-fit:cover}
 .landing-latin{margin-top:30px;font-family:var(--mono);font-size:11.5px;letter-spacing:7px;color:var(--ink-faint)}
 .landing-title{
-  margin-top:12px;font-size:clamp(26px,5vw,44px);font-weight:800;letter-spacing:1.5px;line-height:1.3;
+  margin-top:12px;font-family:var(--display);font-size:clamp(26px,5vw,44px);font-weight:800;letter-spacing:1.5px;line-height:1.3;
   background:linear-gradient(110deg,#151a2e 0%,var(--violet) 52%,var(--sky) 100%);
   -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;
 }
-.landing-sub{margin-top:10px;color:var(--ink-dim);font-size:15px}
+.landing-sub{margin-top:10px;color:var(--ink-dim);font-size:15px;font-family:var(--display);letter-spacing:1px}
 .enter-btn{
   margin-top:32px;display:inline-flex;align-items:center;gap:10px;
   padding:15px 42px;border-radius:999px;cursor:pointer;border:none;
@@ -224,7 +235,7 @@ html.js .page.visible{opacity:1}
   font-family:var(--mono);font-size:11.5px;letter-spacing:3px;color:var(--violet);margin-bottom:14px}
 .eyebrow::before{content:'';width:26px;height:1px;background:linear-gradient(90deg,var(--violet),transparent)}
 .section-title{
-  font-size:clamp(23px,3.4vw,32px);font-weight:750;letter-spacing:.5px;
+  font-family:var(--display);font-size:clamp(23px,3.4vw,32px);font-weight:750;letter-spacing:.5px;
   background:linear-gradient(110deg,#151a2e 0%,var(--violet) 70%,var(--sky) 100%);
   -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;
 }
@@ -297,7 +308,7 @@ html.js .reveal.in{opacity:1;transform:none}
   75%{transform:scale(1.06) rotate(-2deg)}
   100%{transform:scale(1) rotate(0)}
 }
-.hero-name{font-size:clamp(26px,4vw,36px);font-weight:800;letter-spacing:2px;
+.hero-name{font-size:clamp(26px,4vw,36px);font-weight:800;letter-spacing:2px;font-family:var(--display);
   background:linear-gradient(110deg,#151a2e,var(--violet) 58%,var(--sky));
   -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
 .hero-title{margin-top:6px;color:var(--violet);font-weight:600;letter-spacing:2px;font-size:15px}
@@ -352,7 +363,7 @@ html.js .reveal.in{opacity:1;transform:none}
 .quote{margin-top:30px;padding:20px 24px;border-left:3px solid var(--violet);
   background:linear-gradient(90deg,rgba(109,77,250,.07),rgba(109,77,250,0) 72%);
   border-radius:0 12px 12px 0}
-.quote p{font-size:16px;color:var(--ink);letter-spacing:.5px}
+.quote p{font-size:16px;color:var(--ink);letter-spacing:.5px;font-family:var(--display);font-weight:600}
 .quote span{display:block;margin-top:8px;font-size:12px;color:var(--ink-faint);font-family:var(--mono)}
 
 /* ---------- 经历时间线 ---------- */

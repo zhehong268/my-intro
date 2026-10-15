@@ -13,8 +13,12 @@ const args = process.argv.slice(2);
 const arg = (k, d) => { const a = args.find((x) => x.startsWith("--" + k + "=")); return a ? a.slice(k.length + 3) : d; };
 const ROOT = path.resolve(arg("root", path.join(path.dirname(fileURLToPath(import.meta.url)), "..")));
 
-/* 预算：首屏 450 KB 原始字节 / HTML 压缩后 60 KB / 交互后按需加载的音频 4.5 MB */
-const BUDGET = { firstLoad: 450 * 1024, htmlGzip: 60 * 1024, music: 4.5 * 1024 * 1024 };
+/* 预算：首屏 500 KB 原始字节 / HTML 压缩后 60 KB / 交互后按需加载的音频 4.5 MB
+   （首屏从 450 KB 上调到 500 KB：2026-10 引入自托管字体子集，三个 woff2 共约 52 KB，
+   是主动的视觉升级而不是无意变重——标题换霞鹜文楷、等宽换 JetBrains Mono，
+   按页面实际用字子集化。省掉的回退链在 Windows 上只能落到 Consolas/雅黑，
+   这个字节数花得值。门禁照旧硬失败：再有人无意加一张大图照样红。） */
+const BUDGET = { firstLoad: 500 * 1024, htmlGzip: 60 * 1024, music: 4.5 * 1024 * 1024 };
 /* 入口门一出现，页面会自己 fetch 音频的头 160 KB 预热（main.cpp 的 warmMusic()，
    Range: bytes=0-163839）。它不在 HTML 的引用列表里，抓不到，但不能当它不存在 ——
    这笔账记在这里，算进首屏口径。省流量模式下会被跳过，所以这是上限不是必花。 */

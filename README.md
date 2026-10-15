@@ -61,12 +61,14 @@ generator.exe
 | `cover.jpg` `avatar.jpg` `bg.webp` | 素材图片 |
 | `music.mp3` | 背景音乐，128 kbps（4.1 MB，原 10.2 MB），`preload="none"`，点音乐按钮才加载 |
 | `og-image.jpg` | 分享卡片 1200×630（70 KB），由 `tools/make-og.mjs` 渲染后**提交进仓库**，CI 只负责复制 |
+| `assets/fonts/*.woff2` | 自托管字体子集（OFL）：霞鹜文楷 Medium 做展示标题（`--display`），JetBrains Mono Regular/Bold 做等宽（`--mono`）；按页面实际用字子集化，三个文件共约 53 KB，`font-display:swap`。来源、授权、重新生成方法见 `assets/fonts/README.md` |
 | `LICENSE` | 代码 MIT；素材版权说明写在同一个文件的下半部分 |
 | `selftest.mjs` | 本机自检：起本地静态服务器 + 无头 Edge，本地 61 条 / 线上 60 条断言（差的那条查生成物里有没有占位符残留，需要磁盘上的文件） |
 | `audio-start.mjs` | 量「点进入主页 → 真的出声」：走真实入口门、真点按钮，打印 `play` / `loadedmetadata` / `playing` / 遮罩撤掉的时刻，以及预热 fetch 发没发、元素那次请求是不是命中缓存。用法 `node audio-start.mjs <url> 0 <cdp端口> - <点门前等多少毫秒>` |
 | `tools/wasm-check.mjs` | 内核契约门：导出、版本号、谱面、判定窗口边界、准确率权重 |
 | `tools/asset-gate.mjs` | 资产门：页面引用到的本地文件必须都在发布目录里 |
 | `tools/budget.mjs` | 首屏体积门禁：文件表 + 预算判定 |
+| `tools/subset-fonts.py` | 重新生成字体子集：从 index.html 提取用字 → 下载源字体 → pyftsubset 出 woff2（改了标题文字后跑它补齐新字） |
 | `tools/og-card.html` `tools/make-og.mjs` | 分享卡片的模板与渲染脚本 |
 | `.github/workflows/deploy.yml` | CI：编 wasm → 编生成器 → 组装 `_site` → 资产门（三个页面各一遍）→ 内核门 → 体积门 → 发布 Pages |
 
@@ -76,6 +78,7 @@ generator.exe
 - **动画只用 `transform` 与 `opacity`**：不使用 `backdrop-filter`、`background-attachment: fixed`；倾斜 / 聚光 / 视差 rAF 节流且只在桌面端启用；音游跑在单个 `canvas` 上；`ResizeObserver` 重算背板，避免高分屏下拉伸。
 - **对比度按 AA 收口**：小字用的 `--ink-faint` 从 `rgba(21,26,46,.44)`（最差 2.7:1）提到 `.62`，实测 4.74–4.86:1。
 - **可访问性**：跳转正文的 skip-link、音乐按钮的 `aria-pressed`、canvas 的 `role="img"` + `aria-label`、装饰层 `aria-hidden`、`prefers-reduced-motion` 下关掉全部动效。
+- **字体是自托管的子集，不是系统的**：标题用霞鹜文楷（Medium），等宽用 JetBrains Mono，都是 OFL 授权、按页面实际用字子集化（合计约 53 KB，首屏预算内），`font-display:swap` 不阻塞首屏。子集没覆盖到的字按 `Kaiti SC → KaiTi → serif` 回退；改了标题文字后跑 `python tools/subset-fonts.py` 补齐。
 - **分享卡片是构建输入**：`og-image.jpg` 由 `tools/make-og.mjs` 用无头 Edge 渲染 `tools/og-card.html` 得到，提交进仓库；CI 只把它复制进 `_site`，不重新渲染（生成器是纯 C++，没有图像库）。
 - **音游是可玩的，判定也来自内核**：默认自动演奏；点「开始挑战（64 音符）」进一轮，键盘 `D F G H J K L`（或数字 `1–7`）以及直接点轨道都能打，判定窗口 `±45ms` PERFECT / `±90ms` GOOD 由 `judge_ms` 给、准确率千分比由 `accuracy_permille` 给。空击不扣分，漏掉的算 MISS；一轮结束出结算面板，最好成绩写进 `localStorage`（键 `myintro.rhythm.best.v1`）。滚出可视区域会暂停，回来时把暂停时长补给还没判定的音符，不会一回来就一串 MISS。
 - **两道门都是硬失败**：资产门保证页面引用的文件都发布了，内核门保证 wasm 的导出与边界行为没变，体积门保证首屏没变重；任一道不过，部署直接红掉。
@@ -102,16 +105,22 @@ node tools/budget.mjs                           # 首屏体积门禁
 
 61 条断言覆盖：无 JS 下的可见性 / 滚动 / 数字 / 技能条 / `.reveal`，入口门，wasm 谱面一致性（`parity`、`laneSource`、`kernel_version=2`），内联谱面 256 个合法轨道，canvas 背板 = CSS 尺寸 × dpr，滚到底部导航高亮，COMBO 递增，rAF 帧率，skip-link / aria-pressed / canonical / 1200×630 og 卡片 / twitter card / 英文摘要 / 预加载，小字对比度 ≥ 4.5:1，控制台无异常；可玩模式 9 条（判定内核自检、边界串 `001112222211100`、JS 回退镜像与内核同答案、控制条就位、真按键拿到非 MISS 且 `judgeSource=wasm`、漏判记 MISS、`#rAcc` 等于内核千分比、结算面板 + 最好成绩落盘、刷新后仍在）；音频 8 条（图采样率 = 文件 44100 且 `running`、几十秒无 waiting/stalled/frozen、抖动时降级到原生通路、降级后进度接得上、降级后只剩一个 audio、`?audio=plain` 不建图也照样放、入口门期间预热首包已发出 `window.__musicWarm === 206`、点进入主页到出声 ≤ 1.2s）；seed 与工具页 8 条（默认 seed 的 16 音符与 Node 独立实现一致、任意文字 seed 折成 32 位后内核与镜像逐位一致、换 seed 确实换谱面、`?seed=` 进入就生效、内核控制台三张表全对、控制台换 seed 后仍一致且地址同步、无 JS 对照页的 sandbox 确实禁脚本且右框已进主页）。
 
-首屏体积（`node tools/budget.mjs` 实测，预算 450 KB）：
+首屏体积（`node tools/budget.mjs` 实测，预算 500 KB）：
 
 ```
 avatar.jpg    17.8 KB   bg.webp  43.9 KB   cover.jpg  70.4 KB
-favicon.svg    0.8 KB   index.html 115.9 KB
-首屏合计     248.7 KB   其中 HTML gzip 后 35.8 KB
-含音频预热   408.7 KB   预热 = 入口门期间那 160 KB 的 Range 预取（省流量模式会跳过）
+favicon.svg    0.8 KB   index.html 119.3 KB
+assets/fonts/ 51.7 KB   霞鹜文楷子集 12.6 + JetBrains Mono Regular 15.0 / Bold 24.1
+首屏合计     303.9 KB   其中 HTML gzip 后 36.5 KB
+含音频预热   463.9 KB   预热 = 入口门期间那 160 KB 的 Range 预取（省流量模式会跳过）
 music.mp3   4010.7 KB   按需（预算 4.5 MB）
-kernel.html   54.4 KB   nojs.html 38.7 KB   工具页（点进去才加载，gzip 16.5 / 11.3 KB）
+kernel.html   55.3 KB   nojs.html 39.4 KB   工具页（点进去才加载，gzip 16.5 / 11.3 KB）
 ```
+
+预算从 450 KB 上调到 500 KB 的那 52 KB 花在字体上：标题用霞鹜文楷 Medium、
+等宽用 JetBrains Mono，都是 OFL 授权、按页面实际用字子集化（合计约 52 KB），
+`font-display:swap` 不阻塞首屏。子集没覆盖的字按 `Kaiti SC → KaiTi → serif` 回退；
+改了标题文字后跑 `python tools/subset-fonts.py` 补齐（见 `assets/fonts/README.md`）。
 
 ## 已知限制
 
