@@ -1,6 +1,5 @@
-横幅落地：用站长提供的那张插画 + 文档同步
+横幅手机端：窄屏换成 16/10 的框，脸不会被压扁
 
-- stage-banner.webp（1400x1113，137 KB，loading=lazy 不计首屏）进仓库；横幅 img 加 object-position:50% 14%，脸不会被扁框裁掉；caption 改成中性的「舞台上的五个人」
-- deploy.yml：有 stage-banner.* 才拷进 _site（没有就用生成器里的自绘占位）
-- selftest 加 6 条：徽章 data-sha/data-bytes 与「一致」文案、难度三档与落盘、时间条 tick、横幅 loading=lazy → 76/76
-- README/LICENSE 同步：首屏 353.2/540、含预热 513.1、gzip 57.9/64、wasm v3 与 detect_onsets、drop-test 跑法、断言 76/75、素材清单加 stage-banner.webp、去掉「页面里没有官方图片」的说法
+- .stage-frame 在 max-width:640px 下 aspect-ratio 从 1200/420 改成 16/10，object-position 抬到 50% 18%
+- 390x844 实测：五个人完整露出，不再是 136px 的细条；桌面端不变
+- 门禁复跑全绿，selftest 76/76
